@@ -8,6 +8,8 @@ type TachikomaLeg struct {
 	VelocityX float32
 	VelocityY float32
 	WheelSpin float32
+	TrailX    float32
+	TrailY    float32
 }
 
 type TachikomaLegLayout struct {
@@ -35,6 +37,7 @@ type TachikomaRig struct {
 	BobPhase          float32
 	ArmRecoil         float32
 	TuckAmount        float32
+	SkidAmount        float32
 	HeadServo         AngularServo
 	MuzzleX           float32
 	MuzzleY           float32
@@ -46,6 +49,7 @@ type TachikomaRig struct {
 const (
 	tachikomaLegCount         = 4
 	tachikomaScale            = 1.3
+	tachikomaWheelRadius      = 3.4
 	tachikomaThighLength      = 10 * tachikomaScale
 	tachikomaShinLength       = 12 * tachikomaScale
 	tachikomaFootStiffness    = 320
@@ -130,10 +134,12 @@ func (g *Game) updateTachikoma(deltaSeconds float32) {
 	g.steerTachikoma(rig, isMoving, deltaSeconds)
 	isDashing := player.DashSeconds > 0
 	rig.TuckAmount += (boolToFloat(isDashing) - rig.TuckAmount) * min(1, deltaSeconds*14)
-	g.swingAbdomen(rig, deltaSeconds)
+	accelerationX, accelerationY := g.measureAcceleration(rig, deltaSeconds)
+	g.swingAbdomen(rig, accelerationX, accelerationY, deltaSeconds)
 	for leg := range tachikomaLegCount {
 		g.rollLeg(rig, leg, deltaSeconds)
 	}
+	g.updateSkid(rig, accelerationX, accelerationY)
 	rig.BobPhase += deltaSeconds * (2.2 + speed*0.045)
 	rig.ArmRecoil = max(0, rig.ArmRecoil-deltaSeconds*tachikomaRecoilRecovery)
 	g.updateGaze(rig, isMoving, deltaSeconds)
@@ -159,17 +165,22 @@ func (g *Game) placeTachikoma(rig *TachikomaRig) {
 	for leg := range tachikomaLegCount {
 		layout := &tachikomaLegLayouts[leg]
 		rig.Legs[leg].FootX, rig.Legs[leg].FootY = rig.LocalToWorld(player.X, player.Y, layout.RestForward, layout.RestSide)
+		rig.Legs[leg].TrailX, rig.Legs[leg].TrailY = rig.Legs[leg].FootX, rig.Legs[leg].FootY
 	}
 	rig.LookX, rig.LookY = player.AimX, player.AimY
 	rig.MuzzleX, rig.MuzzleY = player.X, player.Y
 	rig.IsPlaced = true
 }
 
-func (g *Game) swingAbdomen(rig *TachikomaRig, deltaSeconds float32) {
+func (g *Game) measureAcceleration(rig *TachikomaRig, deltaSeconds float32) (float32, float32) {
 	player := g.player
 	accelerationX := (player.VelocityX - rig.PreviousVelocityX) / deltaSeconds
 	accelerationY := (player.VelocityY - rig.PreviousVelocityY) / deltaSeconds
 	rig.PreviousVelocityX, rig.PreviousVelocityY = player.VelocityX, player.VelocityY
+	return accelerationX, accelerationY
+}
+
+func (g *Game) swingAbdomen(rig *TachikomaRig, accelerationX, accelerationY, deltaSeconds float32) {
 	forceX := -accelerationX*tachikomaAbdomenInertia - rig.AbdomenOffsetX*tachikomaAbdomenStiffness - rig.AbdomenVelocityX*tachikomaAbdomenDamping
 	forceY := -accelerationY*tachikomaAbdomenInertia - rig.AbdomenOffsetY*tachikomaAbdomenStiffness - rig.AbdomenVelocityY*tachikomaAbdomenDamping
 	rig.AbdomenVelocityX += forceX * deltaSeconds

@@ -76,7 +76,7 @@ func (r *Renderer) queueTachikomaLeg(player *Player, rig *TachikomaRig, leg int,
 }
 
 func (r *Renderer) queueWheel(x, y, spin, alpha float32) {
-	r.solid.AddCircle(x, y, scaledTachikoma(3.4), tachikomaWheel, alpha)
+	r.solid.AddCircle(x, y, scaledTachikoma(tachikomaWheelRadius), tachikomaWheel, alpha)
 	r.solid.AddCircle(x, y, scaledTachikoma(1.4), tachikomaWhite, alpha)
 	r.solid.AddSegment(x-cosine(spin)*3, y-sine(spin)*3, x+cosine(spin)*3, y+sine(spin)*3, scaledTachikoma(0.9), tachikomaLegShade, alpha)
 }

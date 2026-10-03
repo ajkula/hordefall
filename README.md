@@ -91,6 +91,7 @@ The player is a small blue Tachikoma seen from above, animated procedurally from
 - The head is a turret on a neck bearing, driven by an angular servo (damped spring, slight overshoot) toward your aim, limited to about 110 degrees from the chassis. When the aim goes past that stop, the chassis pivots to follow; omni wheels let it face one way while rolling another. The abdomen counter-rotates a little as a counterweight.
 - A barrel under the head recoils on every shot and projectiles leave from its muzzle. Arms follow the head.
 - Legs tuck in during a dash. The body breathes, faster when rolling.
+- Skid trails: sharp turns, braking and dashes leave a luminous white trail behind each wheel, as wide as the wheel, that drops quickly in intensity then lingers for about 1.6 s (`skids.go`). Purely visual, handling is unchanged.
 Tuning: constants and `tachikomaLegLayouts` in `tachikoma.go`, colors and shapes in `tachikoma_render.go`.
 
 ## Boss: Spider Tank
@@ -133,6 +134,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `render.go`      | Batched circle sprites with `DrawTriangles32`, additive glow |
 | `tachikoma.go`   | Player rig: wheel springs, abdomen sway, gaze, recoil      |
 | `tachikoma_render.go` | Player drawing                                        |
+| `skids.go`       | Wheel skid trails                                          |
 | `spider.go`      | Spider tank boss: spawn, procedural legs, gait, stomps     |
 | `spider_laser.go` | Spider tank beam: charge, lock, fire state machine         |
 | `spider_render.go` | Spider tank drawing                                      |

@@ -16,3 +16,6 @@ snapshots/
 *.swp
 Thumbs.db
 .DS_Store
+
+# Archives
+*.zip

@@ -39,6 +39,7 @@ type Effects struct {
 	ShakeTrauma   float32
 	ShakeX        float32
 	ShakeY        float32
+	Skids         SkidMarks
 	random        Random
 }
 
@@ -143,6 +144,7 @@ func (e *Effects) Update(deltaSeconds float32) {
 		e.Popups[index].Y -= popupRiseSpeed * deltaSeconds
 	}
 	e.ShakeTrauma = max(0, e.ShakeTrauma-shakeDecayPerSecond*deltaSeconds)
+	e.Skids.Update(deltaSeconds)
 	magnitude := e.ShakeTrauma * e.ShakeTrauma * 14
 	e.ShakeX, e.ShakeY = e.random.Between(-magnitude, magnitude), e.random.Between(-magnitude, magnitude)
 }
@@ -151,6 +153,7 @@ func (e *Effects) Clear() {
 	e.ParticleCount = 0
 	e.Rings, e.Bolts, e.Popups = e.Rings[:0], e.Bolts[:0], e.Popups[:0]
 	e.ShakeTrauma, e.ShakeX, e.ShakeY = 0, 0, 0
+	e.Skids.Clear()
 }
 
 // ===== Internal =====
