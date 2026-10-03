@@ -1,0 +1,120 @@
+# Hordefall
+
+A systemic horde survivor written in Go with [Ebitengine](https://ebitengine.org).
+Thousands of enemies, auto-firing elemental weapons, and a living ground: every element interacts with enemies, with the terrain, and with each other.
+
+## Run
+
+```sh
+go run .
+```
+
+## Controls
+
+| Action        | Arcade stick / gamepad  | Keyboard        |
+|---------------|-------------------------|-----------------|
+| Move          | Stick (D-pad or analog) | WASD / arrows   |
+| Fire (hold)   | Button 1                | J / Z           |
+| Aim lock (hold) | Button 2              | K / X           |
+| Dash          | Button 3                | Space / L / C   |
+| Pause         | Start                   | Esc / P         |
+| Configure buttons (title) | Select      | F2              |
+| Input debug (in game) | Select          | F1              |
+
+Aim follows your movement. Hold aim lock to freeze it and strafe or retreat while firing.
+Ember Bolt, Arc Lightning, Oil Flask and Downpour fire where you aim while Fire is held. Frost Nova and Orbit Blades are automatic.
+
+On the title screen, Select / F2 opens the button setup: press your Fire, Aim lock and Dash buttons in turn.
+The mapping is saved to `%AppData%\hordefall\controls.json` (raw button indices) and loaded on startup.
+
+## The systems
+
+**Statuses** (`status.go`): Burning, Chilled, Frozen, Oiled, Wet, Shocked. Each is a bit in `StatusFlags` with a duration, tint, speed factor and damage over time.
+
+**Reactions**: an element hitting an enemy that carries a status triggers a reaction from `reactionRules`:
+
+| Element  | Status           | Reaction     | Effect                                         |
+|----------|------------------|--------------|------------------------------------------------|
+| Fire     | Oiled            | INFERNO      | Fire explosion, chains, ignites the ground, hurts you |
+| Shock    | Oiled            | INFERNO      | Sparks ignite oil                              |
+| Oil      | Burning          | INFERNO      | Burning enemy walks into oil                   |
+| Fire     | Chilled / Frozen | STEAM        | Scalding burst that wets around                |
+| Frost    | Burning          | STEAM        |                                                |
+| Frost    | Wet / Chilled    | FREEZE       | Enemy frozen solid                             |
+| Shock    | Wet              | ELECTROCUTE  | Arcs to every wet enemy nearby                 |
+| Physical / Shock | Frozen   | SHATTER      | x3 damage and ice shards                       |
+| Fire / Water | Wet / Burning | HISS        | Extinguished                                   |
+
+Reaction bursts carry an element too, so reactions chain into further reactions.
+
+**Ground** (`ground.go`): a 256x256 cellular grid. Grass catches fire and spreads it, oil burns explosively, ice melts, water freezes under frost, ash regrows into grass. Standing on a cell applies its element to enemies (fire burns, water wets, oil soaks, ice chills) and fire hurts the player.
+
+**Enemies** (`enemies.go`): Bloaters burst into oil, Frostlings leave ice and chill, Emberlings leave fire. The horde feeds the systems.
+
+## The player: a Tachikoma
+
+The player is a small blue Tachikoma seen from above, animated procedurally from the reference design: a front cabin with three eyes, a heavy abdomen on a ball joint, four white droplet-shaped legs ending in wheels, and two small manipulator arms.
+- Each wheel follows its rest pose through a damped spring, so legs stretch, lag and overshoot when you accelerate or turn. Knees are solved with two-bone inverse kinematics.
+- The abdomen hangs on a spring driven by acceleration: it trails, swings in turns and settles.
+- The eyes track your aim; when you stand still for a while, they glance around with curiosity.
+- The head is a turret on a neck bearing, driven by an angular servo (damped spring, slight overshoot) toward your aim, limited to about 110 degrees from the chassis. When the aim goes past that stop, the chassis pivots to follow; omni wheels let it face one way while rolling another. The abdomen counter-rotates a little as a counterweight.
+- A barrel under the head recoils on every shot and projectiles leave from its muzzle. Arms follow the head.
+- Legs tuck in during a dash. The body breathes, faster when rolling.
+Tuning: constants and `tachikomaLegLayouts` in `tachikoma.go`, colors and shapes in `tachikoma_render.go`.
+
+## Boss: Spider Tank
+
+After 300 kills, then every 900, a Ghost in the Shell style spider tank walks in (at most 3 at once).
+Its four legs are procedural: each leg is a two-bone chain solved with inverse kinematics (the knee is the outward solution of the two-circle intersection), each foot stays planted until it drifts too far from its rest pose, then steps ahead of the body with an eased arc. Legs move in diagonal pairs.
+Every footfall is a stomp: dust, screen shake, a physical burst that crushes nearby enemies, shatters frozen ones and hurts you.
+Its cockpit, sensor and cannon sit on a turret ring that tracks you with a slow, heavy servo, independently of where the legs carry the body.
+It takes statuses and reactions like any enemy, and explodes into a firestorm when destroyed.
+Tuning lives in the constants and `spiderLegLayouts` of `spider.go`; drawing is in `spider_render.go`.
+
+## Weapons
+
+Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chains), Oil Flask (soaks ground and enemies), Downpour (wets, douses fires), Orbit Blades (physical, shatters frozen). Up to 5 weapons, level 7 each, plus 6 passives.
+
+## Architecture
+
+| File             | Role                                                       |
+|------------------|------------------------------------------------------------|
+| `main.go`        | Game loop, state machine table                             |
+| `status.go`      | Statuses, elements, reaction table                         |
+| `combat.go`      | Hits, reactions, area bursts, deaths                       |
+| `horde.go`       | Enemy movement, separation, contagion, spawn director      |
+| `enemies.go`     | Enemy table and struct-of-arrays store                     |
+| `weapons.go`     | Weapon table and behaviors                                 |
+| `projectiles.go` | Bolts and lobbed flasks                                    |
+| `ground.go`      | Living terrain cellular automaton                          |
+| `upgrades.go`    | Passives and level-up offers                               |
+| `player.go`      | Player movement, dash, damage, experience                  |
+| `gems.go`        | Experience gems                                            |
+| `effects.go`     | Particles, rings, lightning, popups, screen shake          |
+| `spatial.go`     | Uniform grid with counting sort for neighbor queries       |
+| `render.go`      | Batched circle sprites with `DrawTriangles32`, additive glow |
+| `tachikoma.go`   | Player rig: wheel springs, abdomen sway, gaze, recoil      |
+| `tachikoma_render.go` | Player drawing                                        |
+| `spider.go`      | Spider tank boss: spawn, procedural legs, gait, stomps     |
+| `spider_render.go` | Spider tank drawing                                      |
+| `ui.go`          | HUD, menus, overlays                                       |
+| `input.go`       | Keyboard and gamepad bindings, raw button capture          |
+| `bindings.go`    | Button mapping persistence                                 |
+
+Entities are stored as struct of arrays with swap-remove, the spatial grid is rebuilt every tick with a counting sort, and every entity type is drawn in a single batched draw call.
+
+## Extending
+
+- New enemy: add a `EnemyKind` and an entry in `enemyTable`.
+- New reaction: add a `ReactionKind`, its `reactionTable` entry, and a line in `reactionRules`.
+- New ground rule: add a line in `groundRules`.
+- New weapon: add a `WeaponKind`, a `weaponTable` entry and a behavior in `weaponBehaviors`.
+
+## Tests and benchmarks
+
+```sh
+go test -run Long -v
+go test -bench .
+```
+
+The long test runs 8 simulated minutes with every weapon maxed. `BenchmarkSimulateTenThousandEnemies` measures a tick with 10 000 live enemies packed around the player (about 5 ms on an i5-6200U).
