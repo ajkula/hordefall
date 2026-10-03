@@ -29,6 +29,9 @@ type Game struct {
 	ground               *Ground
 	grid                 *SpatialGrid
 	renderer             *Renderer
+	audio                *AudioEngine
+	musicSignals         [musicSignalCount]float32
+	previousReactions    int
 	ui                   *UI
 	director             SpawnDirector
 	bursts               []Burst
@@ -125,6 +128,7 @@ func NewGame() *Game {
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
 	game.loadBindings()
 	game.loadHighScore()
+	game.audio = NewAudioEngine()
 	game.startDemo()
 	return game
 }
@@ -140,6 +144,7 @@ func (g *Game) Update() error {
 	g.clockSeconds += deltaSeconds
 	g.menuLockSeconds = max(0, g.menuLockSeconds-deltaSeconds)
 	stateHandlers[g.state].Update(g)
+	g.updateAudio()
 	return nil
 }
 
@@ -241,6 +246,7 @@ func (g *Game) openLevelUpIfPending() {
 		return
 	}
 	g.buildUpgradeOffers()
+	g.playSound(SoundLevelUp)
 	g.switchState(StateLevelUp)
 }
 

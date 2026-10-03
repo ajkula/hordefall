@@ -9,6 +9,7 @@ type WeaponDefinition struct {
 	Description      string
 	Element          Element
 	IsAimed          bool
+	FireSound        SoundKind
 	Color            [3]float32
 	BaseCooldown     float32
 	CooldownPerLevel float32
@@ -62,19 +63,19 @@ const (
 var weaponTable = [weaponKindCount]WeaponDefinition{
 	WeaponEmberBolt: {
 		Name: "Ember Bolt", Description: "Fires burning bolts where you aim.",
-		Element: ElementFire, IsAimed: true, Color: [3]float32{1, 0.55, 0.15},
+		Element: ElementFire, IsAimed: true, FireSound: SoundPew, Color: [3]float32{1, 0.55, 0.15},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 11, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2,
 	},
 	WeaponFrostNova: {
 		Name: "Frost Nova", Description: "Pulses cold around you. Chills, freezes the wet, ices water.",
-		Element: ElementFrost, Color: [3]float32{0.6, 0.85, 1},
+		Element: ElementFrost, FireSound: SoundNova, Color: [3]float32{0.6, 0.85, 1},
 		BaseCooldown: 2.6, CooldownPerLevel: 0.06, BaseDamage: 5, DamagePerLevel: 3,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 95, RadiusPerLevel: 14,
 	},
 	WeaponArcLightning: {
 		Name: "Arc Lightning", Description: "Strikes the enemy you aim at, then chains. Electrocutes the wet.",
-		Element: ElementShock, IsAimed: true, Color: [3]float32{1, 1, 0.5},
+		Element: ElementShock, IsAimed: true, FireSound: SoundZap, Color: [3]float32{1, 1, 0.5},
 		BaseCooldown: 0.9, CooldownPerLevel: 0.06, BaseDamage: 12, DamagePerLevel: 4,
 		BaseCount: 3, LevelsPerCount: 1,
 	},
@@ -86,7 +87,7 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 	},
 	WeaponDownpour: {
 		Name: "Downpour", Description: "Calls rain where you aim. Wets enemies, douses flames.",
-		Element: ElementWater, IsAimed: true, Color: [3]float32{0.35, 0.6, 1},
+		Element: ElementWater, IsAimed: true, FireSound: SoundRain, Color: [3]float32{0.35, 0.6, 1},
 		BaseCooldown: 3.6, CooldownPerLevel: 0.07, BaseDamage: 3, DamagePerLevel: 1.5,
 		BaseCount: 1, LevelsPerCount: 3, BaseRadius: 85, RadiusPerLevel: 12,
 	},
@@ -141,6 +142,7 @@ func (g *Game) updateWeapon(weapon *WeaponState, deltaSeconds float32) {
 	}
 	weapon.CooldownRemaining = definition.CooldownAt(weapon.Level) * g.player.CooldownMultiplier
 	weaponBehaviors[weapon.Kind](g, weapon, definition)
+	g.playSound(definition.FireSound)
 	g.player.Rig.ArmRecoil = max(g.player.Rig.ArmRecoil, boolToFloat(definition.IsAimed))
 }
 

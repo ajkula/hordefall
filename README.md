@@ -17,6 +17,29 @@ go run .
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume or Back to main menu.
 - **Game over**: Start / Enter to try again, Select / Backspace for the main menu.
 
+## Music and sound
+
+### Adaptive tracker music
+The soundtrack is a small Amiga-style tracker running live: `music/theme.trk` is a plain-text song with 10 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
+
+The music is procedural in the sense that it follows the game. Every channel always plays in time, but is only heard while its game signal is above a threshold, with a smooth fade:
+
+| Layer | Signal | Meaning |
+|-------|--------|---------|
+| drums, bass | `always` | the base groove |
+| hi-hats, chords, lead | `horde` | enemies massing around you |
+| boss voices | `boss` | one deep voice per spider tank alive: saw stabs on the root (1 tank), a lower square growl on the fifth (2 tanks), the deepest saw drone sliding a semitone up and a tone down (3 tanks) |
+| crystal bells | `reactions` | infernos, freezes, shatters chaining |
+| tension pulse | `danger` | low health or a spider beam charging |
+
+The tempo also rises with intensity (`tempoboost`). M mutes the music.
+
+### Composing
+Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is 10 cells separated by `|`, each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Parse errors give the line and channel, and `go test -run Theme` checks the song.
+
+### Procedural sound effects
+Every sound effect is synthesized on the fly from layered voices with a random pitch variation, so no two pops are identical: enemy pops, thuds and splashes, weapon pews, zaps and novas, reaction explosions, shatters, hisses and electrocutions, spider stomps, beam charge and fire, dash, hurt, level-up arpeggio, gem pickup and menu blips. Each sound has a minimum interval, so a hundred kills in a frame never saturate the mix. Sounds are declared in `sounds.go`; enemies, reactions and weapons reference them from their own tables.
+
 ## Controls
 
 | Action        | Arcade stick / gamepad  | Keyboard        |
@@ -119,6 +142,11 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `menus.go`       | Main menu, pause, game over and remap states               |
 | `score.go`       | Score, high score persistence                              |
 | `demo.go`        | Attract-mode benchmark sequences                           |
+| `synth.go`       | Oscillators, envelopes, filter                             |
+| `tracker.go`     | Tracker song parser and adaptive sequencer                 |
+| `audio.go`       | Audio engine and mixer                                     |
+| `sounds.go`      | Procedural sound effect table                              |
+| `game_audio.go`  | Music signals and sound triggers                           |
 
 Entities are stored as struct of arrays with swap-remove, the spatial grid is rebuilt every tick with a counting sort, and every entity type is drawn in a single batched draw call.
 

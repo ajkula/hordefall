@@ -23,6 +23,7 @@ type EnemyDefinition struct {
 	DeathStimulus    GroundStimulus
 	DeathGroundCells int
 	IsHeavy          bool
+	DeathSound       SoundKind
 	IsCustomDrawn    bool
 }
 
@@ -62,30 +63,30 @@ const maximumEnemies = 12000
 var enemyTable = [enemyKindCount]EnemyDefinition{
 	EnemySwarmer: {
 		Name: "Swarmer", Color: [3]float32{0.85, 0.25, 0.3}, Radius: 8, Speed: 72, Health: 10,
-		ContactDamage: 6, Experience: 1, SpawnWeight: 10,
+		ContactDamage: 6, Experience: 1, SpawnWeight: 10, DeathSound: SoundPop,
 	},
 	EnemyRunner: {
 		Name: "Runner", Color: [3]float32{0.95, 0.75, 0.3}, Radius: 6, Speed: 125, Health: 7,
-		ContactDamage: 5, Experience: 1, UnlockSeconds: 50, SpawnWeight: 5,
+		ContactDamage: 5, Experience: 1, UnlockSeconds: 50, SpawnWeight: 5, DeathSound: SoundPop,
 	},
 	EnemyBloater: {
 		Name: "Bloater", Color: [3]float32{0.45, 0.3, 0.55}, Radius: 13, Speed: 48, Health: 32,
-		ContactDamage: 10, Experience: 3, UnlockSeconds: 35, SpawnWeight: 2.5,
+		ContactDamage: 10, Experience: 3, UnlockSeconds: 35, SpawnWeight: 2.5, DeathSound: SoundSplash,
 		DeathElement: ElementOil, DeathRadius: 60, DeathStimulus: StimulusOil, DeathGroundCells: 2,
 	},
 	EnemyBrute: {
 		Name: "Brute", Color: [3]float32{0.55, 0.2, 0.2}, Radius: 18, Speed: 40, Health: 110,
-		ContactDamage: 18, Experience: 8, UnlockSeconds: 90, SpawnWeight: 1.2,
+		ContactDamage: 18, Experience: 8, UnlockSeconds: 90, SpawnWeight: 1.2, DeathSound: SoundThud,
 	},
 	EnemyFrostling: {
 		Name: "Frostling", Color: [3]float32{0.5, 0.75, 0.95}, Radius: 9, Speed: 66, Health: 22,
-		ContactDamage: 8, Experience: 2, UnlockSeconds: 120, SpawnWeight: 2.5,
+		ContactDamage: 8, Experience: 2, UnlockSeconds: 120, SpawnWeight: 2.5, DeathSound: SoundShatter,
 		Immunities:   StatusChilled | StatusFrozen,
 		DeathElement: ElementFrost, DeathRadius: 55, DeathDamage: 4, DeathStimulus: StimulusChill, DeathGroundCells: 2,
 	},
 	EnemyEmberling: {
 		Name: "Emberling", Color: [3]float32{1, 0.45, 0.1}, Radius: 9, Speed: 80, Health: 20,
-		ContactDamage: 8, Experience: 2, UnlockSeconds: 160, SpawnWeight: 2.5,
+		ContactDamage: 8, Experience: 2, UnlockSeconds: 160, SpawnWeight: 2.5, DeathSound: SoundThud,
 		Immunities:   StatusBurning,
 		DeathElement: ElementFire, DeathRadius: 45, DeathDamage: 6, DeathStimulus: StimulusHeat, DeathGroundCells: 1,
 	},
@@ -93,7 +94,7 @@ var enemyTable = [enemyKindCount]EnemyDefinition{
 		Name: "Spider Tank", Color: [3]float32{0.46, 0.52, 0.44}, Radius: 60, Speed: 52, Health: 2600,
 		ContactDamage: 28, Experience: 150,
 		DeathElement: ElementFire, DeathRadius: 150, DeathDamage: 70, DeathStimulus: StimulusHeat, DeathGroundCells: 5,
-		IsHeavy: true, IsCustomDrawn: true,
+		IsHeavy: true, IsCustomDrawn: true, DeathSound: SoundExplosion,
 	},
 }
 

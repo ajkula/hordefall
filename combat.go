@@ -71,6 +71,7 @@ func (g *Game) triggerReaction(reaction ReactionKind, x, y float32) {
 	}
 	definition := &reactionTable[reaction]
 	g.reactionCounts[reaction]++
+	g.playSound(definition.Sound)
 	g.effects.AddPopup(x, y, definition.Name, definition.Color)
 	g.effects.AddShake(definition.ShakeStrength)
 	g.effects.AddRing(x, y, definition.AreaRadius, definition.Color)
@@ -123,6 +124,7 @@ func (g *Game) resolveDeathIfDead(index int) {
 	x, y := enemies.PositionX[index], enemies.PositionY[index]
 	g.grantKillRewardsIf(x, y, definition, !enemies.LastHitByBoss[index] && !g.isDemo)
 	g.effects.SpawnSparks(x, y, 5, definition.Color, 110)
+	g.playSound(definition.DeathSound)
 	g.ground.StimulateArea(x, y, definition.DeathGroundCells, definition.DeathStimulus)
 	g.QueueBurst(Burst{X: x, Y: y, Radius: definition.DeathRadius, Damage: definition.DeathDamage, Element: definition.DeathElement})
 	enemies.Remove(index)

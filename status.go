@@ -32,6 +32,7 @@ type ReactionDefinition struct {
 	GroundRadiusCells int
 	ShakeStrength     float32
 	DamagesPlayer     bool
+	Sound             SoundKind
 }
 
 type ReactionRule struct {
@@ -98,31 +99,31 @@ var reactionTable = [reactionKindCount]ReactionDefinition{
 		Name: "INFERNO", Color: [3]float32{1, 0.5, 0.1}, DamageMultiplier: 1,
 		RemovesStatus: StatusOiled, AddsStatus: StatusBurning,
 		AreaRadius: 75, AreaDamage: 28, AreaElement: ElementFire,
-		GroundStimulus: StimulusHeat, GroundRadiusCells: 3, ShakeStrength: 7, DamagesPlayer: true,
+		GroundStimulus: StimulusHeat, GroundRadiusCells: 3, ShakeStrength: 7, DamagesPlayer: true, Sound: SoundExplosion,
 	},
 	ReactionSteam: {
 		Name: "STEAM", Color: [3]float32{0.9, 0.92, 0.95}, DamageMultiplier: 1.5,
 		RemovesStatus: StatusBurning | StatusChilled, SuppressedStatus: StatusBurning | StatusChilled,
-		AreaRadius: 50, AreaDamage: 12, AreaElement: ElementWater, ShakeStrength: 1.5,
+		AreaRadius: 50, AreaDamage: 12, AreaElement: ElementWater, ShakeStrength: 1.5, Sound: SoundHiss,
 	},
 	ReactionFreeze: {
 		Name: "FREEZE", Color: [3]float32{0.6, 0.9, 1}, DamageMultiplier: 1,
 		RemovesStatus: StatusChilled | StatusWet | StatusBurning, SuppressedStatus: StatusChilled, AddsStatus: StatusFrozen,
-		GroundStimulus: StimulusChill, GroundRadiusCells: 1,
+		GroundStimulus: StimulusChill, GroundRadiusCells: 1, Sound: SoundFreeze,
 	},
 	ReactionShatter: {
 		Name: "SHATTER", Color: [3]float32{0.8, 0.95, 1}, DamageMultiplier: 3,
 		RemovesStatus: StatusFrozen,
-		AreaRadius:    45, AreaDamage: 10, AreaElement: ElementPhysical, ShakeStrength: 3,
+		AreaRadius:    45, AreaDamage: 10, AreaElement: ElementPhysical, ShakeStrength: 3, Sound: SoundShatter,
 	},
 	ReactionElectrocute: {
 		Name: "ELECTROCUTE", Color: [3]float32{1, 1, 0.45}, DamageMultiplier: 2,
 		RemovesStatus: StatusWet,
-		AreaRadius:    120, AreaDamage: 16, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 2,
+		AreaRadius:    120, AreaDamage: 16, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 2, Sound: SoundElectrocute,
 	},
 	ReactionExtinguish: {
 		Name: "HISS", Color: [3]float32{0.7, 0.75, 0.8}, DamageMultiplier: 0.5,
-		RemovesStatus: StatusBurning | StatusWet, SuppressedStatus: StatusBurning | StatusWet,
+		RemovesStatus: StatusBurning | StatusWet, SuppressedStatus: StatusBurning | StatusWet, Sound: SoundHiss,
 	},
 }
 

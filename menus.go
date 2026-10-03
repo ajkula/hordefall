@@ -29,9 +29,11 @@ func (g *Game) navigateMenu(options []MenuOption) {
 	isNext := g.controls.JustPressed&(ActionRight|ActionDown) != 0
 	count := len(options)
 	g.menuSelection = (g.menuSelection + count + boolToIndex(isNext) - boolToIndex(isPrevious)) % count
+	g.playSoundIf(SoundMenuMove, isNext || isPrevious)
 	if !g.isConfirming() {
 		return
 	}
+	g.playSound(SoundMenuSelect)
 	options[g.menuSelection].Activate(g)
 }
 

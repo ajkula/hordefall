@@ -206,6 +206,7 @@ func (g *Game) stomp(x, y, power float32) {
 	g.effects.SpawnSparks(x, y, 9, stompDustColor, 120)
 	g.effects.AddRing(x, y, spiderStompRadius, stompDustColor)
 	g.effects.AddShake(1.2)
+	g.playSound(SoundStomp)
 	g.QueueBurst(Burst{X: x, Y: y, Radius: spiderStompRadius, Damage: spiderStompDamage * power, Element: ElementPhysical})
 	isPlayerCrushed := distanceSquared(x, y, g.player.X, g.player.Y) < spiderStompRadius*spiderStompRadius
 	g.DamagePlayer(spiderStompPlayerHurt * power * boolToFloat(isPlayerCrushed))

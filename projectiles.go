@@ -147,6 +147,7 @@ func (g *Game) updateFlask(index int) {
 	x, y, radius := projectiles.X[index], projectiles.Y[index], projectiles.AreaRadius[index]
 	g.ApplyBurst(Burst{X: x, Y: y, Radius: radius, Damage: projectiles.Damage[index], Element: ElementOil})
 	g.ground.StimulateArea(x, y, int(radius/groundCellSize), StimulusOil)
+	g.playSound(SoundSplash)
 	g.effects.AddRing(x, y, radius, projectiles.Color[index])
 	g.effects.SpawnSparks(x, y, 14, [3]float32{0.2, 0.15, 0.25}, 160)
 }

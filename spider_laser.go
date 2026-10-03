@@ -53,6 +53,11 @@ var laserPhaseBehaviors = [laserPhaseCount]laserPhaseBehavior{
 	LaserFiring:   (*Game).fireLaser,
 }
 
+var laserPhaseSounds = [laserPhaseCount]SoundKind{
+	LaserCharging: SoundLaserCharge,
+	LaserFiring:   SoundLaserFire,
+}
+
 var (
 	laserTargetingColor = [3]float32{1, 0.25, 0.15}
 	laserCoreColor      = [3]float32{1, 0.95, 0.8}
@@ -104,6 +109,7 @@ func (g *Game) enterLaserPhase(rig *SpiderRig) {
 	laser.Timer += g.random.Between(laserCooldownMinimum, laserCooldownMaximum) * boolToFloat(isCooldown)
 	isFiring := laser.Phase == LaserFiring
 	g.effects.AddShake(14 * boolToFloat(isFiring))
+	g.playSound(laserPhaseSounds[laser.Phase])
 	g.effects.AddRing(laser.OriginX, laser.OriginY, 90*boolToFloat(isFiring), laserBeamColor)
 }
 
