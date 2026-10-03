@@ -119,6 +119,7 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.queueProjectiles(g)
 	r.queuePlayer(g)
 	r.queueParticles(g)
+	r.queueSpiderLasers(g)
 	r.queueRings(g)
 	r.queueLightning(g)
 	r.solid.Flush(screen)

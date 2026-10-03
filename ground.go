@@ -61,6 +61,7 @@ const (
 	StimulusChill
 	StimulusOil
 	StimulusDouse
+	StimulusScorch
 	StimulusExpire
 	stimulusCount
 )
@@ -104,6 +105,10 @@ var groundRules = []GroundRule{
 	{StimulusOil, GroundDirt, GroundOil, 1024},
 	{StimulusOil, GroundAsh, GroundOil, 1024},
 	{StimulusDouse, GroundFire, GroundAsh, 1024},
+	{StimulusScorch, GroundGrass, GroundFire, 700},
+	{StimulusScorch, GroundOil, GroundFire, 1024},
+	{StimulusScorch, GroundIce, GroundWater, 1024},
+	{StimulusScorch, GroundDirt, GroundAsh, 500},
 	{StimulusExpire, GroundFire, GroundAsh, 1024},
 	{StimulusExpire, GroundAsh, GroundGrass, 1024},
 	{StimulusExpire, GroundIce, GroundWater, 1024},

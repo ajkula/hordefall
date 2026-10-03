@@ -68,6 +68,13 @@ After 300 kills, then every 900, a Ghost in the Shell style spider tank walks in
 Its four legs are procedural: each leg is a two-bone chain solved with inverse kinematics (the knee is the outward solution of the two-circle intersection), each foot stays planted until it drifts too far from its rest pose, then steps ahead of the body with an eased arc. Legs move in diagonal pairs.
 Every footfall is a stomp: dust, screen shake, a physical burst that crushes nearby enemies, shatters frozen ones and hurts you.
 Its cockpit, sensor and cannon sit on a turret ring that tracks you with a slow, heavy servo, independently of where the legs carry the body.
+**Devastator beam.** It spawns off screen and opens with its signature attack, so you know it is there:
+1. Charging (2.2 s): the ground crackles with sparks and arcs along the line of fire, and a thin, intense targeting beam leaves the cannon and tracks you through the turret servo.
+2. Locked (400 ms): the beam freezes and blinks. This is your window to get out, or to dash through.
+3. Firing (0.35 s): a long, thick, blinding ray. It shreds your health (dashing makes you immune), burns every enemy it crosses, and scorches the ground: grass and oil catch fire, ice melts, dirt turns to ash.
+4. Cooldown (6 to 9 s), then again.
+Enemies killed by a boss give no experience, no kill and no lifesteal. Timings, damage and range are constants in `spider_laser.go`.
+
 It takes statuses and reactions like any enemy, and explodes into a firestorm when destroyed.
 Tuning lives in the constants and `spiderLegLayouts` of `spider.go`; drawing is in `spider_render.go`.
 
@@ -96,6 +103,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `tachikoma.go`   | Player rig: wheel springs, abdomen sway, gaze, recoil      |
 | `tachikoma_render.go` | Player drawing                                        |
 | `spider.go`      | Spider tank boss: spawn, procedural legs, gait, stomps     |
+| `spider_laser.go` | Spider tank beam: charge, lock, fire state machine         |
 | `spider_render.go` | Spider tank drawing                                      |
 | `ui.go`          | HUD, menus, overlays                                       |
 | `input.go`       | Keyboard and gamepad bindings, raw button capture          |

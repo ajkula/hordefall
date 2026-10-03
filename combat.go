@@ -28,6 +28,7 @@ func (g *Game) HitEnemy(index int, damage float32, element Element) {
 	if enemies.Health[index] <= 0 {
 		return
 	}
+	enemies.LastHitByBoss[index] = false
 	reaction := FindReaction(element, enemies.Status[index])
 	definition := &reactionTable[reaction]
 	enemies.ApplyStatus(index, elementStatus[element]&^definition.SuppressedStatus)
@@ -120,11 +121,18 @@ func (g *Game) resolveDeathIfDead(index int) {
 	}
 	definition := &enemyTable[enemies.Kind[index]]
 	x, y := enemies.PositionX[index], enemies.PositionY[index]
-	g.gems.Drop(x, y, definition.Experience)
+	g.grantKillRewardsIf(x, y, definition, !enemies.LastHitByBoss[index])
 	g.effects.SpawnSparks(x, y, 5, definition.Color, 110)
 	g.ground.StimulateArea(x, y, definition.DeathGroundCells, definition.DeathStimulus)
 	g.QueueBurst(Burst{X: x, Y: y, Radius: definition.DeathRadius, Damage: definition.DeathDamage, Element: definition.DeathElement})
+	enemies.Remove(index)
+}
+
+func (g *Game) grantKillRewardsIf(x, y float32, definition *EnemyDefinition, isPlayerKill bool) {
+	if !isPlayerKill {
+		return
+	}
+	g.gems.Drop(x, y, definition.Experience)
 	g.kills++
 	g.HealFromKill()
-	enemies.Remove(index)
 }

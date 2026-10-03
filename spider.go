@@ -31,6 +31,7 @@ type SpiderRig struct {
 	MaximumHealth float32
 	TurretServo   AngularServo
 	Power         float32
+	Laser         SpiderLaser
 	Legs          [spiderLegCount]LegRig
 }
 
@@ -50,7 +51,7 @@ const (
 	spiderStompRadius     = 52
 	spiderStompDamage     = 22
 	spiderStompPlayerHurt = 18
-	spiderSpawnDistance   = 620
+	spiderSpawnDistance   = 840
 	firstSpiderKills      = 300
 	spiderKillsInterval   = 900
 	spiderTurretPivot     = 8
@@ -128,7 +129,7 @@ func (g *Game) spawnSpiderIfDue() {
 	x := clamp(g.player.X+cosine(angle)*spiderSpawnDistance, 80, arenaSize-80)
 	y := clamp(g.player.Y+sine(angle)*spiderSpawnDistance, 80, arenaSize-80)
 	id := g.spawnEnemyAt(EnemySpiderTank, x, y)
-	rig := SpiderRig{EnemyID: id, X: x, Y: y, Heading: angle + 3.14159265}
+	rig := SpiderRig{EnemyID: id, X: x, Y: y, Heading: angle + 3.14159265, Laser: newSpiderLaser()}
 	rig.Power = 1 + g.elapsedSeconds/150
 	rig.MaximumHealth = enemyTable[EnemySpiderTank].Health * rig.Power
 	for leg := range spiderLegCount {
@@ -160,7 +161,8 @@ func (g *Game) updateSpider(rig *SpiderRig, enemyIndex int, deltaSeconds float32
 	rig.X, rig.Y = x, y
 	rig.Heading = turnToward(rig.Heading, atan2(rig.VelocityY, rig.VelocityX), spiderTurnRate*deltaSeconds*boolToFloat(length(rig.VelocityX, rig.VelocityY) > 5))
 	turretTarget := clamp(angleDifference(rig.Heading, atan2(g.player.Y-rig.Y, g.player.X-rig.X)), -spiderTurretLimit, spiderTurretLimit)
-	rig.TurretServo.Drive(turretTarget, spiderTurretStiffness, spiderTurretDamping, deltaSeconds)
+	rig.TurretServo.Drive(turretTarget, spiderTurretStiffness, spiderTurretDamping, deltaSeconds*boolToFloat(!rig.Laser.IsTurretFrozen()))
+	g.updateSpiderLaser(rig, deltaSeconds)
 	for leg := range spiderLegCount {
 		g.updateLeg(rig, leg, deltaSeconds)
 	}

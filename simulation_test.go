@@ -142,3 +142,65 @@ func TestBoltStopsOnToughTarget(t *testing.T) {
 		t.Fatalf("bolt with pierce 5 went through a brute with %.0f health", game.enemies.Health[0]+10)
 	}
 }
+
+func TestSpiderLaserCycleLocksThenFires(t *testing.T) {
+	game := newHeadlessGame()
+	game.kills = game.nextSpiderKills
+	game.spawnSpiderIfDue()
+	phasesSeen := map[LaserPhase]bool{}
+	lockedAngle := float32(0)
+	for range 4 * ticksPerSecond {
+		stepHeadlessIdle(game)
+		laser := &game.spiders[0].Laser
+		phasesSeen[laser.Phase] = true
+		isEnteringLock := laser.Phase == LaserLocked && lockedAngle == 0
+		lockedAngle += laser.BeamAngle * boolToFloat(isEnteringLock)
+		if laser.Phase == LaserLocked && laser.BeamAngle != lockedAngle {
+			t.Fatalf("beam moved while locked")
+		}
+	}
+	for phase := range laserPhaseCount {
+		if !phasesSeen[phase] {
+			t.Fatalf("laser never reached phase %d", phase)
+		}
+	}
+}
+
+func TestLaserBurnsPlayerUnlessDashing(t *testing.T) {
+	game := newHeadlessGame()
+	rig := &SpiderRig{Power: 1, Laser: SpiderLaser{Phase: LaserFiring, OriginX: game.player.X - 300, OriginY: game.player.Y}}
+	game.burnPlayerInBeam(rig, 1, 0, 0.1)
+	if game.player.Health >= game.player.MaximumHealth {
+		t.Fatalf("player standing in the beam took no damage")
+	}
+	healthAfterHit := game.player.Health
+	game.player.DashSeconds = 0.1
+	game.burnPlayerInBeam(rig, 1, 0, 0.1)
+	if game.player.Health != healthAfterHit {
+		t.Fatalf("dashing player was burned by the beam")
+	}
+}
+
+func TestBossKillsGiveNoReward(t *testing.T) {
+	game := newHeadlessGame()
+	game.enemies.Spawn(EnemySwarmer, 100, 100, 1)
+	game.enemies.LastHitByBoss[0] = true
+	game.enemies.Health[0] = 0
+	game.removeDeadEnemies()
+	if game.gems.Count != 0 || game.kills != 0 {
+		t.Fatalf("boss kill dropped %d gems and counted %d kills", game.gems.Count, game.kills)
+	}
+	game.enemies.Spawn(EnemySwarmer, 100, 100, 1)
+	game.HitEnemy(0, 1000, ElementPhysical)
+	game.removeDeadEnemies()
+	if game.gems.Count != 1 || game.kills != 1 {
+		t.Fatalf("player kill dropped %d gems and counted %d kills", game.gems.Count, game.kills)
+	}
+}
+
+func stepHeadlessIdle(game *Game) {
+	game.frame++
+	game.controls = Controls{}
+	game.player.Health = game.player.MaximumHealth
+	game.simulate()
+}
