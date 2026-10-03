@@ -29,6 +29,10 @@ const (
 	cardSpacing        = 28
 	descriptionWrapLen = 34
 	spiderBarTop       = 50
+	mainMenuOptionsTop = 505
+	menuTitleTop       = 70
+	menuHintTop        = 660
+	menuDim            = 0.42
 	spiderBarWidth     = 520
 	spiderBarHeight    = 18
 	spiderBarGap       = 3
@@ -86,32 +90,33 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 }
 
 func (u *UI) DrawMainMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
-	dimScreen(screen, 0.42)
-	u.drawText(screen, "HORDEFALL", u.title, screenWidth/2, 70, accentColor, 1, text.AlignCenter)
-	u.drawText(screen, describeHighScore(g.highScore), u.bold, screenWidth/2, 180, highScoreColor, 1, text.AlignCenter)
-	u.drawMenuOptions(g, screen, options, 290)
+	dimScreen(screen, menuDim)
+	u.drawText(screen, "HORDEFALL", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, describeHighScore(g.highScore), u.bold, screenWidth/2, menuTitleTop+110, highScoreColor, 1, text.AlignCenter)
+	u.drawMenuOptions(g, screen, options, mainMenuOptionsTop)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
 	controls := "Move: stick / WASD    Fire: button 1 / J    Aim lock: button 2 / K    Dash: button 3 / Space    Pause: Start / Esc"
-	u.drawText(screen, controls, u.small, screenWidth/2, 660, textColor, 0.9, text.AlignCenter)
-	u.drawText(screen, g.bindingsMessage, u.small, screenWidth/2, 684, mutedTextColor, 1, text.AlignCenter)
+	u.drawText(screen, controls, u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
+	u.drawText(screen, g.bindingsMessage, u.small, screenWidth/2, menuHintTop+24, mutedTextColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawPauseMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
-	dimScreen(screen, 0.55)
-	u.drawText(screen, "PAUSED", u.title, screenWidth/2, 180, textColor, 1, text.AlignCenter)
-	u.drawMenuOptions(g, screen, options, 310)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to resume", u.regular, screenWidth/2, 480, mutedTextColor, 1, text.AlignCenter)
+	dimScreen(screen, menuDim)
+	u.drawText(screen, "PAUSED", u.title, screenWidth/2, menuTitleTop, textColor, 1, text.AlignCenter)
+	u.drawMenuOptions(g, screen, options, mainMenuOptionsTop)
+	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to resume", u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
 }
 
 func (u *UI) DrawOptionsMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
-	dimScreen(screen, 0.55)
-	u.drawText(screen, "OPTIONS", u.title, screenWidth/2, 150, accentColor, 1, text.AlignCenter)
-	u.drawMenuOptions(g, screen, options, 290)
-	u.drawText(screen, "Music only: sound effects stay on. Settings are saved.", u.small, screenWidth/2, 450, mutedTextColor, 1, text.AlignCenter)
-	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, 530, healthColor, 1, text.AlignCenter)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to go back", u.regular, screenWidth/2, 490, mutedTextColor, 1, text.AlignCenter)
+	dimScreen(screen, menuDim)
+	u.drawText(screen, "OPTIONS", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
+	u.drawMenuOptions(g, screen, options, mainMenuOptionsTop)
 	u.drawBenchmarkPanel(g, screen)
+	u.drawDemoSequence(g, screen)
+	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
+	u.drawText(screen, "Music only: sound effects stay on. Settings are saved.", u.small, screenWidth/2, menuHintTop+24, mutedTextColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawLevelUp(g *Game, screen *ebiten.Image) {
