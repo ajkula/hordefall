@@ -11,10 +11,11 @@ go run .
 
 ## Menus, score and high score
 
-- **Main menu**: Play, Configure buttons, Quit, and your high score. Behind it runs an attract-mode benchmark: six 5-second gameplay sequences on loop (Inferno chain, Electrocution, Freeze and shatter, Wildfire, Spider tank, Horde x4000) interleaved with randomly generated LIVE ACTION clips (random weapons and levels, passives, enemy mix and count, starting statuses, prepared ground, sometimes a spider tank), all played by an autopilot Tachikoma, with live FPS, TPS, simulation time and entity counts.
+- **Main menu**: Play, Options, Quit, and your high score (dark orange).
+- **Options**: Configure buttons, Music on/off (sound effects stay on), Back. Settings are saved to `%AppData%\hordefall\settings.json` and restored on launch. Behind it runs an attract-mode benchmark: six 5-second gameplay sequences on loop (Inferno chain, Electrocution, Freeze and shatter, Wildfire, Spider tank, Horde x4000) interleaved with randomly generated LIVE ACTION clips (random weapons and levels, passives, enemy mix and count, starting statuses, prepared ground, sometimes a spider tank), all played by an autopilot Tachikoma, with live FPS, TPS, simulation time and entity counts.
 - **Score**: every kill is worth its experience x 10 (a spider tank is worth 1,500) and every second survived is worth 5. Score and high score are shown in the HUD.
 - **High score** is saved to `%AppData%\hordefall\highscore.json` on game over, when leaving a run for the main menu, on Quit and when the window is closed.
-- **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume or Back to main menu.
+- **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu.
 - **Game over**: Start / Enter to try again, Select / Backspace for the main menu.
 
 ## Music and sound
@@ -143,6 +144,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `bindings.go`    | Button mapping persistence                                 |
 | `menus.go`       | Main menu, pause, game over and remap states               |
 | `score.go`       | Score, high score persistence                              |
+| `settings.go`    | Persisted settings (music on/off)                          |
 | `demo.go`        | Attract-mode benchmark sequences                           |
 | `synth.go`       | Oscillators, envelopes, filter                             |
 | `tracker.go`     | Tracker song parser and adaptive sequencer                 |

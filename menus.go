@@ -5,22 +5,31 @@ import "github.com/hajimehoshi/ebiten/v2"
 // ===== Types =====
 
 type MenuOption struct {
-	Label    string
+	Label    func(game *Game) string
 	Activate func(game *Game)
 }
 
 // ===== Constants =====
 
 var mainMenuOptions = []MenuOption{
-	{"Play", (*Game).startRun},
-	{"Configure buttons", (*Game).openRemap},
-	{"Quit", (*Game).requestQuit},
+	{fixedLabel("Play"), (*Game).startRun},
+	{fixedLabel("Options"), (*Game).openOptions},
+	{fixedLabel("Quit"), (*Game).requestQuit},
+}
+
+var optionsMenuOptions = []MenuOption{
+	{fixedLabel("Configure buttons"), (*Game).openRemapFromOptions},
+	{(*Game).musicLabel, (*Game).toggleMusic},
+	{fixedLabel("Back"), (*Game).closeOptions},
 }
 
 var pauseMenuOptions = []MenuOption{
-	{"Resume", (*Game).resumeRun},
-	{"Back to main menu", (*Game).abandonRun},
+	{fixedLabel("Resume"), (*Game).resumeRun},
+	{(*Game).musicLabel, (*Game).toggleMusic},
+	{fixedLabel("Back to main menu"), (*Game).abandonRun},
 }
+
+var musicLabels = [2]string{"Music: OFF", "Music: ON"}
 
 // ===== Internal =====
 
@@ -47,9 +56,30 @@ func (g *Game) goHome() {
 	g.switchState(StateMainMenu)
 }
 
-func (g *Game) openRemap() {
+func fixedLabel(label string) func(game *Game) string {
+	return func(*Game) string { return label }
+}
+
+func (g *Game) musicLabel() string {
+	return musicLabels[boolToIndex(g.settings.IsMusicOn)]
+}
+
+func (g *Game) openOptions() {
+	g.switchState(StateOptions)
+}
+
+func (g *Game) closeOptions() {
+	g.switchState(StateMainMenu)
+}
+
+func (g *Game) openRemapFrom(returnState GameState) {
 	g.remapStep = 0
+	g.remapReturnState = returnState
 	g.switchState(StateRemap)
+}
+
+func (g *Game) openRemapFromOptions() {
+	g.openRemapFrom(StateOptions)
 }
 
 func (g *Game) requestQuit() {
@@ -68,10 +98,19 @@ func (g *Game) abandonRun() {
 func (g *Game) updateMainMenu() {
 	g.updateDemo()
 	if g.controls.JustPressed&ActionSelect != 0 {
-		g.openRemap()
+		g.openRemapFrom(StateMainMenu)
 		return
 	}
 	g.navigateMenu(mainMenuOptions)
+}
+
+func (g *Game) updateOptions() {
+	g.updateDemo()
+	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
+		g.closeOptions()
+		return
+	}
+	g.navigateMenu(optionsMenuOptions)
 }
 
 func (g *Game) updatePaused() {
@@ -98,7 +137,7 @@ func (g *Game) updateGameOver() {
 func (g *Game) updateRemap() {
 	g.updateDemo()
 	if g.controls.JustPressed&ActionPause != 0 {
-		g.switchState(StateMainMenu)
+		g.switchState(g.remapReturnState)
 		return
 	}
 	button := g.controls.RawJustPressed
@@ -130,12 +169,17 @@ func (g *Game) finishRemap() {
 	if err := SaveButtonBindings(bindings); err != nil {
 		g.bindingsMessage = "Buttons active for this session, save failed: " + err.Error()
 	}
-	g.switchState(StateMainMenu)
+	g.switchState(g.remapReturnState)
 }
 
 func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
 	g.ui.DrawMainMenu(g, screen, mainMenuOptions)
+}
+
+func (g *Game) drawOptions(screen *ebiten.Image) {
+	g.renderer.DrawWorld(g, screen)
+	g.ui.DrawOptionsMenu(g, screen, optionsMenuOptions)
 }
 
 func (g *Game) drawPaused(screen *ebiten.Image) {

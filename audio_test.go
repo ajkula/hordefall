@@ -110,3 +110,37 @@ func renderStatistics(t *testing.T, tracker *Tracker, samples int) (float32, flo
 	}
 	return peak, float32(math.Sqrt(sumSquares / float64(2*samples)))
 }
+
+func TestMusicToggleKeepsSoundEffects(t *testing.T) {
+	engine := &AudioEngine{random: NewRandom(1), EffectsVolume: 1, MusicVolume: 1, tracker: newThemeTracker(t)}
+	engine.SetMusicOn(false)
+	if engine.IsMusicOn() {
+		t.Fatalf("music still on after toggle")
+	}
+	engine.startSound(&soundTable[SoundPop])
+	peak := float32(0)
+	for range sampleRate / 10 {
+		left, right := engine.renderFrame()
+		peak = max(peak, abs(left), abs(right))
+	}
+	if peak < 0.01 {
+		t.Fatalf("sound effects silenced by the music toggle (peak %.3f)", peak)
+	}
+}
+
+func TestMusicSettingIsSavedAndRestored(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.audio = &AudioEngine{random: NewRandom(1)}
+	game.loadSettings()
+	if !game.settings.IsMusicOn || game.musicLabel() != "Music: ON" {
+		t.Fatalf("music should default to on, label %q", game.musicLabel())
+	}
+	game.toggleMusic()
+	restarted := newHeadlessGame()
+	restarted.audio = &AudioEngine{random: NewRandom(1)}
+	restarted.loadSettings()
+	if restarted.settings.IsMusicOn || restarted.audio.IsMusicOn() || restarted.musicLabel() != "Music: OFF" {
+		t.Fatalf("music off was not restored after restart, label %q", restarted.musicLabel())
+	}
+}

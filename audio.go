@@ -89,13 +89,22 @@ func (e *AudioEngine) SetEffectsVolume(volume float32) {
 	e.EffectsVolume = volume
 }
 
-func (e *AudioEngine) ToggleMusic() {
+func (e *AudioEngine) IsMusicOn() bool {
+	if e == nil {
+		return true
+	}
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	return !e.IsMusicMuted
+}
+
+func (e *AudioEngine) SetMusicOn(isOn bool) {
 	if e == nil {
 		return
 	}
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	e.IsMusicMuted = !e.IsMusicMuted
+	e.IsMusicMuted = !isOn
 }
 
 func (e *AudioEngine) Read(buffer []byte) (int, error) {

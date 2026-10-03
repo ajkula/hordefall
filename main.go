@@ -64,8 +64,11 @@ type Game struct {
 	isQuitRequested      bool
 	isInputDebugVisible  bool
 	remapStep            int
+	remapReturnState     GameState
 	remapButtons         [3]int
 	bindingsMessage      string
+	settings             Settings
+	settingsMessage      string
 }
 
 // ===== Constants =====
@@ -77,6 +80,7 @@ const (
 	StatePaused
 	StateGameOver
 	StateRemap
+	StateOptions
 	stateCount
 )
 
@@ -100,6 +104,7 @@ var stateHandlers = [stateCount]StateHandler{
 	StatePaused:   {(*Game).updatePaused, (*Game).drawPaused},
 	StateGameOver: {(*Game).updateGameOver, (*Game).drawGameOver},
 	StateRemap:    {(*Game).updateRemap, (*Game).drawRemap},
+	StateOptions:  {(*Game).updateOptions, (*Game).drawOptions},
 }
 
 // ===== Public API =====
@@ -129,6 +134,7 @@ func NewGame() *Game {
 	game.loadBindings()
 	game.loadHighScore()
 	game.audio = NewAudioEngine()
+	game.loadSettings()
 	game.startDemo()
 	return game
 }

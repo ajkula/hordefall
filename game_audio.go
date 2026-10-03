@@ -30,7 +30,7 @@ func (g *Game) playSoundIf(kind SoundKind, shouldPlay bool) {
 
 func (g *Game) updateAudio() {
 	if g.controls.JustPressed&ActionMute != 0 {
-		g.audio.ToggleMusic()
+		g.toggleMusic()
 	}
 	g.audio.SetEffectsVolume(menuEffectsVolume + (gameEffectsVolume-menuEffectsVolume)*boolToFloat(!g.isDemo))
 	if g.frame%musicSignalFrames != 0 {

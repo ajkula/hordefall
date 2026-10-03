@@ -41,6 +41,7 @@ var (
 	healthColor    = [3]float32{0.9, 0.22, 0.25}
 	experienceBlue = [3]float32{0.35, 0.65, 1}
 	accentColor    = [3]float32{1, 0.75, 0.3}
+	highScoreColor = [3]float32{0.8, 0.42, 0.08}
 )
 
 var reactionHints = []string{
@@ -75,8 +76,10 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawText(screen, formatClock(g.elapsedSeconds), u.bold, screenWidth/2, 16, textColor, 1, text.AlignCenter)
 	status := fmt.Sprintf("Kills %d   Horde %d   FPS %.0f", g.kills, g.enemies.Count, ebiten.ActualFPS())
 	u.drawText(screen, status, u.regular, screenWidth-16, 18, mutedTextColor, 1, text.AlignEnd)
-	scoreLine := fmt.Sprintf("SCORE %s    HI %s", formatThousands(g.CurrentScore()), formatThousands(max(g.highScore.Score, g.CurrentScore())))
-	u.drawText(screen, scoreLine, u.bold, screenWidth-16, 44, accentColor, 1, text.AlignEnd)
+	highScoreText := "HI " + formatThousands(max(g.highScore.Score, g.CurrentScore()))
+	highScoreWidth, _ := text.Measure(highScoreText, u.bold, 0)
+	u.drawText(screen, highScoreText, u.bold, screenWidth-16, 44, highScoreColor, 1, text.AlignEnd)
+	u.drawText(screen, "SCORE "+formatThousands(g.CurrentScore()), u.bold, screenWidth-16-float32(highScoreWidth)-24, 44, accentColor, 1, text.AlignEnd)
 	u.drawWeaponList(g, screen)
 	u.drawSpiderBars(g, screen)
 	u.drawPopups(g, screen)
@@ -85,9 +88,8 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 func (u *UI) DrawMainMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, 0.42)
 	u.drawText(screen, "HORDEFALL", u.title, screenWidth/2, 70, accentColor, 1, text.AlignCenter)
-	u.drawText(screen, "A systemic horde survivor. Burn, freeze, soak, shock. Combine.", u.regular, screenWidth/2, 160, textColor, 1, text.AlignCenter)
-	u.drawText(screen, describeHighScore(g.highScore), u.bold, screenWidth/2, 205, accentColor, 1, text.AlignCenter)
-	u.drawMenuOptions(screen, options, g.menuSelection, 290, g.clockSeconds)
+	u.drawText(screen, describeHighScore(g.highScore), u.bold, screenWidth/2, 180, highScoreColor, 1, text.AlignCenter)
+	u.drawMenuOptions(g, screen, options, 290)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
 	controls := "Move: stick / WASD    Fire: button 1 / J    Aim lock: button 2 / K    Dash: button 3 / Space    Pause: Start / Esc"
@@ -98,8 +100,18 @@ func (u *UI) DrawMainMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 func (u *UI) DrawPauseMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, 0.55)
 	u.drawText(screen, "PAUSED", u.title, screenWidth/2, 180, textColor, 1, text.AlignCenter)
-	u.drawMenuOptions(screen, options, g.menuSelection, 320, g.clockSeconds)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to resume", u.regular, screenWidth/2, 470, mutedTextColor, 1, text.AlignCenter)
+	u.drawMenuOptions(g, screen, options, 310)
+	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to resume", u.regular, screenWidth/2, 480, mutedTextColor, 1, text.AlignCenter)
+}
+
+func (u *UI) DrawOptionsMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
+	dimScreen(screen, 0.55)
+	u.drawText(screen, "OPTIONS", u.title, screenWidth/2, 150, accentColor, 1, text.AlignCenter)
+	u.drawMenuOptions(g, screen, options, 290)
+	u.drawText(screen, "Music only: sound effects stay on. Settings are saved.", u.small, screenWidth/2, 450, mutedTextColor, 1, text.AlignCenter)
+	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, 530, healthColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to go back", u.regular, screenWidth/2, 490, mutedTextColor, 1, text.AlignCenter)
+	u.drawBenchmarkPanel(g, screen)
 }
 
 func (u *UI) DrawLevelUp(g *Game, screen *ebiten.Image) {
@@ -130,7 +142,9 @@ func (u *UI) DrawGameOver(g *Game, screen *ebiten.Image) {
 	u.drawText(screen, "YOU FELL", u.title, screenWidth/2, 70, healthColor, 1, text.AlignCenter)
 	u.drawText(screen, "SCORE "+formatThousands(g.CurrentScore()), u.title, screenWidth/2, 160, accentColor, 1, text.AlignCenter)
 	highScoreLines := [2]string{describeHighScore(g.highScore), "NEW HIGH SCORE!"}
-	u.drawText(screen, highScoreLines[boolToIndex(g.isNewHighScore)], u.bold, screenWidth/2, 250, textColor, pulse(g.clockSeconds)*boolToFloat(g.isNewHighScore)+boolToFloat(!g.isNewHighScore), text.AlignCenter)
+	highScoreColors := [2][3]float32{highScoreColor, accentColor}
+	highScoreAlpha := pulse(g.clockSeconds)*boolToFloat(g.isNewHighScore) + boolToFloat(!g.isNewHighScore)
+	u.drawText(screen, highScoreLines[boolToIndex(g.isNewHighScore)], u.bold, screenWidth/2, 250, highScoreColors[boolToIndex(g.isNewHighScore)], highScoreAlpha, text.AlignCenter)
 	summary := fmt.Sprintf("Survived %s    Level %d    Kills %d", formatClock(g.elapsedSeconds), g.player.Level, g.kills)
 	u.drawText(screen, summary, u.bold, screenWidth/2, 295, textColor, 1, text.AlignCenter)
 	u.drawText(screen, describeReactionCounts(g.reactionCounts), u.regular, screenWidth/2, 345, mutedTextColor, 1, text.AlignCenter)
@@ -163,12 +177,13 @@ func (u *UI) drawText(screen *ebiten.Image, message string, face *text.GoTextFac
 	text.Draw(screen, message, face, options)
 }
 
-func (u *UI) drawMenuOptions(screen *ebiten.Image, options []MenuOption, selected int, top float32, clockSeconds float32) {
+func (u *UI) drawMenuOptions(g *Game, screen *ebiten.Image, options []MenuOption, top float32) {
 	for index, option := range options {
-		isSelected := index == selected
-		labels := [2]string{option.Label, "> " + option.Label + " <"}
+		isSelected := index == g.menuSelection
+		label := option.Label(g)
+		labels := [2]string{label, "> " + label + " <"}
 		colors := [2][3]float32{mutedTextColor, accentColor}
-		alpha := 1 - 0.3*boolToFloat(isSelected)*(1-pulse(clockSeconds))
+		alpha := 1 - 0.3*boolToFloat(isSelected)*(1-pulse(g.clockSeconds))
 		u.drawText(screen, labels[boolToIndex(isSelected)], u.bold, screenWidth/2, top+float32(index)*48, colors[boolToIndex(isSelected)], alpha, text.AlignCenter)
 	}
 }
