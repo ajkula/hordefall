@@ -5,6 +5,8 @@
 #   INSTRUMENT  two digits (01..31)   .. = keep
 #   EFFECT      0xy arpeggio (+x, +y semitones, the Amiga chord shimmer)
 #               Cxx volume (hex 00..40)   ... = none
+# Instrument properties: attack decay sustain release volume duty slide filter,
+#   sub (sine one octave below, 0..1) and detune (second voice, in semitones).
 # A row lasts 'speed' ticks, a tick lasts 2.5 / tempo seconds.
 #
 # Adaptive layers: every channel always plays in time, but is only heard
@@ -25,9 +27,9 @@ instrument 3  hihat    noise     attack 0.001 decay 0.035 volume 0.2 filter 0.05
 instrument 4  bass     saw       attack 0.004 decay 0.18 sustain 0.55 release 0.05 volume 0.42 filter 0.8
 instrument 5  chords   square    attack 0.004 decay 0.25 sustain 0.5 release 0.08 volume 0.14 duty 0.25
 instrument 6  lead     square    attack 0.01 decay 0.2 sustain 0.7 release 0.12 volume 0.18 duty 0.5
-instrument 7  stab     saw       attack 0.002 decay 0.25 volume 0.34 filter 0.5 slide -0.3
-instrument 8  growl    square    attack 0.03 decay 0.4 sustain 0.6 release 0.2 volume 0.3 duty 0.3 filter 0.72
-instrument 9  drone    saw       attack 0.08 decay 0.5 sustain 0.8 release 0.3 volume 0.34 filter 0.86
+instrument 7  stab     saw       attack 0.002 decay 0.3 volume 0.42 filter 0.38 slide -0.3 sub 0.7 detune 0.1
+instrument 8  growl    square    attack 0.03 decay 0.4 sustain 0.65 release 0.25 volume 0.4 duty 0.3 filter 0.6 sub 0.8 detune 0.08
+instrument 9  drone    saw       attack 0.08 decay 0.5 sustain 0.85 release 0.35 volume 0.46 filter 0.74 sub 0.9 detune 0.15
 instrument 10 bell     triangle  attack 0.001 decay 0.18 volume 0.2
 instrument 11 pulse    square    attack 0.002 decay 0.1 volume 0.14 duty 0.125
 
