@@ -84,8 +84,9 @@ func (offer UpgradeOffer) Title() string {
 
 func (offer UpgradeOffer) Subtitle() string {
 	isNew := offer.NextLevel == 1 && offer.Kind != UpgradeHeal
-	labels := [2]string{fmt.Sprintf("Level %d", offer.NextLevel), "NEW"}
-	return labels[boolToIndex(isNew)]
+	levelLabels := [2]string{fmt.Sprintf("Level %d", offer.NextLevel), "NEW"}
+	kindLabels := [2]string{levelLabels[boolToIndex(isNew)], fmt.Sprintf("+%d health", healUpgradeAmount)}
+	return kindLabels[boolToIndex(offer.Kind == UpgradeHeal)]
 }
 
 func (offer UpgradeOffer) Description() string {

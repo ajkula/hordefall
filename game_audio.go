@@ -45,7 +45,7 @@ func (g *Game) computeMusicSignals() [musicSignalCount]float32 {
 	isFighting := boolToFloat(g.state != StateGameOver)
 	signals[SignalAlways] = 1
 	signals[SignalHorde] = clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1) * isFighting
-	signals[SignalBoss] = float32(len(g.spiders)) * isFighting
+	signals[SignalBoss] = float32(len(g.spiders)+boolToIndex(g.hordeEvent.IsActive)) * isFighting
 	signals[SignalReactions] = g.reactionSignal() * isFighting
 	signals[SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal()) * isFighting
 	return signals

@@ -40,9 +40,14 @@ type Game struct {
 	chainedEnemies       []int32
 	spiders              []SpiderRig
 	nextSpiderKills      int
+	bossProgressKills    int
+	bossEventCount       int
+	hordeEvent           HordeEvent
 	offers               []UpgradeOffer
 	offerPool            []UpgradeOffer
 	selectedOffer        int
+	levelUpBanner        string
+	levelUpBannerSeconds float32
 	menuSelection        int
 	menuLockSeconds      float32
 	reactionCounts       [reactionKindCount]int
@@ -92,6 +97,7 @@ const (
 	deltaSeconds            = 1.0 / ticksPerSecond
 	spatialCellSize         = 32
 	menuLockDuration        = 0.45
+	levelUpBannerDuration   = 2.2
 	groundSeedBase          = 0x5EED
 	selectionDirections     = ActionLeft | ActionUp
 	simulationTimeSmoothing = 0.05
@@ -180,7 +186,10 @@ func (g *Game) resetRun() {
 	g.elapsedSeconds, g.kills, g.killScore = 0, 0, 0
 	g.spiders = g.spiders[:0]
 	g.nextSpiderKills = firstSpiderKills
+	g.bossProgressKills, g.bossEventCount = 0, 0
+	g.hordeEvent = HordeEvent{}
 	g.isDemo, g.isNewHighScore = false, false
+	g.levelUpBannerSeconds = 0
 }
 
 func (g *Game) isConfirming() bool {
@@ -233,6 +242,7 @@ func (g *Game) simulate() {
 	g.spawnSpiderIfDue()
 	g.tickGroundIfDue()
 	g.effects.Update(deltaSeconds)
+	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
 }
 
 func (g *Game) measureSimulation(started time.Time) {
@@ -253,7 +263,18 @@ func (g *Game) openLevelUpIfPending() {
 	}
 	g.buildUpgradeOffers()
 	g.playSound(SoundLevelUp)
+	if len(g.offers) == 1 {
+		g.applySoleOffer()
+		return
+	}
 	g.switchState(StateLevelUp)
+}
+
+func (g *Game) applySoleOffer() {
+	offer := g.offers[0]
+	g.applyOffer(offer)
+	g.levelUpBanner = "LEVEL UP!   " + offer.Title() + "  " + offer.Subtitle()
+	g.levelUpBannerSeconds = levelUpBannerDuration
 }
 
 func (g *Game) updateLevelUp() {

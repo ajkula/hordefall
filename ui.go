@@ -33,6 +33,8 @@ const (
 	menuTitleTop       = 70
 	menuHintTop        = 660
 	menuDim            = 0.42
+	levelUpBannerTop   = 150
+	levelUpBannerFade  = 0.6
 	spiderBarWidth     = 520
 	spiderBarHeight    = 18
 	spiderBarGap       = 3
@@ -86,6 +88,8 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawText(screen, "SCORE "+formatThousands(g.CurrentScore()), u.bold, screenWidth-16-float32(highScoreWidth)-24, 44, accentColor, 1, text.AlignEnd)
 	u.drawWeaponList(g, screen)
 	u.drawSpiderBars(g, screen)
+	u.drawHordeEventBar(g, screen)
+	u.drawLevelUpBanner(g, screen)
 	u.drawPopups(g, screen)
 }
 
@@ -212,6 +216,14 @@ func (u *UI) drawDemoSequence(g *Game, screen *ebiten.Image) {
 	vector.FillRect(screen, right-260, 514, 260, 4, toColor(panelColor, 0.75), false)
 	vector.FillRect(screen, right-260, 514, 260*g.DemoSequenceProgress(), 4, toColor(accentColor, 1), false)
 	u.drawText(screen, g.DemoSequenceSubtitle(), u.small, right, 524, mutedTextColor, 1, text.AlignEnd)
+}
+
+func (u *UI) drawLevelUpBanner(g *Game, screen *ebiten.Image) {
+	if g.levelUpBannerSeconds <= 0 {
+		return
+	}
+	fade := clamp(g.levelUpBannerSeconds/levelUpBannerFade, 0, 1)
+	u.drawText(screen, g.levelUpBanner, u.bold, screenWidth/2, levelUpBannerTop, accentColor, fade, text.AlignCenter)
 }
 
 func describeHighScore(highScore HighScore) string {

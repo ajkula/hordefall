@@ -17,6 +17,7 @@ go run .
 - **High score** is saved to `%AppData%\hordefall\highscore.json` on game over, when leaving a run for the main menu, on Quit and when the window is closed.
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu.
 - **Game over**: Start / Enter to try again, Select / Backspace for the main menu.
+- **Level up**: when several upgrades are available the game pauses on a choice of cards; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption.
 
 ## Music and sound
 
@@ -111,6 +112,10 @@ Enemies killed by a boss give no experience, no kill and no lifesteal. Timings, 
 It takes statuses and reactions like any enemy, and explodes into a firestorm when destroyed.
 Tuning lives in the constants and `spiderLegLayouts` of `spider.go`; drawing is in `spider_render.go`.
 
+## Boss event: the Horde
+
+Every third boss event is not a spider tank but a horde of heavy enemies (brutes and bloaters) closing in from every side: 500 the first time, then 1,000, 1,500 and so on. It counts as a boss: its purple bar shows how many are left, no other boss arrives until it is wiped out, and the music adds a boss voice. Horde kills give experience and score but do not advance the boss counter. Clearing it awards a bonus of 20 points per member. Tuning in `horde_event.go`.
+
 ## Weapons
 
 Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chains), Oil Flask (soaks ground and enemies), Downpour (wets, douses fires), Orbit Blades (physical, shatters frozen). Up to 5 weapons, level 7 each, plus 6 passives.
@@ -136,6 +141,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `tachikoma.go`   | Player rig: wheel springs, abdomen sway, gaze, recoil      |
 | `tachikoma_render.go` | Player drawing                                        |
 | `skids.go`       | Wheel skid trails                                          |
+| `horde_event.go` | Horde boss event: spawning, tracking, bar                  |
 | `spider.go`      | Spider tank boss: spawn, procedural legs, gait, stomps     |
 | `spider_laser.go` | Spider tank beam: charge, lock, fire state machine         |
 | `spider_render.go` | Spider tank drawing                                      |

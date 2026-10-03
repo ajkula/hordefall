@@ -124,7 +124,8 @@ func TestExperienceCostAlwaysGrows(t *testing.T) {
 func TestNoMoreThanThreeSpiderTanks(t *testing.T) {
 	game := newHeadlessGame()
 	for range 10 {
-		game.kills = game.nextSpiderKills
+		game.bossProgressKills = game.nextSpiderKills
+		game.bossEventCount = 0
 		game.spawnSpiderIfDue()
 	}
 	if len(game.spiders) != maximumSpidersAlive {
@@ -145,7 +146,7 @@ func TestBoltStopsOnToughTarget(t *testing.T) {
 
 func TestSpiderLaserCycleLocksThenFires(t *testing.T) {
 	game := newHeadlessGame()
-	game.kills = game.nextSpiderKills
+	game.bossProgressKills = game.nextSpiderKills
 	game.spawnSpiderIfDue()
 	phasesSeen := map[LaserPhase]bool{}
 	lockedAngle := float32(0)
@@ -261,5 +262,86 @@ func TestDemoSequencesLoopCleanly(t *testing.T) {
 	}
 	if len(seen) != len(demoSequences) {
 		t.Fatalf("demo visited %d of %d sequences", len(seen), len(demoSequences))
+	}
+}
+
+func TestEveryThirdBossEventIsAGrowingHorde(t *testing.T) {
+	game := newHeadlessGame()
+	expectedHordeSizes := []int{500, 1000}
+	hordesSeen := 0
+	for event := 1; event <= 6; event++ {
+		game.spiders, game.enemies.Count, game.hordeEvent = game.spiders[:0], 0, HordeEvent{}
+		game.startBossEvent()
+		isHordeEvent := event%bossEventsPerHorde == 0
+		if game.hordeEvent.IsActive != isHordeEvent || (len(game.spiders) == 1) == isHordeEvent {
+			t.Fatalf("event %d: horde %v, spiders %d", event, game.hordeEvent.IsActive, len(game.spiders))
+		}
+		if isHordeEvent && game.hordeEvent.Total != expectedHordeSizes[hordesSeen] {
+			t.Fatalf("horde %d has %d enemies, want %d", hordesSeen+1, game.hordeEvent.Total, expectedHordeSizes[hordesSeen])
+		}
+		hordesSeen += boolToIndex(isHordeEvent)
+	}
+}
+
+func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
+	game := newHeadlessGame()
+	game.bossEventCount = bossEventsPerHorde - 1
+	game.startBossEvent()
+	total := game.hordeEvent.Total
+	for index := range game.enemies.Count {
+		game.enemies.Health[index] = 0
+	}
+	game.removeDeadEnemies()
+	if game.bossProgressKills != 0 || game.kills != total {
+		t.Fatalf("horde kills: boss progress %d (want 0), kills %d (want %d)", game.bossProgressKills, game.kills, total)
+	}
+	if game.hordeEvent.IsActive {
+		t.Fatalf("horde still active after every member died")
+	}
+	game.bossProgressKills = game.nextSpiderKills
+	game.spawnSpiderIfDue()
+	if len(game.spiders) != 1 {
+		t.Fatalf("no boss after the horde was cleared")
+	}
+}
+
+func TestNoBossWhileHordeIsAlive(t *testing.T) {
+	game := newHeadlessGame()
+	game.bossEventCount = bossEventsPerHorde - 1
+	game.startBossEvent()
+	game.bossProgressKills = game.nextSpiderKills * 10
+	game.spawnSpiderIfDue()
+	if len(game.spiders) != 0 {
+		t.Fatalf("a spider tank arrived while the horde was alive")
+	}
+}
+
+func TestSoleOfferIsAppliedWithoutPausing(t *testing.T) {
+	game := newHeadlessGame()
+	game.player.Weapons = game.player.Weapons[:0]
+	for kind := range weaponKindCount {
+		game.player.Weapons = append(game.player.Weapons, WeaponState{Kind: kind, Level: maximumWeaponLevel})
+	}
+	for kind := range passiveKindCount {
+		game.player.PassiveLevels[kind] = passiveTable[kind].MaximumLevel
+	}
+	game.player.Health = 10
+	game.player.PendingLevelUps = 1
+	game.openLevelUpIfPending()
+	if game.state != StatePlaying || game.player.PendingLevelUps != 0 || game.player.Health <= 10 {
+		t.Fatalf("sole offer: state %d, pending %d, health %.0f", game.state, game.player.PendingLevelUps, game.player.Health)
+	}
+	if game.levelUpBannerSeconds <= 0 || game.levelUpBanner == "" {
+		t.Fatalf("no level up banner shown")
+	}
+	t.Logf("banner: %q", game.levelUpBanner)
+}
+
+func TestSeveralOffersStillOpenTheMenu(t *testing.T) {
+	game := newHeadlessGame()
+	game.player.PendingLevelUps = 1
+	game.openLevelUpIfPending()
+	if game.state != StateLevelUp {
+		t.Fatalf("with several offers the level up menu should open, state %d", game.state)
 	}
 }

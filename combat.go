@@ -122,7 +122,9 @@ func (g *Game) resolveDeathIfDead(index int) {
 	}
 	definition := &enemyTable[enemies.Kind[index]]
 	x, y := enemies.PositionX[index], enemies.PositionY[index]
-	g.grantKillRewardsIf(x, y, definition, !enemies.LastHitByBoss[index] && !g.isDemo)
+	isHordeEnemy := enemies.IsHordeEvent[index]
+	g.grantKillRewardsIf(x, y, definition, !enemies.LastHitByBoss[index] && !g.isDemo, isHordeEnemy)
+	g.recordHordeCasualtyIf(isHordeEnemy)
 	g.effects.SpawnSparks(x, y, 5, definition.Color, 110)
 	g.playSound(definition.DeathSound)
 	g.ground.StimulateArea(x, y, definition.DeathGroundCells, definition.DeathStimulus)
@@ -130,12 +132,13 @@ func (g *Game) resolveDeathIfDead(index int) {
 	enemies.Remove(index)
 }
 
-func (g *Game) grantKillRewardsIf(x, y float32, definition *EnemyDefinition, isPlayerKill bool) {
+func (g *Game) grantKillRewardsIf(x, y float32, definition *EnemyDefinition, isPlayerKill, isHordeEnemy bool) {
 	if !isPlayerKill {
 		return
 	}
 	g.gems.Drop(x, y, definition.Experience)
 	g.awardKillScore(definition.Experience)
 	g.kills++
+	g.bossProgressKills += 1 - boolToIndex(isHordeEnemy)
 	g.HealFromKill()
 }

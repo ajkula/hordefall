@@ -121,11 +121,11 @@ func solveKneeCandidates(hipX, hipY, footX, footY float32) (float32, float32, fl
 }
 
 func (g *Game) spawnSpiderIfDue() {
-	if g.kills < g.nextSpiderKills || len(g.spiders) >= maximumSpidersAlive {
+	if g.bossProgressKills < g.nextSpiderKills || len(g.spiders) >= maximumSpidersAlive || g.hordeEvent.IsActive {
 		return
 	}
 	g.nextSpiderKills += spiderKillsInterval
-	g.spawnSpiderAt(g.random.Angle(), spiderSpawnDistance)
+	g.startBossEvent()
 }
 
 func (g *Game) spawnSpiderAt(angle, distance float32) {

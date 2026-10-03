@@ -38,6 +38,7 @@ type EnemyStore struct {
 	Health        []float32
 	Power         []float32
 	LastHitByBoss []bool
+	IsHordeEvent  []bool
 	Kind          []EnemyKind
 	Status        []StatusFlags
 	StatusTimers  [statusCount][]float32
@@ -110,6 +111,7 @@ func NewEnemyStore(capacity int) *EnemyStore {
 		Health:        make([]float32, capacity),
 		Power:         make([]float32, capacity),
 		LastHitByBoss: make([]bool, capacity),
+		IsHordeEvent:  make([]bool, capacity),
 		Kind:          make([]EnemyKind, capacity),
 		Status:        make([]StatusFlags, capacity),
 		HitFlash:      make([]float32, capacity),
@@ -134,6 +136,7 @@ func (s *EnemyStore) Spawn(kind EnemyKind, x, y, healthScale float32) uint32 {
 	s.Health[index] = enemyTable[kind].Health * healthScale
 	s.Power[index] = healthScale
 	s.LastHitByBoss[index] = false
+	s.IsHordeEvent[index] = false
 	s.Kind[index] = kind
 	s.Status[index] = 0
 	s.HitFlash[index] = 0
@@ -161,6 +164,7 @@ func (s *EnemyStore) Remove(index int) {
 	s.Health[index] = s.Health[last]
 	s.Power[index] = s.Power[last]
 	s.LastHitByBoss[index] = s.LastHitByBoss[last]
+	s.IsHordeEvent[index] = s.IsHordeEvent[last]
 	s.Kind[index] = s.Kind[last]
 	s.Status[index] = s.Status[last]
 	s.HitFlash[index] = s.HitFlash[last]
