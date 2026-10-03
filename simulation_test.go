@@ -345,3 +345,17 @@ func TestSeveralOffersStillOpenTheMenu(t *testing.T) {
 		t.Fatalf("with several offers the level up menu should open, state %d", game.state)
 	}
 }
+
+func TestRightStickAimsIndependentlyOfMovement(t *testing.T) {
+	game := newHeadlessGame()
+	game.controls = Controls{MoveX: 1, AimX: 0, AimY: -1, HasAimStick: true}
+	game.updatePlayer(deltaSeconds)
+	if game.player.AimY > -0.99 || game.player.FacingX < 0.99 {
+		t.Fatalf("moving right while aiming up: aim (%.2f, %.2f), facing (%.2f, %.2f)", game.player.AimX, game.player.AimY, game.player.FacingX, game.player.FacingY)
+	}
+	game.controls = Controls{MoveY: 1}
+	game.updatePlayer(deltaSeconds)
+	if game.player.AimY < 0.99 {
+		t.Fatalf("without the right stick the aim should follow movement, aim (%.2f, %.2f)", game.player.AimX, game.player.AimY)
+	}
+}

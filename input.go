@@ -18,6 +18,9 @@ type Controls struct {
 	Held           Action
 	JustPressed    Action
 	RawJustPressed int
+	AimX           float32
+	AimY           float32
+	HasAimStick    bool
 }
 
 type KeyBinding struct {
@@ -63,6 +66,7 @@ const (
 const (
 	analogDeadzone         = 0.25
 	analogDirectionMinimum = 0.5
+	aimStickDeadzone       = 0.35
 	rawHorizontalAxis      = 0
 	rawVerticalAxis        = 1
 	maximumRawButtons      = 64
@@ -117,11 +121,14 @@ func (r *InputReader) Read() Controls {
 	moveX := digitalX + (analogX-digitalX)*analogWeight
 	moveY := digitalY + (analogY-digitalY)*analogWeight
 	scale := 1 / max(1, length(moveX, moveY))
+	aimX, aimY := r.readAimStick()
 	controls := Controls{
 		MoveX: moveX * scale, MoveY: moveY * scale,
 		Held: held, JustPressed: held &^ r.previous,
 		RawJustPressed: lowestButton(rawPressed &^ r.rawPrevious),
+		HasAimStick:    length(aimX, aimY) > aimStickDeadzone,
 	}
+	controls.AimX, controls.AimY = normalize(aimX, aimY)
 	r.previous, r.rawPrevious = held, rawPressed
 	return controls
 }
@@ -204,6 +211,24 @@ func (r *InputReader) readAnalog() (float32, float32) {
 		strongestY += (y - strongestY) * boolToFloat(isStronger)
 	}
 	return strongestX, strongestY
+}
+
+func (r *InputReader) readAimStick() (float32, float32) {
+	strongestX, strongestY := float32(0), float32(0)
+	for _, id := range r.gamepadIDs {
+		x, y := readRightStick(id)
+		isStronger := length(x, y) > length(strongestX, strongestY)
+		strongestX += (x - strongestX) * boolToFloat(isStronger)
+		strongestY += (y - strongestY) * boolToFloat(isStronger)
+	}
+	return strongestX, strongestY
+}
+
+func readRightStick(id ebiten.GamepadID) (float32, float32) {
+	isStandard := boolToFloat(ebiten.IsStandardGamepadLayoutAvailable(id))
+	x := float32(ebiten.StandardGamepadAxisValue(id, ebiten.StandardGamepadAxisRightStickHorizontal)) * isStandard
+	y := float32(ebiten.StandardGamepadAxisValue(id, ebiten.StandardGamepadAxisRightStickVertical)) * isStandard
+	return x, y
 }
 
 func readGamepadStick(id ebiten.GamepadID) (float32, float32) {

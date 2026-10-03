@@ -47,6 +47,7 @@ Every sound effect is synthesized on the fly from layered voices with a random p
 | Action        | Arcade stick / gamepad  | Keyboard        |
 |---------------|-------------------------|-----------------|
 | Move          | Stick (D-pad or analog) | WASD / arrows   |
+| Aim           | Right stick (twin-stick pads) | follows movement |
 | Fire (hold)   | Button 1                | J / Z           |
 | Aim lock (hold) | Button 2              | K / X           |
 | Dash          | Button 3                | Space / L / C   |
@@ -55,6 +56,7 @@ Every sound effect is synthesized on the fly from layered voices with a random p
 | Input debug (in game) | Select          | F1              |
 
 Aim follows your movement. Hold aim lock to freeze it and strafe or retreat while firing.
+On a gamepad with two sticks, the right stick aims (twin-stick): move with the left stick, aim with the right one; release it and the aim follows your movement again. Fire stays on button 1.
 Ember Bolt, Arc Lightning, Oil Flask and Downpour fire where you aim while Fire is held. Frost Nova and Orbit Blades are automatic.
 
 On the title screen, Select / F2 opens the button setup: press your Fire, Aim lock and Dash buttons in turn.

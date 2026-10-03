@@ -139,6 +139,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	isDashing := player.DashSeconds > 0
 	player.DashSeconds = max(0, player.DashSeconds-deltaSeconds)
 	g.updateFacing()
+	g.applyAimStick()
 	dashWeight := boolToFloat(isDashing)
 	directionX := g.controls.MoveX + (player.DashDirectionX-g.controls.MoveX)*dashWeight
 	directionY := g.controls.MoveY + (player.DashDirectionY-g.controls.MoveY)*dashWeight
@@ -166,6 +167,13 @@ func (g *Game) updateFacing() {
 	keepWeight := boolToFloat(player.IsAimLocked)
 	player.AimX += (player.FacingX - player.AimX) * (1 - keepWeight)
 	player.AimY += (player.FacingY - player.AimY) * (1 - keepWeight)
+}
+
+func (g *Game) applyAimStick() {
+	if !g.controls.HasAimStick {
+		return
+	}
+	g.player.AimX, g.player.AimY = g.controls.AimX, g.controls.AimY
 }
 
 func (g *Game) startDashIfRequested() {
