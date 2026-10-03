@@ -125,9 +125,12 @@ func (g *Game) spawnSpiderIfDue() {
 		return
 	}
 	g.nextSpiderKills += spiderKillsInterval
-	angle := g.random.Angle()
-	x := clamp(g.player.X+cosine(angle)*spiderSpawnDistance, 80, arenaSize-80)
-	y := clamp(g.player.Y+sine(angle)*spiderSpawnDistance, 80, arenaSize-80)
+	g.spawnSpiderAt(g.random.Angle(), spiderSpawnDistance)
+}
+
+func (g *Game) spawnSpiderAt(angle, distance float32) {
+	x := clamp(g.player.X+cosine(angle)*distance, 80, arenaSize-80)
+	y := clamp(g.player.Y+sine(angle)*distance, 80, arenaSize-80)
 	id := g.spawnEnemyAt(EnemySpiderTank, x, y)
 	rig := SpiderRig{EnemyID: id, X: x, Y: y, Heading: angle + 3.14159265, Laser: newSpiderLaser()}
 	rig.Power = 1 + g.elapsedSeconds/150

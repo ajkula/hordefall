@@ -204,3 +204,62 @@ func stepHeadlessIdle(game *Game) {
 	game.player.Health = game.player.MaximumHealth
 	game.simulate()
 }
+
+func TestHighScoreIsSavedAndReloaded(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.killScore, game.elapsedSeconds, game.kills = 4200, 90, 321
+	game.recordHighScore()
+	if !game.isNewHighScore {
+		t.Fatalf("first score was not flagged as a new high score")
+	}
+	reloaded, err := LoadHighScore()
+	if err != nil || reloaded.Score != game.CurrentScore() || reloaded.Kills != 321 {
+		t.Fatalf("reloaded %+v (err %v), want score %d", reloaded, err, game.CurrentScore())
+	}
+}
+
+func TestDemoNeverRecordsHighScore(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.startDemo()
+	game.killScore = 999999
+	game.recordHighScore()
+	if game.highScore.Score != 0 {
+		t.Fatalf("demo recorded a high score of %d", game.highScore.Score)
+	}
+}
+
+func TestPauseFreezesTheWorld(t *testing.T) {
+	game := newHeadlessGame()
+	game.effects.AddShake(20)
+	stepHeadless(game)
+	game.state = StatePaused
+	frame, shakeX, enemyCount := game.frame, game.effects.ShakeX, game.enemies.Count
+	for range 120 {
+		game.controls = Controls{}
+		game.updatePaused()
+	}
+	if game.frame != frame || game.effects.ShakeX != shakeX || game.enemies.Count != enemyCount {
+		t.Fatalf("world changed while paused")
+	}
+}
+
+func TestDemoSequencesLoopCleanly(t *testing.T) {
+	game := newHeadlessGame()
+	game.startDemo()
+	seen := map[int]bool{}
+	randomClips := 0
+	for range (2*len(demoSequences) + 1) * demoSequenceSeconds * ticksPerSecond {
+		isStarting := game.demoSeconds+deltaSeconds > demoSequenceSeconds
+		game.updateDemo()
+		seen[game.demoSequence] = true
+		randomClips += boolToIndex(isStarting && game.currentDemo.Name == randomClipName)
+	}
+	if randomClips < len(demoSequences)-1 {
+		t.Fatalf("only %d random clips played between scripted sequences", randomClips)
+	}
+	if len(seen) != len(demoSequences) {
+		t.Fatalf("demo visited %d of %d sequences", len(seen), len(demoSequences))
+	}
+}

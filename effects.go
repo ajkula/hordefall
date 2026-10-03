@@ -37,6 +37,8 @@ type Effects struct {
 	Bolts         []LightningBolt
 	Popups        []Popup
 	ShakeTrauma   float32
+	ShakeX        float32
+	ShakeY        float32
 	random        Random
 }
 
@@ -127,8 +129,7 @@ func (e *Effects) AddShake(strength float32) {
 }
 
 func (e *Effects) ShakeOffset() (float32, float32) {
-	magnitude := e.ShakeTrauma * e.ShakeTrauma * 14
-	return e.random.Between(-magnitude, magnitude), e.random.Between(-magnitude, magnitude)
+	return e.ShakeX, e.ShakeY
 }
 
 func (e *Effects) Update(deltaSeconds float32) {
@@ -142,12 +143,14 @@ func (e *Effects) Update(deltaSeconds float32) {
 		e.Popups[index].Y -= popupRiseSpeed * deltaSeconds
 	}
 	e.ShakeTrauma = max(0, e.ShakeTrauma-shakeDecayPerSecond*deltaSeconds)
+	magnitude := e.ShakeTrauma * e.ShakeTrauma * 14
+	e.ShakeX, e.ShakeY = e.random.Between(-magnitude, magnitude), e.random.Between(-magnitude, magnitude)
 }
 
 func (e *Effects) Clear() {
 	e.ParticleCount = 0
 	e.Rings, e.Bolts, e.Popups = e.Rings[:0], e.Bolts[:0], e.Popups[:0]
-	e.ShakeTrauma = 0
+	e.ShakeTrauma, e.ShakeX, e.ShakeY = 0, 0, 0
 }
 
 // ===== Internal =====

@@ -121,7 +121,7 @@ func (g *Game) resolveDeathIfDead(index int) {
 	}
 	definition := &enemyTable[enemies.Kind[index]]
 	x, y := enemies.PositionX[index], enemies.PositionY[index]
-	g.grantKillRewardsIf(x, y, definition, !enemies.LastHitByBoss[index])
+	g.grantKillRewardsIf(x, y, definition, !enemies.LastHitByBoss[index] && !g.isDemo)
 	g.effects.SpawnSparks(x, y, 5, definition.Color, 110)
 	g.ground.StimulateArea(x, y, definition.DeathGroundCells, definition.DeathStimulus)
 	g.QueueBurst(Burst{X: x, Y: y, Radius: definition.DeathRadius, Damage: definition.DeathDamage, Element: definition.DeathElement})
@@ -133,6 +133,7 @@ func (g *Game) grantKillRewardsIf(x, y float32, definition *EnemyDefinition, isP
 		return
 	}
 	g.gems.Drop(x, y, definition.Experience)
+	g.awardKillScore(definition.Experience)
 	g.kills++
 	g.HealFromKill()
 }

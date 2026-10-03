@@ -18,8 +18,8 @@ type ButtonBindings struct {
 // ===== Constants =====
 
 const (
-	bindingsDirectoryName = "hordefall"
-	bindingsFileName      = "controls.json"
+	configDirectoryName = "hordefall"
+	bindingsFileName    = "controls.json"
 )
 
 var remapStepNames = [3]string{"FIRE", "AIM LOCK", "DASH"}
@@ -27,7 +27,7 @@ var remapStepNames = [3]string{"FIRE", "AIM LOCK", "DASH"}
 // ===== Public API =====
 
 func LoadButtonBindings() (ButtonBindings, error) {
-	path, err := bindingsPath()
+	path, err := configFilePath(bindingsFileName)
 	if err != nil {
 		return ButtonBindings{}, err
 	}
@@ -43,7 +43,7 @@ func LoadButtonBindings() (ButtonBindings, error) {
 }
 
 func SaveButtonBindings(bindings ButtonBindings) error {
-	path, err := bindingsPath()
+	path, err := configFilePath(bindingsFileName)
 	if err != nil {
 		return err
 	}
@@ -63,12 +63,12 @@ func BindingsFromSteps(buttons [3]int) ButtonBindings {
 
 // ===== Internal =====
 
-func bindingsPath() (string, error) {
+func configFilePath(fileName string) (string, error) {
 	directory, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(directory, bindingsDirectoryName, bindingsFileName), nil
+	return filepath.Join(directory, configDirectoryName, fileName), nil
 }
 
 func validateBindings(bindings ButtonBindings) error {

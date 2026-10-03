@@ -56,6 +56,7 @@ const (
 	ActionPause
 	ActionSelect
 	ActionDebug
+	ActionStart
 )
 
 const (
@@ -76,7 +77,8 @@ var keyboardBindings = []KeyBinding{
 	{ebiten.KeyJ, actionFireConfirm}, {ebiten.KeyZ, actionFireConfirm},
 	{ebiten.KeyK, ActionAimLock}, {ebiten.KeyX, ActionAimLock},
 	{ebiten.KeySpace, ActionDash}, {ebiten.KeyL, ActionDash}, {ebiten.KeyC, ActionDash},
-	{ebiten.KeyEnter, ActionConfirm},
+	{ebiten.KeyEnter, ActionConfirm | ActionStart},
+	{ebiten.KeyBackspace, ActionSelect},
 	{ebiten.KeyEscape, ActionPause}, {ebiten.KeyP, ActionPause},
 	{ebiten.KeyF2, ActionSelect},
 	{ebiten.KeyF1, ActionDebug},
@@ -87,7 +89,7 @@ var gamepadSystemBindings = []GamepadBinding{
 	{ebiten.StandardGamepadButtonLeftBottom, ActionDown},
 	{ebiten.StandardGamepadButtonLeftLeft, ActionLeft},
 	{ebiten.StandardGamepadButtonLeftRight, ActionRight},
-	{ebiten.StandardGamepadButtonCenterRight, ActionPause | ActionConfirm},
+	{ebiten.StandardGamepadButtonCenterRight, ActionPause | ActionConfirm | ActionStart},
 	{ebiten.StandardGamepadButtonCenterLeft, ActionSelect},
 }
 
@@ -98,7 +100,7 @@ var gamepadDefaultActionBindings = []GamepadBinding{
 	{ebiten.StandardGamepadButtonRightTop, ActionDash},
 }
 
-var actionNames = []string{"Up", "Down", "Left", "Right", "Fire", "AimLock", "Dash", "Confirm", "Pause", "Select", "Debug"}
+var actionNames = []string{"Up", "Down", "Left", "Right", "Fire", "AimLock", "Dash", "Confirm", "Pause", "Select", "Debug", "Start"}
 
 // ===== Public API =====
 

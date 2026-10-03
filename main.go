@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -39,13 +40,25 @@ type Game struct {
 	offers               []UpgradeOffer
 	offerPool            []UpgradeOffer
 	selectedOffer        int
+	menuSelection        int
 	menuLockSeconds      float32
 	reactionCounts       [reactionKindCount]int
 	elapsedSeconds       float32
 	clockSeconds         float32
 	kills                int
+	killScore            int
+	highScore            HighScore
+	isNewHighScore       bool
+	scoreMessage         string
 	frame                uint32
 	runCount             uint32
+	isDemo               bool
+	demoSeconds          float32
+	demoSequence         int
+	demoSlot             int
+	currentDemo          DemoSequence
+	simulationMillis     float32
+	isQuitRequested      bool
 	isInputDebugVisible  bool
 	remapStep            int
 	remapButtons         [3]int
@@ -55,7 +68,7 @@ type Game struct {
 // ===== Constants =====
 
 const (
-	StateTitle GameState = iota
+	StateMainMenu GameState = iota
 	StatePlaying
 	StateLevelUp
 	StatePaused
@@ -65,19 +78,20 @@ const (
 )
 
 const (
-	screenWidth         = 1280
-	screenHeight        = 720
-	arenaSize           = 4096
-	ticksPerSecond      = 60
-	deltaSeconds        = 1.0 / ticksPerSecond
-	spatialCellSize     = 32
-	menuLockDuration    = 0.45
-	groundSeedBase      = 0x5EED
-	selectionDirections = ActionLeft | ActionUp
+	screenWidth             = 1280
+	screenHeight            = 720
+	arenaSize               = 4096
+	ticksPerSecond          = 60
+	deltaSeconds            = 1.0 / ticksPerSecond
+	spatialCellSize         = 32
+	menuLockDuration        = 0.45
+	groundSeedBase          = 0x5EED
+	selectionDirections     = ActionLeft | ActionUp
+	simulationTimeSmoothing = 0.05
 )
 
 var stateHandlers = [stateCount]StateHandler{
-	StateTitle:    {(*Game).updateTitle, (*Game).drawTitle},
+	StateMainMenu: {(*Game).updateMainMenu, (*Game).drawMainMenu},
 	StatePlaying:  {(*Game).updatePlaying, (*Game).drawPlaying},
 	StateLevelUp:  {(*Game).updateLevelUp, (*Game).drawLevelUp},
 	StatePaused:   {(*Game).updatePaused, (*Game).drawPaused},
@@ -91,6 +105,7 @@ func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Hordefall")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	ebiten.SetWindowClosingHandled(true)
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatal(err)
 	}
@@ -109,14 +124,19 @@ func NewGame() *Game {
 	game.resetRun()
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
 	game.loadBindings()
+	game.loadHighScore()
+	game.startDemo()
 	return game
 }
 
 func (g *Game) Update() error {
+	if ebiten.IsWindowBeingClosed() || g.isQuitRequested {
+		g.recordHighScore()
+		return ebiten.Termination
+	}
 	g.controls = g.input.Read()
-	isSelectTogglingDebug := g.controls.JustPressed&ActionSelect != 0 && g.state != StateTitle && g.state != StateRemap
+	isSelectTogglingDebug := g.controls.JustPressed&ActionSelect != 0 && (g.state == StatePlaying || g.state == StateLevelUp)
 	g.isInputDebugVisible = g.isInputDebugVisible != (g.controls.JustPressed&ActionDebug != 0 || isSelectTogglingDebug)
-	g.frame++
 	g.clockSeconds += deltaSeconds
 	g.menuLockSeconds = max(0, g.menuLockSeconds-deltaSeconds)
 	stateHandlers[g.state].Update(g)
@@ -146,9 +166,10 @@ func (g *Game) resetRun() {
 	g.director = NewSpawnDirector()
 	g.bursts = g.bursts[:0]
 	g.reactionCounts = [reactionKindCount]int{}
-	g.elapsedSeconds, g.kills = 0, 0
+	g.elapsedSeconds, g.kills, g.killScore = 0, 0, 0
 	g.spiders = g.spiders[:0]
 	g.nextSpiderKills = firstSpiderKills
+	g.isDemo, g.isNewHighScore = false, false
 }
 
 func (g *Game) isConfirming() bool {
@@ -158,29 +179,17 @@ func (g *Game) isConfirming() bool {
 func (g *Game) switchState(state GameState) {
 	g.state = state
 	g.menuLockSeconds = menuLockDuration
+	g.menuSelection = 0
 }
 
 func (g *Game) loadBindings() {
 	bindings, err := LoadButtonBindings()
 	if err != nil {
-		g.bindingsMessage = "Default buttons. Press Select / F2 to configure."
+		g.bindingsMessage = "Default buttons. Select / F2 to configure."
 		return
 	}
 	g.input.UseCustomBindings(bindings)
-	g.bindingsMessage = "Custom buttons loaded. Press Select / F2 to reconfigure."
-}
-
-func (g *Game) updateTitle() {
-	g.tickGroundIfDue()
-	if g.controls.JustPressed&ActionSelect != 0 {
-		g.remapStep = 0
-		g.switchState(StateRemap)
-		return
-	}
-	if !g.isConfirming() {
-		return
-	}
-	g.switchState(StatePlaying)
+	g.bindingsMessage = "Custom buttons loaded. Select / F2 to reconfigure."
 }
 
 func (g *Game) updatePlaying() {
@@ -190,6 +199,7 @@ func (g *Game) updatePlaying() {
 	}
 	g.simulate()
 	if g.player.Health <= 0 {
+		g.recordHighScore()
 		g.switchState(StateGameOver)
 		return
 	}
@@ -197,6 +207,8 @@ func (g *Game) updatePlaying() {
 }
 
 func (g *Game) simulate() {
+	defer g.measureSimulation(time.Now())
+	g.frame++
 	g.elapsedSeconds += deltaSeconds
 	g.grid.Rebuild(g.enemies.PositionX, g.enemies.PositionY, g.enemies.Count)
 	g.updatePlayer(deltaSeconds)
@@ -210,6 +222,11 @@ func (g *Game) simulate() {
 	g.spawnSpiderIfDue()
 	g.tickGroundIfDue()
 	g.effects.Update(deltaSeconds)
+}
+
+func (g *Game) measureSimulation(started time.Time) {
+	elapsedMillis := float32(time.Since(started).Microseconds()) / 1000
+	g.simulationMillis += (elapsedMillis - g.simulationMillis) * simulationTimeSmoothing
 }
 
 func (g *Game) tickGroundIfDue() {
@@ -240,69 +257,6 @@ func (g *Game) updateLevelUp() {
 	g.openLevelUpIfPending()
 }
 
-func (g *Game) updatePaused() {
-	if g.controls.JustPressed&ActionPause == 0 {
-		return
-	}
-	g.state = StatePlaying
-}
-
-func (g *Game) updateGameOver() {
-	g.effects.Update(deltaSeconds)
-	if !g.isConfirming() {
-		return
-	}
-	g.resetRun()
-	g.switchState(StatePlaying)
-}
-
-func (g *Game) updateRemap() {
-	if g.controls.JustPressed&ActionPause != 0 {
-		g.switchState(StateTitle)
-		return
-	}
-	button := g.controls.RawJustPressed
-	isSystemButton := g.controls.Held&(ActionPause|ActionSelect) != 0
-	if button < 0 || isSystemButton || g.isAlreadyRemapped(button) {
-		return
-	}
-	g.remapButtons[g.remapStep] = button
-	g.remapStep++
-	if g.remapStep < len(g.remapButtons) {
-		return
-	}
-	g.finishRemap()
-}
-
-func (g *Game) isAlreadyRemapped(button int) bool {
-	for step := range g.remapStep {
-		if g.remapButtons[step] == button {
-			return true
-		}
-	}
-	return false
-}
-
-func (g *Game) finishRemap() {
-	bindings := BindingsFromSteps(g.remapButtons)
-	g.input.UseCustomBindings(bindings)
-	g.bindingsMessage = "Buttons saved."
-	if err := SaveButtonBindings(bindings); err != nil {
-		g.bindingsMessage = "Buttons active for this session, save failed: " + err.Error()
-	}
-	g.switchState(StateTitle)
-}
-
-func (g *Game) drawTitle(screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawTitle(screen, g.clockSeconds, g.bindingsMessage)
-}
-
-func (g *Game) drawRemap(screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawRemap(screen, g.remapStep, g.remapButtons)
-}
-
 func (g *Game) drawPlaying(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
 	g.ui.DrawHud(g, screen)
@@ -311,14 +265,4 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 func (g *Game) drawLevelUp(screen *ebiten.Image) {
 	g.drawPlaying(screen)
 	g.ui.DrawLevelUp(g, screen)
-}
-
-func (g *Game) drawPaused(screen *ebiten.Image) {
-	g.drawPlaying(screen)
-	g.ui.DrawPaused(screen)
-}
-
-func (g *Game) drawGameOver(screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawGameOver(g, screen)
 }
