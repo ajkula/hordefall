@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"testing"
 
 	"hordefall/internal/rng"
@@ -189,8 +190,12 @@ func TestFirstSongIsPickedAmongEnabledTracks(t *testing.T) {
 
 func TestGraphicsSettingsDefaultsAndSanitizing(t *testing.T) {
 	defaults := DefaultSettings()
-	if !defaults.IsVsyncOn || !defaults.IsFPSShown || defaults.IsFullscreen || defaults.ShakeLevel != graphicsLevelCount-1 || defaults.EffectsLevel != graphicsLevelCount-1 || defaults.BloomLevel != defaultBloomLevel || defaults.IsCRTOn {
-		t.Fatalf("unexpected graphics defaults: %+v", defaults)
+	expected := Settings{
+		IsMusicOn: true, Tracks: map[string]bool{}, Resolution: ResolutionNative,
+		ShakeLevel: 1, EffectsLevel: 2, BloomLevel: 1, IsCRTOn: true, MusicVolumeStep: 3, EffectsVolumeStep: 4,
+	}
+	if fmt.Sprintf("%+v", defaults) != fmt.Sprintf("%+v", expected) {
+		t.Fatalf("unexpected defaults: got %+v, want %+v", defaults, expected)
 	}
 	broken := Settings{Resolution: 9, ShakeLevel: -4, EffectsLevel: 12, BloomLevel: 7}
 	sanitizeGraphics(&broken)
@@ -236,6 +241,7 @@ func TestMusicVolumeSliderStepsAndClamps(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
 	game.settings = DefaultSettings()
+	game.settings.MusicVolumeStep = volumeSteps
 	game.adjustMusicVolume(1)
 	if game.settings.MusicVolumeStep != volumeSteps {
 		t.Fatalf("volume went past 100%%: step %d", game.settings.MusicVolumeStep)
@@ -261,6 +267,7 @@ func TestEffectsVolumeSliderScalesSoundEffects(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
 	game.settings = DefaultSettings()
+	game.settings.EffectsVolumeStep = volumeSteps
 	game.audio = audio.NewSilentEngine(1)
 	game.isDemo = false
 	game.updateAudio()
@@ -272,7 +279,7 @@ func TestEffectsVolumeSliderScalesSoundEffects(t *testing.T) {
 	}
 	game.adjustEffectsVolume(-10)
 	game.updateAudio()
-	if game.audio.EffectsVolume != 0 || game.settings.MusicVolumeStep != volumeSteps {
+	if game.audio.EffectsVolume != 0 || game.settings.MusicVolumeStep != defaultMusicVolumeStep {
 		t.Fatalf("0%% effects should be silent without touching music: effects %.3f, music step %d", game.audio.EffectsVolume, game.settings.MusicVolumeStep)
 	}
 }

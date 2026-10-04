@@ -32,10 +32,11 @@ const (
 )
 
 const (
-	graphicsLevelCount   = 3
-	maximumRenderScale   = 3
-	defaultGraphicsLevel = graphicsLevelCount - 1
-	defaultBloomLevel    = 1
+	graphicsLevelCount  = 3
+	maximumRenderScale  = 3
+	defaultShakeLevel   = 1
+	defaultEffectsLevel = 2
+	defaultBloomLevel   = 1
 )
 
 var resolutionChoices = [resolutionCount]ResolutionChoice{

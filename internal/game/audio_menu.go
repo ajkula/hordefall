@@ -12,16 +12,18 @@ import (
 // ===== Constants =====
 
 const (
-	volumeSteps          = 5
-	maximumMusicVolume   = 0.5
-	sliderTrayWidth      = 220
-	sliderSlotHeight     = 10
-	sliderSlotGap        = 4
-	sliderRimThickness   = 2
-	sliderRimHeight      = 8
-	sliderTrayPadding    = 3
-	sliderOutlineMargin  = 1
-	sliderEmptySlotAlpha = 0.55
+	volumeSteps              = 5
+	defaultMusicVolumeStep   = 3
+	defaultEffectsVolumeStep = 4
+	maximumMusicVolume       = 0.5
+	sliderTrayWidth          = 220
+	sliderSlotHeight         = 10
+	sliderSlotGap            = 4
+	sliderRimThickness       = 2
+	sliderRimHeight          = 8
+	sliderTrayPadding        = 3
+	sliderOutlineMargin      = 1
+	sliderEmptySlotAlpha     = 0.55
 )
 
 var musicVolumeSlider = MenuSlider{

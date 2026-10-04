@@ -30,9 +30,9 @@ const settingsFileName = "settings.json"
 func DefaultSettings() Settings {
 	return Settings{
 		IsMusicOn: true, Tracks: map[string]bool{},
-		IsVsyncOn: true, Resolution: Resolution720p, IsFPSShown: true,
-		ShakeLevel: defaultGraphicsLevel, EffectsLevel: defaultGraphicsLevel,
-		BloomLevel: defaultBloomLevel, MusicVolumeStep: volumeSteps, EffectsVolumeStep: volumeSteps,
+		IsFullscreen: false, IsVsyncOn: false, Resolution: ResolutionNative, IsFPSShown: false,
+		ShakeLevel: defaultShakeLevel, EffectsLevel: defaultEffectsLevel, BloomLevel: defaultBloomLevel, IsCRTOn: true,
+		MusicVolumeStep: defaultMusicVolumeStep, EffectsVolumeStep: defaultEffectsVolumeStep,
 	}
 }
 
