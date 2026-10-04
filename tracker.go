@@ -117,6 +117,7 @@ var instrumentProperties = map[string]func(settings *VoiceSettings, value float3
 	"filter":  func(settings *VoiceSettings, value float32) { settings.Filter = value },
 	"sub":     func(settings *VoiceSettings, value float32) { settings.SubLevel = value },
 	"detune":  func(settings *VoiceSettings, value float32) { settings.Detune = value },
+	"drive":   func(settings *VoiceSettings, value float32) { settings.Drive = value },
 }
 
 // ===== Public API =====

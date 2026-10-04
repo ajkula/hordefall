@@ -6,7 +6,8 @@
 #   EFFECT      0xy arpeggio (+x, +y semitones, the Amiga chord shimmer)
 #               Cxx volume (hex 00..40)   ... = none
 # Instrument properties: attack decay sustain release volume duty slide filter,
-#   sub (sine one octave below, 0..1) and detune (second voice, in semitones).
+#   sub (sine one octave below, 0..1), detune (second voice, in semitones)
+#   and drive (overdrive saturation, 0 = clean, 3..4 = crunchy guitar).
 # A row lasts 'speed' ticks, a tick lasts 2.5 / tempo seconds.
 #
 # Adaptive layers: every channel always plays in time, but is only heard

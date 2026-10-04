@@ -47,6 +47,8 @@ type Game struct {
 	offerPool            []UpgradeOffer
 	selectedOffer        int
 	levelUpBanner        string
+	musicBanner          string
+	musicBannerSeconds   float32
 	levelUpBannerSeconds float32
 	menuSelection        int
 	menuLockSeconds      float32
@@ -74,6 +76,10 @@ type Game struct {
 	bindingsMessage      string
 	settings             Settings
 	settingsMessage      string
+	playlistMenu         []MenuOption
+	enabledSongs         []int
+	musicSlot            int
+	musicRandom          Random
 }
 
 // ===== Constants =====
@@ -86,6 +92,7 @@ const (
 	StateGameOver
 	StateRemap
 	StateOptions
+	StatePlaylist
 	stateCount
 )
 
@@ -111,6 +118,7 @@ var stateHandlers = [stateCount]StateHandler{
 	StateGameOver: {(*Game).updateGameOver, (*Game).drawGameOver},
 	StateRemap:    {(*Game).updateRemap, (*Game).drawRemap},
 	StateOptions:  {(*Game).updateOptions, (*Game).drawOptions},
+	StatePlaylist: {(*Game).updatePlaylist, (*Game).drawPlaylist},
 }
 
 // ===== Public API =====
@@ -134,6 +142,8 @@ func NewGame() *Game {
 		gems:        NewGemStore(maximumGems),
 		effects:     NewEffects(),
 		grid:        NewSpatialGrid(arenaSize, spatialCellSize, maximumEnemies),
+		musicSlot:   noMusicSlot,
+		musicRandom: NewRandom(uint32(time.Now().UnixNano())),
 	}
 	game.resetRun()
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
@@ -165,7 +175,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if !g.isInputDebugVisible {
 		return
 	}
-	g.ui.DrawDebugOverlay(g.input.DescribeDevices(g.controls), screen)
+	g.ui.DrawDebugOverlay(append(g.input.DescribeDevices(g.controls), g.describeMusic()), screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -243,6 +253,7 @@ func (g *Game) simulate() {
 	g.tickGroundIfDue()
 	g.effects.Update(deltaSeconds)
 	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
+	g.musicBannerSeconds = max(0, g.musicBannerSeconds-deltaSeconds)
 }
 
 func (g *Game) measureSimulation(started time.Time) {

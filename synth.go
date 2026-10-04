@@ -26,6 +26,7 @@ type VoiceSettings struct {
 	Delay        float32
 	SubLevel     float32
 	Detune       float32
+	Drive        float32
 }
 
 type Voice struct {
@@ -111,7 +112,8 @@ func (v *Voice) Render() (float32, float32) {
 	v.advancePhase()
 	raw := v.oscillate()
 	v.FilterState += (raw - v.FilterState) * (1 - v.Settings.Filter)
-	value := v.FilterState * amplitude * v.Settings.Volume
+	driven := v.FilterState * (1 + v.Settings.Drive) / (1 + abs(v.FilterState)*v.Settings.Drive)
+	value := driven * amplitude * v.Settings.Volume
 	v.Age += sampleSeconds
 	v.Frequency *= v.SlideFactor
 	return value * (1 - v.Settings.Pan), value * v.Settings.Pan

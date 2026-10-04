@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // ===== Constants =====
 
 const (
@@ -11,6 +13,10 @@ const (
 	dangerHealthThreshold   = 0.45
 	menuEffectsVolume       = 0.45
 	gameEffectsVolume       = 0.8
+	songRotationSeconds     = 300
+	noMusicSlot             = -1
+	menuShowcaseIntensity   = 0.7
+	musicBannerDuration     = 4
 )
 
 var laserDangerPhases = [laserPhaseCount]float32{LaserCharging: 1, LaserLocked: 1, LaserFiring: 1}
@@ -33,6 +39,7 @@ func (g *Game) updateAudio() {
 		g.toggleMusic()
 	}
 	g.audio.SetEffectsVolume(menuEffectsVolume + (gameEffectsVolume-menuEffectsVolume)*boolToFloat(!g.isDemo))
+	g.rotateSong()
 	if g.frame%musicSignalFrames != 0 {
 		return
 	}
@@ -40,11 +47,67 @@ func (g *Game) updateAudio() {
 	g.audio.SetMusicSignals(g.musicSignals)
 }
 
+func (g *Game) rotateSong() {
+	if !g.HasEnabledSong() {
+		return
+	}
+	slot := g.currentMusicSlot()
+	isFirstObservation := g.musicSlot == noMusicSlot
+	isSlotChanged := slot != g.musicSlot && !isFirstObservation
+	g.musicSlot = slot
+	if isFirstObservation {
+		songCount := g.audio.SongCount()
+		g.playSong(g.nextEnabledSong((g.musicRandom.Below(songCount) + songCount - 1) % songCount))
+		return
+	}
+	isCurrentDisabled := !g.IsSongEnabled(g.audio.CurrentSong())
+	if !isSlotChanged && !isCurrentDisabled {
+		return
+	}
+	g.playSong(g.nextEnabledSong(g.audio.CurrentSong()))
+}
+
+func (g *Game) currentMusicSlot() int {
+	isInRun := !g.isDemo && g.state != StateMainMenu && g.state != StateOptions && g.state != StateRemap && g.state != StatePlaylist
+	runSlot := int(g.elapsedSeconds) / songRotationSeconds
+	demoSlot := max(0, g.demoSlot) / (2 * len(demoSequences))
+	slots := [2]int{demoSlot, runSlot}
+	return slots[boolToIndex(isInRun)]*2 + boolToIndex(isInRun)
+}
+
+func (g *Game) describeMusic() string {
+	titles := make([]string, 0, g.audio.SongCount())
+	for index := range g.audio.SongCount() {
+		titles = appendIf(titles, g.audio.SongTitle(index), g.IsSongEnabled(index))
+	}
+	return "Music playing: " + g.audio.PlayingDescription() + "   enabled: " + strings.Join(titles, ", ")
+}
+
+func (g *Game) nextEnabledSong(current int) int {
+	songCount := g.audio.SongCount()
+	for step := 1; step <= songCount; step++ {
+		candidate := (current + step) % songCount
+		if g.IsSongEnabled(candidate) {
+			return candidate
+		}
+	}
+	return current
+}
+
+func (g *Game) playSong(index int) {
+	if !g.audio.SelectSong(index) {
+		return
+	}
+	g.musicBanner = "\u266A  " + g.audio.SongTitle(index)
+	g.musicBannerSeconds = musicBannerDuration
+}
+
 func (g *Game) computeMusicSignals() [musicSignalCount]float32 {
 	var signals [musicSignalCount]float32
 	isFighting := boolToFloat(g.state != StateGameOver)
 	signals[SignalAlways] = 1
-	signals[SignalHorde] = clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1) * isFighting
+	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1) * isFighting
+	signals[SignalHorde] = max(hordeSignal, menuShowcaseIntensity*boolToFloat(g.isDemo))
 	signals[SignalBoss] = float32(len(g.spiders)+boolToIndex(g.hordeEvent.IsActive)) * isFighting
 	signals[SignalReactions] = g.reactionSignal() * isFighting
 	signals[SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal()) * isFighting

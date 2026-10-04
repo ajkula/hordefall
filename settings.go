@@ -9,7 +9,8 @@ import (
 // ===== Types =====
 
 type Settings struct {
-	IsMusicOn bool `json:"musicOn"`
+	IsMusicOn bool            `json:"musicOn"`
+	Tracks    map[string]bool `json:"tracks"`
 }
 
 // ===== Constants =====
@@ -19,7 +20,7 @@ const settingsFileName = "settings.json"
 // ===== Public API =====
 
 func DefaultSettings() Settings {
-	return Settings{IsMusicOn: true}
+	return Settings{IsMusicOn: true, Tracks: map[string]bool{}}
 }
 
 func LoadSettings() (Settings, error) {
@@ -33,6 +34,7 @@ func LoadSettings() (Settings, error) {
 		return settings, err
 	}
 	err = json.Unmarshal(content, &settings)
+	settings.Tracks = ensureTracks(settings.Tracks)
 	return settings, err
 }
 
@@ -53,6 +55,13 @@ func SaveSettings(settings Settings) error {
 
 // ===== Internal =====
 
+func ensureTracks(tracks map[string]bool) map[string]bool {
+	if tracks == nil {
+		return map[string]bool{}
+	}
+	return tracks
+}
+
 func (g *Game) loadSettings() {
 	settings, err := LoadSettings()
 	g.settings = settings
@@ -60,11 +69,16 @@ func (g *Game) loadSettings() {
 		g.settings = DefaultSettings()
 	}
 	g.audio.SetMusicOn(g.settings.IsMusicOn)
+	g.buildPlaylistMenu()
 }
 
 func (g *Game) toggleMusic() {
 	g.settings.IsMusicOn = !g.settings.IsMusicOn
 	g.audio.SetMusicOn(g.settings.IsMusicOn)
+	g.saveSettings()
+}
+
+func (g *Game) saveSettings() {
 	g.settingsMessage = ""
 	if err := SaveSettings(g.settings); err != nil {
 		g.settingsMessage = "Settings not saved: " + err.Error()

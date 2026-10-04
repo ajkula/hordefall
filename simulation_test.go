@@ -47,6 +47,7 @@ func newHeadlessGame() *Game {
 		gems:        NewGemStore(maximumGems),
 		effects:     NewEffects(),
 		grid:        NewSpatialGrid(arenaSize, spatialCellSize, maximumEnemies),
+		musicSlot:   noMusicSlot,
 	}
 	game.resetRun()
 	game.state = StatePlaying

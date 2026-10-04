@@ -12,7 +12,7 @@ go run .
 ## Menus, score and high score
 
 - **Main menu**: Play, Options, Quit, and your high score (dark orange).
-- **Options**: Configure buttons, Music on/off (sound effects stay on), Back. Settings are saved to `%AppData%\hordefall\settings.json` and restored on launch. Behind it runs an attract-mode benchmark: six 5-second gameplay sequences on loop (Inferno chain, Electrocution, Freeze and shatter, Wildfire, Spider tank, Horde x4000) interleaved with randomly generated LIVE ACTION clips (random weapons and levels, passives, enemy mix and count, starting statuses, prepared ground, sometimes a spider tank), all played by an autopilot Tachikoma, with live FPS, TPS, simulation time and entity counts.
+- **Options**: Configure buttons, Music on/off (sound effects stay on), Playlist (switch each track on or off: enabling a track plays it at once, disabling the current one moves to the next enabled track, rotation goes to the next enabled track; all off means no music), Back. Settings are saved to `%AppData%\hordefall\settings.json` and restored on launch; the playlist is a `"tracks": { "title": true/false }` map, and a track missing from it counts as enabled. Behind it runs an attract-mode benchmark: six 5-second gameplay sequences on loop (Inferno chain, Electrocution, Freeze and shatter, Wildfire, Spider tank, Horde x4000) interleaved with randomly generated LIVE ACTION clips (random weapons and levels, passives, enemy mix and count, starting statuses, prepared ground, sometimes a spider tank), all played by an autopilot Tachikoma, with live FPS, TPS, simulation time and entity counts.
 - **Score**: every kill is worth its experience x 10 (a spider tank is worth 1,500) and every second survived is worth 5. Score and high score are shown in the HUD.
 - **High score** is saved to `%AppData%\hordefall\highscore.json` on game over, when leaving a run for the main menu, on Quit and when the window is closed.
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu.
@@ -38,6 +38,25 @@ The tempo also rises with intensity (`tempoboost`). M mutes the music.
 
 ### Composing
 Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is 10 cells separated by `|`, each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Parse errors give the line and channel, and `go test -run Theme` checks the song.
+
+### Song rotation and procedural composer
+The first song is picked at random among enabled tracks at launch. Then the next enabled track plays when a run starts, every 5 minutes during a run, and on the main menu after every full cycle of the attract-mode sequences, with a 3-second crossfade and a small banner: the hand-written theme first, then five songs composed procedurally at each launch from the styles in `composer.go`:
+
+| Style | Mood | Key / mode | Tempo |
+|-------|------|------------|-------|
+| Neon Pursuit | fast, tense chase | E harmonic minor | 145 |
+| Frozen Wastes | cold, airy, sparse | D dorian | 100 |
+| Ember March | heavy half-time march | C phrygian | 112 |
+| Skyline Rush | bright, heroic | F major | 155 |
+| Grey Transmission | post-punk: driving melodic bass, overdriven chorused guitars | B minor | 160 |
+
+A style sets the scale, tonic, chord progression, tempo, drum, bass, chord and melody rhythms, and timbres. The composer derives arpeggios from the scale chords and writes the melody as a random walk on the scale, anchored on chord tones on downbeats, so melodies differ at every launch. All songs share the same adaptive layers. Add a style by adding an entry to `musicStyles`.
+
+Preview all songs as 30-second WAV files:
+
+```powershell
+$env:HORDEFALL_WAV_DIR = "./music/previews"; go test -run ExportSongPreviews
+```
 
 ### Procedural sound effects
 Every sound effect is synthesized on the fly from layered voices with a random pitch variation, so no two pops are identical: enemy pops, thuds and splashes, weapon pews, zaps and novas, reaction explosions, shatters, hisses and electrocutions, spider stomps, beam charge and fire, dash, hurt, level-up arpeggio, gem pickup and menu blips. Each sound has a minimum interval, so a hundred kills in a frame never saturate the mix. Sounds are declared in `sounds.go`; enemies, reactions and weapons reference them from their own tables.
@@ -152,10 +171,12 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `bindings.go`    | Button mapping persistence                                 |
 | `menus.go`       | Main menu, pause, game over and remap states               |
 | `score.go`       | Score, high score persistence                              |
-| `settings.go`    | Persisted settings (music on/off)                          |
+| `settings.go`    | Persisted settings (music on/off, playlist)                |
+| `playlist.go`    | Playlist menu and enabled tracks                           |
 | `demo.go`        | Attract-mode benchmark sequences                           |
 | `synth.go`       | Oscillators, envelopes, filter                             |
 | `tracker.go`     | Tracker song parser and adaptive sequencer                 |
+| `composer.go`    | Procedural song composer and music styles                  |
 | `audio.go`       | Audio engine and mixer                                     |
 | `sounds.go`      | Procedural sound effect table                              |
 | `game_audio.go`  | Music signals and sound triggers                           |

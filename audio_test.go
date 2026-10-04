@@ -1,9 +1,14 @@
 package main
 
 import (
+	"encoding/binary"
+	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // ===== Public API =====
@@ -143,4 +148,264 @@ func TestMusicSettingIsSavedAndRestored(t *testing.T) {
 	if restarted.settings.IsMusicOn || restarted.audio.IsMusicOn() || restarted.musicLabel() != "Music: OFF" {
 		t.Fatalf("music off was not restored after restart, label %q", restarted.musicLabel())
 	}
+}
+
+func TestComposedStylesAreValidCleanAndDistinct(t *testing.T) {
+	theme, err := ParseSong(themeSource)
+	if err != nil {
+		t.Fatalf("theme does not parse: %v", err)
+	}
+	signatures := map[string]bool{}
+	for index := range musicStyles {
+		song := ComposeSong(&musicStyles[index], theme, 1234)
+		if err := validateSong(song); err != nil {
+			t.Fatalf("%s is invalid: %v", song.Title, err)
+		}
+		tracker := NewTracker(song)
+		tracker.SetSignals([musicSignalCount]float32{1, 1, maximumSpidersAlive, 1, 1})
+		peak, rms := renderStatistics(t, tracker, 6*sampleRate)
+		if peak > 1 || rms < 0.02 {
+			t.Fatalf("%s: peak %.3f rms %.3f", song.Title, peak, rms)
+		}
+		firstLeadNote := song.Patterns[0].Rows[0][channelChords].Note
+		signature := fmt.Sprintf("%d/%d/%d", song.Tempo, firstLeadNote, song.Instruments[instrumentLead].Waveform)
+		signatures[signature] = true
+		t.Logf("%-14s tempo %d  peak %.2f  rms %.3f", song.Title, song.Tempo, peak, rms)
+	}
+	if len(signatures) != len(musicStyles) {
+		t.Fatalf("styles are not distinct: %v", signatures)
+	}
+}
+
+func TestSongRotatesEveryFiveMinutesWithCleanCrossfade(t *testing.T) {
+	theme := newThemeTracker(t).song
+	engine := &AudioEngine{random: NewRandom(1), MusicVolume: 1}
+	engine.attachSongs(theme, 99)
+	game := newHeadlessGame()
+	game.audio = engine
+	game.buildPlaylistMenu()
+	songCount := engine.SongCount()
+	for slot := range songCount + 1 {
+		minutes := float32(slot*5) + 4.9*boolToFloat(slot == 0)
+		game.elapsedSeconds = minutes * 60
+		game.rotateSong()
+		expected := slot % songCount
+		if engine.songIndex != expected {
+			t.Fatalf("at %.1f min song %d, want %d", minutes, engine.songIndex, expected)
+		}
+		for range songCrossfadeSeconds * sampleRate / 4 {
+			left, right := engine.renderMusic()
+			if math.IsNaN(float64(left)) || math.IsNaN(float64(right)) || abs(left) > 4 {
+				t.Fatalf("bad sample during crossfade at %.1f min", minutes)
+			}
+		}
+	}
+	if game.musicBanner == "" {
+		t.Fatalf("no music banner shown on song change")
+	}
+}
+
+func TestExportSongPreviews(t *testing.T) {
+	outputDirectory := os.Getenv("HORDEFALL_WAV_DIR")
+	if outputDirectory == "" {
+		t.Skip("HORDEFALL_WAV_DIR not set")
+	}
+	if err := os.MkdirAll(outputDirectory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	engine := &AudioEngine{random: NewRandom(1)}
+	engine.attachSongs(newThemeTracker(t).song, uint32(time.Now().UnixNano()))
+	for index, song := range engine.songs {
+		tracker := NewTracker(song)
+		tracker.SetSignals([musicSignalCount]float32{1, 1, maximumSpidersAlive, 1, 1})
+		path := filepath.Join(outputDirectory, fmt.Sprintf("%d_%s.wav", index+1, strings.ReplaceAll(song.Title, " ", "_")))
+		writePreview(t, tracker, path, 30*sampleRate)
+		t.Logf("wrote %s", path)
+	}
+}
+
+func writePreview(t *testing.T, tracker *Tracker, path string, samples int) {
+	pcm := make([]byte, 0, samples*4)
+	for range samples {
+		left, right := tracker.Render()
+		pcm = binary.LittleEndian.AppendUint16(pcm, uint16(int16(softClip(left*0.5)*32000)))
+		pcm = binary.LittleEndian.AppendUint16(pcm, uint16(int16(softClip(right*0.5)*32000)))
+	}
+	header := make([]byte, 0, 44)
+	header = append(header, "RIFF"...)
+	header = binary.LittleEndian.AppendUint32(header, uint32(36+len(pcm)))
+	header = append(header, "WAVEfmt "...)
+	header = binary.LittleEndian.AppendUint32(header, 16)
+	header = binary.LittleEndian.AppendUint16(header, 1)
+	header = binary.LittleEndian.AppendUint16(header, 2)
+	header = binary.LittleEndian.AppendUint32(header, sampleRate)
+	header = binary.LittleEndian.AppendUint32(header, sampleRate*4)
+	header = binary.LittleEndian.AppendUint16(header, 4)
+	header = binary.LittleEndian.AppendUint16(header, 16)
+	header = append(header, "data"...)
+	header = binary.LittleEndian.AppendUint32(header, uint32(len(pcm)))
+	if err := os.WriteFile(path, append(header, pcm...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDemoChangesSongEveryFullCycle(t *testing.T) {
+	game := newHeadlessGame()
+	engine := &AudioEngine{random: NewRandom(1)}
+	engine.attachSongs(newThemeTracker(t).song, 7)
+	game.audio = engine
+	game.buildPlaylistMenu()
+	game.startDemo()
+	game.state = StateMainMenu
+	cycleSlots := 2 * len(demoSequences)
+	steps := []struct{ slot, song int }{{0, 0}, {cycleSlots - 1, 0}, {cycleSlots, 1}, {2 * cycleSlots, 2}}
+	for _, step := range steps {
+		game.demoSlot = step.slot
+		game.rotateSong()
+		if engine.songIndex != step.song {
+			t.Fatalf("demo slot %d plays song %d, want %d", step.slot, engine.songIndex, step.song)
+		}
+	}
+}
+
+func TestPlaylistTogglesMatchWhatIsHeard(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.audio = &AudioEngine{random: NewRandom(1)}
+	game.audio.attachSongs(newThemeTracker(t).song, 5)
+	game.loadSettings()
+	game.state = StatePlaylist
+	game.rotateSong()
+	playing := game.audio.CurrentSong()
+	other := (playing + 2) % game.audio.SongCount()
+	game.toggleSong(other)
+	game.rotateSong()
+	if game.audio.CurrentSong() != playing {
+		t.Fatalf("disabling %q (not playing) switched the music to %q", game.audio.SongTitle(other), game.audio.SongTitle(game.audio.CurrentSong()))
+	}
+	game.toggleSong(other)
+	if game.audio.CurrentSong() != other || game.musicBanner == "" {
+		t.Fatalf("enabling %q should play it right away, playing %q", game.audio.SongTitle(other), game.audio.SongTitle(game.audio.CurrentSong()))
+	}
+	game.toggleSong(other)
+	game.rotateSong()
+	if game.audio.CurrentSong() == other || !game.IsSongEnabled(game.audio.CurrentSong()) {
+		t.Fatalf("disabling the playing track should move to an enabled one, playing %q", game.audio.SongTitle(game.audio.CurrentSong()))
+	}
+}
+
+func TestPlaylistSkipsDisabledTracksAndPersists(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	newPlaylistGame := func() *Game {
+		game := newHeadlessGame()
+		game.audio = &AudioEngine{random: NewRandom(1)}
+		game.audio.attachSongs(newThemeTracker(t).song, 5)
+		game.loadSettings()
+		return game
+	}
+	game := newPlaylistGame()
+	songCount := game.audio.SongCount()
+	for index := range songCount {
+		game.toggleSong(index)
+	}
+	if game.HasEnabledSong() || !game.audio.IsPlaylistEmpty {
+		t.Fatalf("disabling every track should leave an empty, silent playlist: %v", game.settings.Tracks)
+	}
+	game.toggleSong(0)
+	for _, minutes := range []float32{0, 5, 10, 15} {
+		game.elapsedSeconds = minutes * 60
+		game.rotateSong()
+		if game.audio.songIndex != 0 {
+			t.Fatalf("at %.0f min a disabled track (%d) played", minutes, game.audio.songIndex)
+		}
+	}
+	restarted := newPlaylistGame()
+	if !restarted.IsSongEnabled(0) || restarted.IsSongEnabled(1) || restarted.describeMusic() == "" {
+		t.Fatalf("playlist not restored after restart: %v", restarted.settings.Tracks)
+	}
+	restarted.toggleSong(3)
+	if !restarted.IsSongEnabled(3) || restarted.IsSongEnabled(2) {
+		t.Fatalf("re-enabling a track failed: %v", restarted.settings.Tracks)
+	}
+}
+
+func TestEmptyPlaylistSilencesMusicButNotEffects(t *testing.T) {
+	engine := &AudioEngine{random: NewRandom(1), EffectsVolume: 1, MusicVolume: 1}
+	engine.attachSongs(newThemeTracker(t).song, 3)
+	engine.SetPlaylistEmpty(true)
+	musicPeak := float32(0)
+	for range sampleRate {
+		left, right := engine.renderFrame()
+		musicPeak = max(musicPeak, abs(left), abs(right))
+	}
+	engine.startSound(&soundTable[SoundPop])
+	effectPeak := float32(0)
+	for range sampleRate / 10 {
+		left, right := engine.renderFrame()
+		effectPeak = max(effectPeak, abs(left), abs(right))
+	}
+	if musicPeak > 0.0001 || effectPeak < 0.01 {
+		t.Fatalf("empty playlist: music peak %.4f (want silence), effects peak %.3f (want audible)", musicPeak, effectPeak)
+	}
+}
+
+func TestMenusPlayTheFullSong(t *testing.T) {
+	game := newHeadlessGame()
+	game.startDemo()
+	game.enemies.Count = 0
+	signals := game.computeMusicSignals()
+	theme := newThemeTracker(t).song
+	for channel, layer := range theme.Layers {
+		isMelodic := layer.Signal == SignalHorde
+		if isMelodic && signals[SignalHorde] < layer.Threshold {
+			t.Fatalf("channel %d (horde layer %.2f) is muted on the menu, horde signal %.2f", channel+1, layer.Threshold, signals[SignalHorde])
+		}
+	}
+	game.resetRun()
+	game.enemies.Count = 0
+	if game.computeMusicSignals()[SignalHorde] != 0 {
+		t.Fatalf("in a run with no enemies the horde layers should stay silent")
+	}
+}
+
+func TestTracksMapIsTheSingleSourceOfTruth(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.audio = &AudioEngine{random: NewRandom(1)}
+	game.audio.attachSongs(newThemeTracker(t).song, 5)
+	game.loadSettings()
+	game.settings.Tracks = map[string]bool{"Hordefall Theme": false, "Neon Pursuit": false, "Frozen Wastes": false, "Ember March": true, "Skyline Rush": false, "Grey Transmission": false}
+	for range 5 {
+		game.musicSlot = noMusicSlot
+		game.rotateSong()
+		if game.audio.SongTitle(game.audio.CurrentSong()) != "Ember March" {
+			t.Fatalf("only Ember March is true, playing %q", game.audio.SongTitle(game.audio.CurrentSong()))
+		}
+	}
+	game.settings.Tracks["Ember March"] = false
+	if game.HasEnabledSong() {
+		t.Fatalf("all tracks false but a track is still considered enabled")
+	}
+	before := game.audio.CurrentSong()
+	game.rotateSong()
+	if game.audio.CurrentSong() != before {
+		t.Fatalf("rotation changed song although every track is false")
+	}
+}
+
+func TestFirstSongIsPickedAmongEnabledTracks(t *testing.T) {
+	picked := map[int]bool{}
+	for seed := range 40 {
+		game := newHeadlessGame()
+		game.audio = &AudioEngine{random: NewRandom(1)}
+		game.audio.attachSongs(newThemeTracker(t).song, 5)
+		game.buildPlaylistMenu()
+		game.musicRandom = NewRandom(uint32(seed*7919 + 1))
+		game.rotateSong()
+		picked[game.audio.CurrentSong()] = true
+	}
+	if len(picked) < 3 {
+		t.Fatalf("first song is not varied across launches: %v", picked)
+	}
+	t.Logf("first songs picked over 40 launches: %v", picked)
 }

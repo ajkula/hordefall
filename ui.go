@@ -90,6 +90,7 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawSpiderBars(g, screen)
 	u.drawHordeEventBar(g, screen)
 	u.drawLevelUpBanner(g, screen)
+	u.drawMusicBanner(g, screen)
 	u.drawPopups(g, screen)
 }
 
@@ -100,6 +101,7 @@ func (u *UI) DrawMainMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	u.drawMenuOptions(g, screen, options, mainMenuOptionsTop)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
+	u.drawMusicBanner(g, screen)
 	controls := "Move: stick / WASD    Fire: button 1 / J    Aim lock: button 2 / K    Dash: button 3 / Space    Pause: Start / Esc"
 	u.drawText(screen, controls, u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
 	u.drawText(screen, g.bindingsMessage, u.small, screenWidth/2, menuHintTop+24, mutedTextColor, 1, text.AlignCenter)
@@ -119,6 +121,7 @@ func (u *UI) DrawOptionsMenu(g *Game, screen *ebiten.Image, options []MenuOption
 	u.drawMenuOptions(g, screen, options, mainMenuOptionsTop)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
+	u.drawMusicBanner(g, screen)
 	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
 	u.drawText(screen, "Music only: sound effects stay on. Settings are saved.", u.small, screenWidth/2, menuHintTop+24, mutedTextColor, 1, text.AlignCenter)
 }
@@ -224,6 +227,14 @@ func (u *UI) drawLevelUpBanner(g *Game, screen *ebiten.Image) {
 	}
 	fade := clamp(g.levelUpBannerSeconds/levelUpBannerFade, 0, 1)
 	u.drawText(screen, g.levelUpBanner, u.bold, screenWidth/2, levelUpBannerTop, accentColor, fade, text.AlignCenter)
+}
+
+func (u *UI) drawMusicBanner(g *Game, screen *ebiten.Image) {
+	if g.musicBannerSeconds <= 0 {
+		return
+	}
+	fade := clamp(g.musicBannerSeconds/levelUpBannerFade, 0, 1)
+	u.drawText(screen, g.musicBanner, u.regular, screenWidth-16, screenHeight-34, mutedTextColor, fade, text.AlignEnd)
 }
 
 func describeHighScore(highScore HighScore) string {

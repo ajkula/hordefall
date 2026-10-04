@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -13,20 +14,25 @@ import (
 // ===== Types =====
 
 type AudioEngine struct {
-	context       *audio.Context
-	player        *audio.Player
-	mutex         sync.Mutex
-	effectVoices  [effectVoiceCount]Voice
-	nextVoice     int
-	pending       [maximumPendingSounds]SoundKind
-	pendingCount  int
-	lastPlayed    [soundKindCount]float32
-	tracker       *Tracker
-	random        Random
-	MusicVolume   float32
-	EffectsVolume float32
-	IsMusicMuted  bool
-	SongError     error
+	context         *audio.Context
+	player          *audio.Player
+	mutex           sync.Mutex
+	effectVoices    [effectVoiceCount]Voice
+	nextVoice       int
+	pending         [maximumPendingSounds]SoundKind
+	pendingCount    int
+	lastPlayed      [soundKindCount]float32
+	tracker         *Tracker
+	fadingTracker   *Tracker
+	crossfade       float32
+	songs           []*Song
+	songIndex       int
+	random          Random
+	MusicVolume     float32
+	EffectsVolume   float32
+	IsMusicMuted    bool
+	IsPlaylistEmpty bool
+	SongError       error
 }
 
 // ===== Constants =====
@@ -37,6 +43,7 @@ const (
 	bytesPerFrame        = 8
 	audioBufferDuration  = 60 * time.Millisecond
 	effectPanSpread      = 0.15
+	songCrossfadeSeconds = 3
 )
 
 //go:embed music/theme.trk
@@ -48,7 +55,7 @@ func NewAudioEngine() *AudioEngine {
 	engine := &AudioEngine{random: NewRandom(0x50D), MusicVolume: 0.5, EffectsVolume: 0.8}
 	song, err := ParseSong(themeSource)
 	engine.SongError = err
-	engine.attachSong(song)
+	engine.attachSongs(song, uint32(time.Now().UnixNano()))
 	engine.context = audio.NewContext(sampleRate)
 	player, err := engine.context.NewPlayerF32(engine)
 	if err != nil {
@@ -78,6 +85,53 @@ func (e *AudioEngine) SetMusicSignals(signals [musicSignalCount]float32) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	e.tracker.SetSignals(signals)
+	e.signalFadingTracker(signals)
+}
+
+func (e *AudioEngine) SongCount() int {
+	if e == nil {
+		return 0
+	}
+	return len(e.songs)
+}
+
+func (e *AudioEngine) CurrentSong() int {
+	if e == nil {
+		return 0
+	}
+	return e.songIndex
+}
+
+func (e *AudioEngine) PlayingDescription() string {
+	if e == nil || e.tracker == nil {
+		return "no audio"
+	}
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	song := e.tracker.song
+	return fmt.Sprintf("%s (tempo %d, speed %d)", song.Title, song.Tempo, song.Speed)
+}
+
+func (e *AudioEngine) SongTitle(index int) string {
+	if e == nil {
+		return ""
+	}
+	return e.songs[index].Title
+}
+
+func (e *AudioEngine) SelectSong(index int) bool {
+	if e == nil || index == e.songIndex || index >= len(e.songs) {
+		return false
+	}
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	signals := e.tracker.signals
+	e.fadingTracker = e.tracker
+	e.tracker = NewTracker(e.songs[index])
+	e.tracker.SetSignals(signals)
+	e.crossfade = 0
+	e.songIndex = index
+	return true
 }
 
 func (e *AudioEngine) SetEffectsVolume(volume float32) {
@@ -96,6 +150,15 @@ func (e *AudioEngine) IsMusicOn() bool {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	return !e.IsMusicMuted
+}
+
+func (e *AudioEngine) SetPlaylistEmpty(isEmpty bool) {
+	if e == nil {
+		return
+	}
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	e.IsPlaylistEmpty = isEmpty
 }
 
 func (e *AudioEngine) SetMusicOn(isOn bool) {
@@ -122,11 +185,16 @@ func (e *AudioEngine) Read(buffer []byte) (int, error) {
 
 // ===== Internal =====
 
-func (e *AudioEngine) attachSong(song *Song) {
-	if song == nil {
+func (e *AudioEngine) attachSongs(theme *Song, seed uint32) {
+	if theme == nil {
 		return
 	}
-	e.tracker = NewTracker(song)
+	e.songs = append(e.songs, theme)
+	for index := range musicStyles {
+		e.songs = append(e.songs, ComposeSong(&musicStyles[index], theme, seed+uint32(index)*7919))
+	}
+	e.tracker = NewTracker(theme)
+	e.crossfade = 1
 }
 
 func (e *AudioEngine) startPendingSounds() {
@@ -151,7 +219,7 @@ func (e *AudioEngine) startSound(definition *SoundDefinition) {
 func (e *AudioEngine) renderFrame() (float32, float32) {
 	musicLeft, musicRight := e.renderMusic()
 	effectsLeft, effectsRight := e.renderEffects()
-	musicGain := e.MusicVolume * boolToFloat(!e.IsMusicMuted)
+	musicGain := e.MusicVolume * boolToFloat(!e.IsMusicMuted && !e.IsPlaylistEmpty)
 	return softClip(musicLeft*musicGain + effectsLeft*e.EffectsVolume), softClip(musicRight*musicGain + effectsRight*e.EffectsVolume)
 }
 
@@ -159,7 +227,25 @@ func (e *AudioEngine) renderMusic() (float32, float32) {
 	if e.tracker == nil {
 		return 0, 0
 	}
-	return e.tracker.Render()
+	e.crossfade = min(1, e.crossfade+1/(songCrossfadeSeconds*sampleRate))
+	left, right := e.tracker.Render()
+	fadingLeft, fadingRight := e.renderFadingTracker()
+	return left*e.crossfade + fadingLeft*(1-e.crossfade), right*e.crossfade + fadingRight*(1-e.crossfade)
+}
+
+func (e *AudioEngine) renderFadingTracker() (float32, float32) {
+	if e.fadingTracker == nil || e.crossfade >= 1 {
+		e.fadingTracker = nil
+		return 0, 0
+	}
+	return e.fadingTracker.Render()
+}
+
+func (e *AudioEngine) signalFadingTracker(signals [musicSignalCount]float32) {
+	if e.fadingTracker == nil {
+		return
+	}
+	e.fadingTracker.SetSignals(signals)
 }
 
 func (e *AudioEngine) renderEffects() (float32, float32) {
