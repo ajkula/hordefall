@@ -12,8 +12,6 @@ const (
 	menuListBottomGap = 16
 )
 
-var trackStateLabels = [2]string{"OFF", "ON"}
-
 // ===== Public API =====
 
 func (g *Game) IsSongEnabled(index int) bool {
@@ -45,7 +43,7 @@ func (g *Game) buildPlaylistMenu() {
 }
 
 func (g *Game) trackLabel(index int) string {
-	return g.audio.SongTitle(index) + ": " + trackStateLabels[boolToIndex(g.IsSongEnabled(index))]
+	return g.audio.SongTitle(index) + ": " + onOffLabels[boolToIndex(g.IsSongEnabled(index))]
 }
 
 func (g *Game) toggleSong(index int) {

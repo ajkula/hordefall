@@ -105,6 +105,10 @@ func (b *SpriteBatch) Flush(screen *ebiten.Image) {
 	if len(b.indices) == 0 {
 		return
 	}
+	for index := range b.vertices {
+		b.vertices[index].DstX *= renderScale
+		b.vertices[index].DstY *= renderScale
+	}
 	screen.DrawTriangles32(b.vertices, b.indices, b.texture, &b.options)
 	b.vertices, b.indices = b.vertices[:0], b.indices[:0]
 }
@@ -180,6 +184,7 @@ func (r *Renderer) drawGround(g *Game, screen *ebiten.Image) {
 	options := &ebiten.DrawImageOptions{}
 	options.GeoM.Scale(groundCellSize, groundCellSize)
 	options.GeoM.Translate(float64(-r.CameraX), float64(-r.CameraY))
+	options.GeoM.Scale(float64(renderScale), float64(renderScale))
 	screen.DrawImage(r.groundImage, options)
 }
 

@@ -94,6 +94,7 @@ const (
 	StateRemap
 	StateOptions
 	StatePlaylist
+	StateGraphics
 	stateCount
 )
 
@@ -120,6 +121,7 @@ var stateHandlers = [stateCount]StateHandler{
 	StateRemap:    {(*Game).updateRemap, (*Game).drawRemap},
 	StateOptions:  {(*Game).updateOptions, (*Game).drawOptions},
 	StatePlaylist: {(*Game).updatePlaylist, (*Game).drawPlaylist},
+	StateGraphics: {(*Game).updateGraphics, (*Game).drawGraphics},
 }
 
 // ===== Public API =====
@@ -167,6 +169,7 @@ func (g *Game) Update() error {
 	g.clockSeconds += deltaSeconds
 	g.menuLockSeconds = max(0, g.menuLockSeconds-deltaSeconds)
 	stateHandlers[g.state].Update(g)
+	g.toggleFullscreenIfRequested()
 	g.updateAudio()
 	return nil
 }
@@ -180,7 +183,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return screenWidth, screenHeight
+	renderScale = resolutionChoices[g.settings.Resolution].Scale(outsideWidth, outsideHeight)
+	return int(screenWidth * renderScale), int(screenHeight * renderScale)
 }
 
 // ===== Internal =====

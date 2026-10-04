@@ -39,6 +39,8 @@ type Effects struct {
 	ShakeTrauma   float32
 	ShakeX        float32
 	ShakeY        float32
+	ShakeFactor   float32
+	Density       float32
 	Skids         SkidMarks
 	random        Random
 }
@@ -68,10 +70,12 @@ func NewEffects() *Effects {
 		VelocityX: make([]float32, maximumParticles), VelocityY: make([]float32, maximumParticles),
 		Life: make([]float32, maximumParticles), MaxLife: make([]float32, maximumParticles),
 		Size: make([]float32, maximumParticles), Color: make([][3]float32, maximumParticles),
-		Rings:  make([]Ring, 0, maximumRings),
-		Bolts:  make([]LightningBolt, 0, maximumBolts),
-		Popups: make([]Popup, 0, maximumPopups),
-		random: NewRandom(0xBEEF),
+		Rings:       make([]Ring, 0, maximumRings),
+		Bolts:       make([]LightningBolt, 0, maximumBolts),
+		Popups:      make([]Popup, 0, maximumPopups),
+		ShakeFactor: 1,
+		Density:     1,
+		random:      NewRandom(0xBEEF),
 	}
 }
 
@@ -145,7 +149,7 @@ func (e *Effects) Update(deltaSeconds float32) {
 	}
 	e.ShakeTrauma = max(0, e.ShakeTrauma-shakeDecayPerSecond*deltaSeconds)
 	e.Skids.Update(deltaSeconds)
-	magnitude := e.ShakeTrauma * e.ShakeTrauma * 14
+	magnitude := e.ShakeTrauma * e.ShakeTrauma * 14 * e.ShakeFactor
 	e.ShakeX, e.ShakeY = e.random.Between(-magnitude, magnitude), e.random.Between(-magnitude, magnitude)
 }
 
@@ -159,7 +163,8 @@ func (e *Effects) Clear() {
 // ===== Internal =====
 
 func (e *Effects) spawnParticle(x, y, velocityX, velocityY, life, size float32, color [3]float32) {
-	if e.ParticleCount >= maximumParticles {
+	isThinnedOut := e.random.Float() >= e.Density
+	if e.ParticleCount >= maximumParticles || isThinnedOut {
 		return
 	}
 	index := e.ParticleCount

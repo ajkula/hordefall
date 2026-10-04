@@ -9,8 +9,14 @@ import (
 // ===== Types =====
 
 type Settings struct {
-	IsMusicOn bool            `json:"musicOn"`
-	Tracks    map[string]bool `json:"tracks"`
+	IsMusicOn    bool             `json:"musicOn"`
+	Tracks       map[string]bool  `json:"tracks"`
+	IsFullscreen bool             `json:"fullscreen"`
+	IsVsyncOn    bool             `json:"vsync"`
+	Resolution   RenderResolution `json:"resolution"`
+	IsFPSShown   bool             `json:"showFps"`
+	ShakeLevel   int              `json:"screenShake"`
+	EffectsLevel int              `json:"effects"`
 }
 
 // ===== Constants =====
@@ -20,7 +26,11 @@ const settingsFileName = "settings.json"
 // ===== Public API =====
 
 func DefaultSettings() Settings {
-	return Settings{IsMusicOn: true, Tracks: map[string]bool{}}
+	return Settings{
+		IsMusicOn: true, Tracks: map[string]bool{},
+		IsVsyncOn: true, Resolution: Resolution720p, IsFPSShown: true,
+		ShakeLevel: defaultGraphicsLevel, EffectsLevel: defaultGraphicsLevel,
+	}
 }
 
 func LoadSettings() (Settings, error) {
@@ -35,6 +45,7 @@ func LoadSettings() (Settings, error) {
 	}
 	err = json.Unmarshal(content, &settings)
 	settings.Tracks = ensureTracks(settings.Tracks)
+	sanitizeGraphics(&settings)
 	return settings, err
 }
 
@@ -69,6 +80,7 @@ func (g *Game) loadSettings() {
 		g.settings = DefaultSettings()
 	}
 	g.audio.SetMusicOn(g.settings.IsMusicOn)
+	g.applyGraphicsSettings()
 	g.buildPlaylistMenu()
 }
 

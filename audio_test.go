@@ -409,3 +409,32 @@ func TestFirstSongIsPickedAmongEnabledTracks(t *testing.T) {
 	}
 	t.Logf("first songs picked over 40 launches: %v", picked)
 }
+
+func TestGraphicsSettingsDefaultsAndSanitizing(t *testing.T) {
+	defaults := DefaultSettings()
+	if !defaults.IsVsyncOn || !defaults.IsFPSShown || defaults.IsFullscreen || defaults.ShakeLevel != graphicsLevelCount-1 || defaults.EffectsLevel != graphicsLevelCount-1 {
+		t.Fatalf("unexpected graphics defaults: %+v", defaults)
+	}
+	broken := Settings{Resolution: 9, ShakeLevel: -4, EffectsLevel: 12}
+	sanitizeGraphics(&broken)
+	if broken.Resolution != ResolutionNative || broken.ShakeLevel != 0 || broken.EffectsLevel != graphicsLevelCount-1 {
+		t.Fatalf("out of range values were not clamped: %+v", broken)
+	}
+}
+
+func TestEffectsDensityAndShakeFollowSettings(t *testing.T) {
+	game := newHeadlessGame()
+	game.settings = DefaultSettings()
+	game.settings.EffectsLevel, game.settings.ShakeLevel = 0, 0
+	game.effects.ShakeFactor = shakeLevels[game.settings.ShakeLevel].Factor
+	game.effects.Density = effectsLevels[game.settings.EffectsLevel].Factor
+	game.effects.SpawnSparks(0, 0, 1000, [3]float32{1, 1, 1}, 100)
+	game.effects.AddShake(20)
+	game.effects.Update(deltaSeconds)
+	if game.effects.ParticleCount < 200 || game.effects.ParticleCount > 400 {
+		t.Fatalf("low effects kept %d of 1000 sparks, want about 300", game.effects.ParticleCount)
+	}
+	if game.effects.ShakeX != 0 || game.effects.ShakeY != 0 {
+		t.Fatalf("screen shake off still moved the camera: %.2f %.2f", game.effects.ShakeX, game.effects.ShakeY)
+	}
+}

@@ -61,6 +61,7 @@ const (
 	ActionDebug
 	ActionStart
 	ActionMute
+	ActionFullscreen
 )
 
 const (
@@ -88,6 +89,7 @@ var keyboardBindings = []KeyBinding{
 	{ebiten.KeyF2, ActionSelect},
 	{ebiten.KeyF1, ActionDebug},
 	{ebiten.KeyM, ActionMute},
+	{ebiten.KeyF11, ActionFullscreen},
 }
 
 var gamepadSystemBindings = []GamepadBinding{

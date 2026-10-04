@@ -7,7 +7,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
 )
@@ -19,6 +18,9 @@ type UI struct {
 	regular *text.GoTextFace
 	bold    *text.GoTextFace
 	title   *text.GoTextFace
+
+	scaledFaces map[*text.GoTextFace]*text.GoTextFace
+	faceScale   float32
 }
 
 // ===== Constants =====
@@ -69,6 +71,9 @@ func NewUI() *UI {
 		regular: &text.GoTextFace{Source: regularSource, Size: 18},
 		bold:    &text.GoTextFace{Source: boldSource, Size: 22},
 		title:   &text.GoTextFace{Source: boldSource, Size: 72},
+
+		scaledFaces: map[*text.GoTextFace]*text.GoTextFace{},
+		faceScale:   1,
 	}
 }
 
@@ -80,7 +85,8 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawText(screen, fmt.Sprintf("%.0f / %.0f", max(0, player.Health), player.MaximumHealth), u.small, 22, 20, textColor, 1, text.AlignStart)
 	u.drawText(screen, fmt.Sprintf("Lv %d", player.Level), u.bold, 290, 16, accentColor, 1, text.AlignStart)
 	u.drawText(screen, formatClock(g.elapsedSeconds), u.bold, screenWidth/2, 16, textColor, 1, text.AlignCenter)
-	status := fmt.Sprintf("Kills %d   Horde %d   FPS %.0f", g.kills, g.enemies.Count, ebiten.ActualFPS())
+	fpsTexts := [2]string{"", fmt.Sprintf("   FPS %.0f", ebiten.ActualFPS())}
+	status := fmt.Sprintf("Kills %d   Horde %d", g.kills, g.enemies.Count) + fpsTexts[boolToIndex(g.settings.IsFPSShown)]
 	u.drawText(screen, status, u.regular, screenWidth-16, 18, mutedTextColor, 1, text.AlignEnd)
 	highScoreText := "HI " + formatThousands(max(g.highScore.Score, g.CurrentScore()))
 	highScoreWidth, _ := text.Measure(highScoreText, u.bold, 0)
@@ -166,7 +172,7 @@ func (u *UI) DrawGameOver(g *Game, screen *ebiten.Image) {
 
 func (u *UI) DrawDebugOverlay(lines []string, screen *ebiten.Image) {
 	height := float32(len(lines))*20 + 16
-	vector.FillRect(screen, 12, screenHeight-height-12, 560, height, toColor(panelColor, 0.85), false)
+	fillRect(screen, 12, screenHeight-height-12, 560, height, toColor(panelColor, 0.85))
 	u.drawText(screen, strings.Join(lines, "\n"), u.small, 22, screenHeight-height-4, textColor, 1, text.AlignStart)
 }
 
@@ -181,12 +187,13 @@ func mustLoadFace(fontData []byte) *text.GoTextFaceSource {
 }
 
 func (u *UI) drawText(screen *ebiten.Image, message string, face *text.GoTextFace, x, y float32, tint [3]float32, alpha float32, align text.Align) {
+	scaledFace := u.scaledFace(face)
 	options := &text.DrawOptions{}
-	options.GeoM.Translate(float64(x), float64(y))
+	options.GeoM.Translate(float64(x*renderScale), float64(y*renderScale))
 	options.ColorScale.ScaleWithColor(toColor(tint, alpha))
 	options.PrimaryAlign = align
-	options.LineSpacing = face.Size * 1.45
-	text.Draw(screen, message, face, options)
+	options.LineSpacing = scaledFace.Size * 1.45
+	text.Draw(screen, message, scaledFace, options)
 }
 
 func (u *UI) drawMenuOptions(g *Game, screen *ebiten.Image, options []MenuOption, top float32) {
@@ -209,15 +216,15 @@ func (u *UI) drawBenchmarkPanel(g *Game, screen *ebiten.Image) {
 		fmt.Sprintf("Particles %d    Projectiles %d", g.effects.ParticleCount, g.projectiles.Count),
 		fmt.Sprintf("Ground cells %d    Reactions %d", g.ground.Columns*g.ground.Rows, sumReactions(g.reactionCounts)),
 	}
-	vector.FillRect(screen, 16, 470, 330, float32(len(lines))*24+16, toColor(panelColor, 0.75), false)
+	fillRect(screen, 16, 470, 330, float32(len(lines))*24+16, toColor(panelColor, 0.75))
 	u.drawText(screen, strings.Join(lines, "\n"), u.small, 28, 478, textColor, 0.95, text.AlignStart)
 }
 
 func (u *UI) drawDemoSequence(g *Game, screen *ebiten.Image) {
 	right := float32(screenWidth - 16)
 	u.drawText(screen, g.DemoSequenceName(), u.bold, right, 480, accentColor, 1, text.AlignEnd)
-	vector.FillRect(screen, right-260, 514, 260, 4, toColor(panelColor, 0.75), false)
-	vector.FillRect(screen, right-260, 514, 260*g.DemoSequenceProgress(), 4, toColor(accentColor, 1), false)
+	fillRect(screen, right-260, 514, 260, 4, toColor(panelColor, 0.75))
+	fillRect(screen, right-260, 514, 260*g.DemoSequenceProgress(), 4, toColor(accentColor, 1))
 	u.drawText(screen, g.DemoSequenceSubtitle(), u.small, right, 524, mutedTextColor, 1, text.AlignEnd)
 }
 
@@ -256,7 +263,7 @@ func (u *UI) drawWeaponList(g *Game, screen *ebiten.Image) {
 	for slot, weapon := range g.player.Weapons {
 		definition := &weaponTable[weapon.Kind]
 		y := float32(screenHeight - 30 - (len(g.player.Weapons)-1-slot)*24)
-		vector.FillRect(screen, 16, y+4, 12, 12, toColor(definition.Color, 1), false)
+		fillRect(screen, 16, y+4, 12, 12, toColor(definition.Color, 1))
 		u.drawText(screen, fmt.Sprintf("%s  %d", definition.Name, weapon.Level), u.small, 36, y, textColor, 0.9, text.AlignStart)
 	}
 }
@@ -285,20 +292,20 @@ func (u *UI) drawPopups(g *Game, screen *ebiten.Image) {
 
 func (u *UI) drawOfferCard(screen *ebiten.Image, offer UpgradeOffer, x, y float32, isSelected bool) {
 	borderWidth := 1 + 2*boolToFloat(isSelected)
-	vector.FillRect(screen, x, y, cardWidth, cardHeight, toColor(panelColor, 0.92), false)
-	vector.StrokeRect(screen, x, y, cardWidth, cardHeight, borderWidth, toColor(offer.Color(), 0.4+0.6*boolToFloat(isSelected)), false)
+	fillRect(screen, x, y, cardWidth, cardHeight, toColor(panelColor, 0.92))
+	strokeRect(screen, x, y, cardWidth, cardHeight, borderWidth, toColor(offer.Color(), 0.4+0.6*boolToFloat(isSelected)))
 	u.drawText(screen, offer.Title(), u.bold, x+cardWidth/2, y+18, offer.Color(), 1, text.AlignCenter)
 	u.drawText(screen, offer.Subtitle(), u.small, x+cardWidth/2, y+52, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, wrapText(offer.Description(), descriptionWrapLen), u.regular, x+cardWidth/2, y+86, textColor, 0.9, text.AlignCenter)
 }
 
 func drawBar(screen *ebiten.Image, x, y, width, height, fraction float32, tint [3]float32) {
-	vector.FillRect(screen, x, y, width, height, toColor(panelColor, 0.75), false)
-	vector.FillRect(screen, x, y, width*clamp(fraction, 0, 1), height, toColor(tint, 1), false)
+	fillRect(screen, x, y, width, height, toColor(panelColor, 0.75))
+	fillRect(screen, x, y, width*clamp(fraction, 0, 1), height, toColor(tint, 1))
 }
 
 func dimScreen(screen *ebiten.Image, alpha float32) {
-	vector.FillRect(screen, 0, 0, screenWidth, screenHeight, toColor(panelColor, alpha), false)
+	fillRect(screen, 0, 0, screenWidth, screenHeight, toColor(panelColor, alpha))
 }
 
 func formatClock(seconds float32) string {
