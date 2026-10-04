@@ -65,6 +65,8 @@ var passiveTable = [passiveKindCount]PassiveDefinition{
 	}},
 }
 
+var offerDrawers = [2]func(game *Game){(*Game).drawRandomOffers, (*Game).drawRotatingPassiveOffer}
+
 var upgradeAppliers = [upgradeKindCount]upgradeApplier{
 	UpgradeWeapon:  (*Game).applyWeaponUpgrade,
 	UpgradePassive: (*Game).applyPassiveUpgrade,
@@ -114,18 +116,42 @@ func (g *Game) buildUpgradeOffers() {
 	for kind := range weaponKindCount {
 		g.offerPool = g.appendWeaponOffer(g.offerPool, kind)
 	}
+	isOnlyPassivesLeft := len(g.offerPool) == 0
 	for kind := range passiveKindCount {
 		g.offerPool = g.appendPassiveOffer(g.offerPool, kind)
 	}
 	g.offers = g.offers[:0]
+	offerDrawers[boolToIndex(isOnlyPassivesLeft)](g)
+	g.offers = appendHealIfEmpty(g.offers)
+	g.selectedOffer = 0
+}
+
+func (g *Game) drawRandomOffers() {
 	for len(g.offers) < offersPerLevel && len(g.offerPool) > 0 {
 		pick := g.random.Below(len(g.offerPool))
 		g.offers = append(g.offers, g.offerPool[pick])
 		g.offerPool[pick] = g.offerPool[len(g.offerPool)-1]
 		g.offerPool = g.offerPool[:len(g.offerPool)-1]
 	}
-	g.offers = appendHealIfEmpty(g.offers)
-	g.selectedOffer = 0
+}
+
+func (g *Game) drawRotatingPassiveOffer() {
+	if len(g.offerPool) == 0 {
+		return
+	}
+	kind := g.nextRotatingPassive()
+	g.lastRotatedPassive = kind
+	g.offers = append(g.offers, UpgradeOffer{Kind: UpgradePassive, Passive: kind, NextLevel: g.player.PassiveLevels[kind] + 1})
+}
+
+func (g *Game) nextRotatingPassive() PassiveKind {
+	for step := PassiveKind(1); step <= passiveKindCount; step++ {
+		candidate := (g.lastRotatedPassive + step) % passiveKindCount
+		if g.player.PassiveLevels[candidate] < passiveTable[candidate].MaximumLevel {
+			return candidate
+		}
+	}
+	return g.lastRotatedPassive
 }
 
 func appendHealIfEmpty(offers []UpgradeOffer) []UpgradeOffer {

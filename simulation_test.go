@@ -424,3 +424,33 @@ func TestHordeDoesNotDetonateAtOnce(t *testing.T) {
 		t.Fatalf("only %d of %d horde members survived twelve seconds", game.hordeEvent.Remaining, total)
 	}
 }
+
+func TestOnlyPassivesLeftRotateThroughRemainingOnes(t *testing.T) {
+	game := newHeadlessGame()
+	equipEveryWeapon(game)
+	remaining := []PassiveKind{PassiveSwiftness, PassiveHaste, PassiveMight, PassiveReach}
+	for kind := range passiveKindCount {
+		game.player.PassiveLevels[kind] = passiveTable[kind].MaximumLevel
+	}
+	for _, kind := range remaining {
+		game.player.PassiveLevels[kind] = 0
+	}
+	game.player.PassiveLevels[PassiveMight] = passiveTable[PassiveMight].MaximumLevel - 2
+	expected := []PassiveKind{
+		PassiveSwiftness, PassiveHaste, PassiveMight, PassiveReach,
+		PassiveSwiftness, PassiveHaste, PassiveMight, PassiveReach,
+		PassiveSwiftness, PassiveHaste, PassiveReach,
+		PassiveSwiftness, PassiveHaste, PassiveReach,
+	}
+	for turn, want := range expected {
+		before := game.player.PassiveLevels
+		game.player.PendingLevelUps = 1
+		game.openLevelUpIfPending()
+		if game.state != StatePlaying || game.player.PendingLevelUps != 0 {
+			t.Fatalf("turn %d: the level up paused the game", turn)
+		}
+		if game.player.PassiveLevels[want] != before[want]+1 {
+			t.Fatalf("turn %d: expected %s, banner %q", turn, passiveTable[want].Name, game.levelUpBanner)
+		}
+	}
+}

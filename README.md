@@ -17,7 +17,7 @@ go run .
 - **High score** is saved to `%AppData%\hordefall\highscore.json` on game over, when leaving a run for the main menu, on Quit and when the window is closed.
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu.
 - **Game over**: Start / Enter to try again, Select / Backspace for the main menu.
-- **Level up**: when several upgrades are available the game pauses on a choice of cards; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption.
+- **Level up**: when several upgrades are available the game pauses on a choice of cards; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption. Once every weapon is maxed and only passives remain, each level up applies the next remaining passive in turn (a b c d a b c d, then a b d a b d once c is maxed), also without pausing.
 
 ## Music and sound
 

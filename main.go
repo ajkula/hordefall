@@ -46,6 +46,7 @@ type Game struct {
 	offers               []UpgradeOffer
 	offerPool            []UpgradeOffer
 	selectedOffer        int
+	lastRotatedPassive   PassiveKind
 	levelUpBanner        string
 	musicBanner          string
 	musicBannerSeconds   float32
@@ -200,6 +201,7 @@ func (g *Game) resetRun() {
 	g.hordeEvent = HordeEvent{}
 	g.isDemo, g.isNewHighScore = false, false
 	g.levelUpBannerSeconds = 0
+	g.lastRotatedPassive = passiveKindCount - 1
 }
 
 func (g *Game) isConfirming() bool {
