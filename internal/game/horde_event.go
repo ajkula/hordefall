@@ -1,0 +1,123 @@
+package game
+
+import (
+	"fmt"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+
+	"hordefall/internal/audio"
+)
+
+// ===== Types =====
+
+type HordeEvent struct {
+	IsActive  bool
+	Total     int
+	Remaining int
+}
+
+type bossEventStarter func(game *Game)
+
+// ===== Constants =====
+
+const (
+	spidersBeforeHorde    = 3
+	bossEventsPerHorde    = spidersBeforeHorde + 1
+	hordeEventBaseSize    = 500
+	hordeShellPeriod      = 8
+	hordePowerBonus       = 2
+	hordeClearBonusPerFoe = 20
+)
+
+var hordeCoreKinds = []EnemyKind{
+	EnemyBrute, EnemyFrostling, EnemyRunner, EnemyBrute,
+	EnemySwarmer, EnemyFrostling, EnemyBrute,
+}
+
+var hordeShellKinds = []EnemyKind{EnemyBloater, EnemyEmberling}
+
+var hordeLayerStrides = [2]int{1, hordeShellPeriod}
+
+var hordeLayerKinds = [2][]EnemyKind{hordeCoreKinds, hordeShellKinds}
+
+var hordeLayerDistances = [2][2]float32{{760, 1040}, {1090, 1180}}
+
+var bossEventStarters = [2]bossEventStarter{(*Game).spawnSpiderEvent, (*Game).startHordeEvent}
+
+var hordeBarColor = [3]float32{0.75, 0.35, 0.95}
+
+// ===== Internal =====
+
+func (g *Game) startBossEvent() {
+	g.bossEventCount++
+	isHorde := g.bossEventCount%bossEventsPerHorde == 0
+	bossEventStarters[boolToIndex(isHorde)](g)
+}
+
+func (g *Game) spawnSpiderEvent() {
+	g.spawnSpiderAt(g.random.Angle(), spiderSpawnDistance)
+}
+
+func (g *Game) startHordeEvent() {
+	size := hordeEventBaseSize * (g.bossEventCount / bossEventsPerHorde)
+	spawnedCount := 0
+	for spawned := range size {
+		spawnedCount += boolToIndex(g.spawnHordeEnemy(spawned))
+	}
+	g.hordeEvent = HordeEvent{IsActive: spawnedCount > 0, Total: spawnedCount, Remaining: spawnedCount}
+	g.effects.AddPopup(g.player.X, g.player.Y-80, fmt.Sprintf("THE HORDE APPROACHES  x%d", spawnedCount), hordeBarColor)
+	g.effects.AddShake(8)
+	g.playSound(audio.SoundStomp)
+}
+
+func (g *Game) spawnHordeEnemy(spawned int) bool {
+	layer := boolToIndex(spawned%hordeShellPeriod == hordeShellPeriod-1)
+	kinds := hordeLayerKinds[layer]
+	kind := kinds[spawned/hordeLayerStrides[layer]%len(kinds)]
+	angle := g.random.Angle()
+	distance := g.random.Between(hordeLayerDistances[layer][0], hordeLayerDistances[layer][1])
+	id := g.spawnEnemyAt(kind, g.player.X+cosine(angle)*distance, g.player.Y+sine(angle)*distance)
+	if id == 0 {
+		return false
+	}
+	g.empowerHordeMember(g.enemies.Count - 1)
+	return true
+}
+
+func (g *Game) empowerHordeMember(index int) {
+	enemies := g.enemies
+	enemies.IsHordeEvent[index] = true
+	enemies.Health[index] *= hordePowerBonus
+	enemies.Power[index] *= hordePowerBonus
+}
+
+func (g *Game) recordHordeCasualtyIf(isHordeEnemy bool) {
+	if !isHordeEnemy || !g.hordeEvent.IsActive {
+		return
+	}
+	g.hordeEvent.Remaining--
+	if g.hordeEvent.Remaining > 0 {
+		return
+	}
+	g.finishHordeEvent()
+}
+
+func (g *Game) finishHordeEvent() {
+	g.hordeEvent.IsActive = false
+	g.killScore += g.hordeEvent.Total * hordeClearBonusPerFoe
+	g.effects.AddPopup(g.player.X, g.player.Y-80, "HORDE VANQUISHED", accentColor)
+	g.effects.AddShake(6)
+	g.playSound(audio.SoundLevelUp)
+}
+
+func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {
+	if !g.hordeEvent.IsActive {
+		return
+	}
+	y := float32(spiderBarTop + len(g.spiders)*(spiderBarHeight+spiderBarGap))
+	fraction := float32(g.hordeEvent.Remaining) / float32(max(1, g.hordeEvent.Total))
+	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, fraction, hordeBarColor)
+	label := fmt.Sprintf("HORDE  %d / %d", g.hordeEvent.Remaining, g.hordeEvent.Total)
+	u.drawText(screen, label, u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
+}

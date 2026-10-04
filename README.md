@@ -22,7 +22,7 @@ go run .
 ## Music and sound
 
 ### Adaptive tracker music
-The soundtrack is a small Amiga-style tracker running live: `music/theme.trk` is a plain-text song with 16 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
+The soundtrack is a small Amiga-style tracker running live: `internal/audio/music/theme.trk` is a plain-text song with 16 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
 
 The music is procedural in the sense that it follows the game. Every channel always plays in time, but is only heard while its game signal is above a threshold, with a smooth fade:
 
@@ -44,7 +44,7 @@ Channels 11 to 16 are written by the arranger (`arranger.go`) for every song, th
 The tempo also rises with intensity (`tempoboost`). M mutes the music.
 
 ### Composing
-Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is up to 16 cells separated by `|` (missing channels are empty), each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (`stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test -run Theme` checks the song.
+Edit `internal/audio/music/theme.trk` and rebuild: it is embedded in the executable. A row is up to 16 cells separated by `|` (missing channels are empty), each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (`stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test ./internal/audio -run Theme` checks the song.
 
 ### Song rotation and procedural composer
 The first song is picked at random among enabled tracks at launch. Then the next enabled track plays when a run starts, every 5 minutes during a run, and on the main menu after every full cycle of the attract-mode sequences, with a 3-second crossfade and a small banner: the hand-written theme first, then five songs composed procedurally at each launch from the styles in `composer.go`:
@@ -62,7 +62,7 @@ A style sets the scale, tonic, chord progression, tempo, drum, bass, chord and m
 Preview all songs as 30-second WAV files:
 
 ```powershell
-$env:HORDEFALL_WAV_DIR = "./music/previews"; go test -run ExportSongPreviews
+$env:HORDEFALL_WAV_DIR = "./music/previews"; go test ./internal/audio -run ExportSongPreviews
 ```
 
 ### Procedural sound effects
@@ -153,50 +153,81 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 
 ## Architecture
 
-| File             | Role                                                       |
-|------------------|------------------------------------------------------------|
-| `main.go`        | Game loop, state machine table                             |
-| `status.go`      | Statuses, elements, reaction table                         |
-| `combat.go`      | Hits, reactions, area bursts, deaths                       |
-| `horde.go`       | Enemy movement, separation, contagion, spawn director      |
-| `enemies.go`     | Enemy table and struct-of-arrays store                     |
-| `weapons.go`     | Weapon table and behaviors                                 |
-| `projectiles.go` | Bolts and lobbed flasks                                    |
-| `ground.go`      | Living terrain cellular automaton                          |
-| `upgrades.go`    | Passives and level-up offers                               |
-| `player.go`      | Player movement, dash, damage, experience                  |
-| `gems.go`        | Experience gems                                            |
-| `effects.go`     | Particles, rings, lightning, popups, screen shake          |
-| `spatial.go`     | Uniform grid with counting sort for neighbor queries       |
-| `render.go`      | Batched circle sprites with `DrawTriangles32`, additive glow |
-| `tachikoma.go`   | Player rig: wheel springs, abdomen sway, gaze, recoil      |
-| `tachikoma_render.go` | Player drawing                                        |
-| `mines.go`       | Static mines: drop, arming, trigger, rendering             |
-| `skids.go`       | Wheel skid trails                                          |
-| `horde_event.go` | Horde boss event: spawning, tracking, bar                  |
-| `arranger.go`    | Arranges channels 11-16 from each pattern's chords          |
-| `stereo_room.go` | Stereo room on the music bus: crossed delays, no bass       |
-| `audio_menu.go`  | Audio submenu: music toggle, volume gauges, playlist entry |
-| `graphics.go`    | Graphics options, render scale, scaled text and rectangles |
-| `postfx.go`      | Kage shaders: bloom (bright pass, blur) and CRT filter     |
-| `spider.go`      | Spider tank boss: spawn, procedural legs, gait, stomps     |
-| `spider_laser.go` | Spider tank beam: charge, lock, fire state machine         |
-| `spider_charge.go` | Beam charge visuals: drawn-in motes, sphere, discharge     |
-| `spider_render.go` | Spider tank drawing                                      |
-| `ui.go`          | HUD, menus, overlays                                       |
-| `input.go`       | Keyboard and gamepad bindings, raw button capture          |
-| `bindings.go`    | Button mapping persistence                                 |
-| `menus.go`       | Main menu, pause, game over and remap states               |
-| `score.go`       | Score, high score persistence                              |
-| `settings.go`    | Persisted settings (music on/off, playlist)                |
-| `playlist.go`    | Playlist menu and enabled tracks                           |
-| `demo.go`        | Attract-mode benchmark sequences                           |
-| `synth.go`       | Oscillators, envelopes, filter                             |
-| `tracker.go`     | Tracker song parser and adaptive sequencer                 |
-| `composer.go`    | Procedural song composer and music styles                  |
-| `audio.go`       | Audio engine and mixer                                     |
-| `sounds.go`      | Procedural sound effect table                              |
-| `game_audio.go`  | Music signals and sound triggers                           |
+```
+main.go                   entry point
+internal/
+  game/                   the game: state machine, simulation, entities, bosses, UI, rendering
+  audio/                  synth, tracker, composer, arranger, sound effects, music/theme.trk
+  config/                 settings, controls and high score files
+  spatial/                neighbor-query grid
+  rng/                    random generator
+```
+
+Go builds one package per folder and a type's methods must live in its own package. The `Game` type and its methods therefore stay together in `internal/game`; subsystems with a clean boundary live in their own packages and expose a small API (`audio.Engine`, `config.Load` / `config.Save`, `spatial.Grid`, `rng.Random`).
+
+### internal/game
+
+| File | Role |
+|------|------|
+| `audio_menu.go` | Audio submenu: music toggle, volume gauges, playlist entry |
+| `bindings.go` | Button mapping persistence |
+| `combat.go` | Hits, reactions, area bursts, deaths |
+| `demo.go` | Attract-mode benchmark sequences |
+| `effects.go` | Particles, rings, lightning, popups, screen shake |
+| `enemies.go` | Enemy table and struct-of-arrays store |
+| `game.go` | Game loop, state machine table |
+| `game_audio.go` | Music signals and sound triggers |
+| `gems.go` | Experience gems |
+| `graphics.go` | Graphics options, render scale, scaled text and rectangles |
+| `ground.go` | Living terrain cellular automaton |
+| `horde.go` | Enemy movement, separation, contagion, spawn director |
+| `horde_event.go` | Horde boss event: spawning, tracking, bar |
+| `input.go` | Keyboard and gamepad bindings, raw button capture |
+| `mathutil.go` | Small math helpers |
+| `menus.go` | Main menu, pause, game over and remap states |
+| `menus_test.go` | Menus, settings, playlist and song rotation tests |
+| `mines.go` | Static mines: drop, arming, trigger, rendering |
+| `player.go` | Player movement, dash, damage, experience |
+| `playlist.go` | Playlist menu and enabled tracks |
+| `postfx.go` | Kage shaders: bloom (bright pass, blur) and CRT filter |
+| `projectiles.go` | Bolts and lobbed flasks |
+| `render.go` | Batched circle sprites with `DrawTriangles32`, additive glow |
+| `score.go` | Score, high score persistence |
+| `settings.go` | Persisted settings (music on/off, playlist) |
+| `simulation_test.go` | Simulation, balance, bosses and demo tests |
+| `skids.go` | Wheel skid trails |
+| `spider.go` | Spider tank boss: spawn, procedural legs, gait, stomps |
+| `spider_charge.go` | Beam charge visuals: drawn-in motes, sphere, discharge |
+| `spider_laser.go` | Spider tank beam: charge, lock, fire state machine |
+| `spider_render.go` | Spider tank drawing |
+| `status.go` | Statuses, elements, reaction table |
+| `tachikoma.go` | Player rig: wheel springs, abdomen sway, gaze, recoil |
+| `tachikoma_render.go` | Player drawing |
+| `ui.go` | HUD, menus, overlays |
+| `upgrades.go` | Passives and level-up offers |
+| `weapons.go` | Weapon table and behaviors |
+
+### internal/audio
+
+| File | Role |
+|------|------|
+| `arranger.go` | Arranges channels 11-16 from each pattern's chords |
+| `audio_test.go` | Tracker, composer, arranger, stereo and sound effect tests |
+| `composer.go` | Procedural song composer and music styles |
+| `engine.go` | Audio engine and mixer |
+| `mathutil.go` | Small math helpers |
+| `sounds.go` | Procedural sound effect table |
+| `stereo_room.go` | Stereo room on the music bus: crossed delays, no bass |
+| `synth.go` | Oscillators, envelopes, filter |
+| `tracker.go` | Tracker song parser and adaptive sequencer |
+
+### Other packages
+
+| Package | File | Role |
+|---------|------|------|
+| `config` | `store.go` | JSON files in %AppData%\hordefall: path, load, save |
+| `spatial` | `grid.go` | Uniform grid with counting sort for neighbor queries |
+| `rng` | `random.go` | Xorshift random generator |
 
 Entities are stored as struct of arrays with swap-remove, the spatial grid is rebuilt every tick with a counting sort, and every entity type is drawn in a single batched draw call.
 
@@ -210,8 +241,9 @@ Entities are stored as struct of arrays with swap-remove, the spatial grid is re
 ## Tests and benchmarks
 
 ```sh
-go test -run Long -v
-go test -bench .
+go test ./...
+go test ./internal/game -run Long -v
+go test ./internal/game -bench .
 ```
 
 The long test runs 8 simulated minutes with every weapon maxed. `BenchmarkSimulateTenThousandEnemies` measures a tick with 10 000 live enemies packed around the player (about 5 ms on an i5-6200U).
