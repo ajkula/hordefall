@@ -499,3 +499,40 @@ func TestEffectsVolumeSliderScalesSoundEffects(t *testing.T) {
 		t.Fatalf("0%% effects should be silent without touching music: effects %.3f, music step %d", game.audio.EffectsVolume, game.settings.MusicVolumeStep)
 	}
 }
+
+func TestMusicIsBalancedAndWideInStereo(t *testing.T) {
+	theme, err := ParseSong(themeSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	songs := []*Song{theme}
+	for index := range musicStyles {
+		songs = append(songs, ComposeSong(&musicStyles[index], theme, uint32(index+1)*7919))
+	}
+	for _, song := range songs {
+		tracker := NewTracker(song)
+		tracker.SetSignals([musicSignalCount]float32{1, 1, maximumSpidersAlive, 1, 1})
+		room := &StereoRoom{}
+		lowLeft, lowRight := float32(0), float32(0)
+		energyLeft, energyRight, energySide, energyMid := float64(0), float64(0), float64(0), float64(0)
+		bassLeft, bassRight := float64(0), float64(0)
+		for range 12 * sampleRate {
+			left, right := room.Process(tracker.Render())
+			lowLeft += (left - lowLeft) * 0.02
+			lowRight += (right - lowRight) * 0.02
+			energyLeft += float64(left * left)
+			energyRight += float64(right * right)
+			bassLeft += float64(lowLeft * lowLeft)
+			bassRight += float64(lowRight * lowRight)
+			energyMid += float64((left + right) * (left + right))
+			energySide += float64((left - right) * (left - right))
+		}
+		balance := energyLeft / energyRight
+		bassBalance := bassLeft / bassRight
+		width := energySide / energyMid
+		t.Logf("%-18s balance L/R %.2f, bass L/R %.2f, side/mid %.3f", song.Title, balance, bassBalance, width)
+		if balance < 0.8 || balance > 1.25 || bassBalance < 0.9 || bassBalance > 1.1 || width < 0.01 {
+			t.Errorf("%s is lopsided or flat: balance %.2f, bass %.2f, width %.3f", song.Title, balance, bassBalance, width)
+		}
+	}
+}

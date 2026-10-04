@@ -123,7 +123,7 @@ var instrumentProperties = map[string]func(settings *VoiceSettings, value float3
 // ===== Public API =====
 
 func ParseSong(source string) (*Song, error) {
-	song := &Song{Tempo: 125, Speed: 6, Patterns: map[int]*Pattern{}, ChannelPans: [trackerChannels]float32{0.3, 0.7, 0.7, 0.3, 0.4, 0.35, 0.65, 0.5, 0.7, 0.3}}
+	song := &Song{Tempo: 125, Speed: 6, Patterns: map[int]*Pattern{}, ChannelPans: [trackerChannels]float32{0.5, 0.5, 0.68, 0.34, 0.63, 0.5, 0.5, 0.5, 0.3, 0.7}}
 	parser := &songParser{}
 	for lineNumber, line := range strings.Split(source, "\n") {
 		if err := parser.parseLine(song, strings.TrimSpace(line)); err != nil {

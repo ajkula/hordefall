@@ -37,7 +37,7 @@ The music is procedural in the sense that it follows the game. Every channel alw
 The tempo also rises with intensity (`tempoboost`). M mutes the music.
 
 ### Composing
-Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is 10 cells separated by `|`, each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Parse errors give the line and channel, and `go test -run Theme` checks the song.
+Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is 10 cells separated by `|`, each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (`stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test -run Theme` checks the song.
 
 ### Song rotation and procedural composer
 The first song is picked at random among enabled tracks at launch. Then the next enabled track plays when a run starts, every 5 minutes during a run, and on the main menu after every full cycle of the attract-mode sequences, with a 3-second crossfade and a small banner: the hand-written theme first, then five songs composed procedurally at each launch from the styles in `composer.go`:
@@ -163,6 +163,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `tachikoma_render.go` | Player drawing                                        |
 | `skids.go`       | Wheel skid trails                                          |
 | `horde_event.go` | Horde boss event: spawning, tracking, bar                  |
+| `stereo_room.go` | Stereo room on the music bus: crossed delays, no bass       |
 | `audio_menu.go`  | Audio submenu: music toggle, volume gauges, playlist entry |
 | `graphics.go`    | Graphics options, render scale, scaled text and rectangles |
 | `postfx.go`      | Kage shaders: bloom (bright pass, blur) and CRT filter     |

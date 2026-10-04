@@ -45,6 +45,8 @@ type Voice struct {
 	DetuneRatio  float32
 	NoiseValue   float32
 	FilterState  float32
+	GainLeft     float32
+	GainRight    float32
 	random       Random
 }
 
@@ -64,6 +66,7 @@ const (
 const (
 	sampleRate          = 44100
 	sampleSeconds       = 1.0 / sampleRate
+	panLawCenterGain    = 0.70710678
 	minimumEnvelopeTime = 0.0005
 )
 
@@ -92,6 +95,9 @@ func (v *Voice) Start(settings VoiceSettings, seed uint32) {
 		random:       NewRandom(seed),
 	}
 	v.Settings.Duty = settings.Duty + 0.5*boolToFloat(settings.Duty == 0)
+	panAngle := float64(clamp(settings.Pan, 0, 1)) * math.Pi / 2
+	v.GainLeft = float32(math.Cos(panAngle)) * panLawCenterGain
+	v.GainRight = float32(math.Sin(panAngle)) * panLawCenterGain
 }
 
 func (v *Voice) Release() {
@@ -116,7 +122,7 @@ func (v *Voice) Render() (float32, float32) {
 	value := driven * amplitude * v.Settings.Volume
 	v.Age += sampleSeconds
 	v.Frequency *= v.SlideFactor
-	return value * (1 - v.Settings.Pan), value * v.Settings.Pan
+	return value * v.GainLeft, value * v.GainRight
 }
 
 func NoteFrequency(note int) float32 {

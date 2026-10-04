@@ -19,7 +19,7 @@ title Hordefall Theme
 tempo 125
 tempoboost 18
 speed 6
-pan 0.3 0.7 0.7 0.3 0.4 0.35 0.65 0.5 0.7 0.3
+pan 0.5 0.5 0.68 0.34 0.63 0.5 0.5 0.5 0.3 0.7
 
 #          id name     waveform  properties
 instrument 1  kick     sine      attack 0.001 decay 0.16 volume 1.0 slide -7

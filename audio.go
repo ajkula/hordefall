@@ -27,6 +27,7 @@ type AudioEngine struct {
 	crossfade       float32
 	songs           []*Song
 	songIndex       int
+	room            StereoRoom
 	random          Random
 	MusicVolume     float32
 	EffectsVolume   float32
@@ -239,7 +240,7 @@ func (e *AudioEngine) renderMusic() (float32, float32) {
 	e.crossfade = min(1, e.crossfade+1/(songCrossfadeSeconds*sampleRate))
 	left, right := e.tracker.Render()
 	fadingLeft, fadingRight := e.renderFadingTracker()
-	return left*e.crossfade + fadingLeft*(1-e.crossfade), right*e.crossfade + fadingRight*(1-e.crossfade)
+	return e.room.Process(left*e.crossfade+fadingLeft*(1-e.crossfade), right*e.crossfade+fadingRight*(1-e.crossfade))
 }
 
 func (e *AudioEngine) renderFadingTracker() (float32, float32) {
