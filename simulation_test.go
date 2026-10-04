@@ -473,3 +473,24 @@ func TestOnlyPassivesLeftRotateThroughRemainingOnes(t *testing.T) {
 		}
 	}
 }
+
+func TestDemoClipsNeverRunEmpty(t *testing.T) {
+	const tolerableEmptySeconds = 0.5
+	game := newHeadlessGame()
+	game.startDemo()
+	for range 2 * len(demoSequences) * 2 {
+		sequence := game.currentDemo
+		emptySeconds := float32(0)
+		for range demoSequenceSeconds*ticksPerSecond - 2 {
+			game.updateDemo()
+			emptySeconds += deltaSeconds * boolToFloat(game.enemies.Count*10 < sequence.EnemyCount)
+		}
+		t.Logf("%-22s %-50s spawned %4d, nearly empty for %.2fs", sequence.Name, sequence.Subtitle, sequence.EnemyCount, emptySeconds)
+		if emptySeconds > tolerableEmptySeconds {
+			t.Errorf("%s %s stayed nearly empty for %.2fs", sequence.Name, sequence.Subtitle, emptySeconds)
+		}
+		for game.currentDemo.Name == sequence.Name && game.currentDemo.Subtitle == sequence.Subtitle {
+			game.updateDemo()
+		}
+	}
+}
