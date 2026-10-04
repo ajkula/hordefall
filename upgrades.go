@@ -59,7 +59,7 @@ var passiveTable = [passiveKindCount]PassiveDefinition{
 	PassiveMagnetism: {"Magnetism", "+40% pickup radius.", 5, func(player *Player) { player.MagnetRadius *= 1.4 }},
 	PassiveHaste:     {"Haste", "-8% weapon cooldowns.", 5, func(player *Player) { player.CooldownMultiplier *= 0.92 }},
 	PassiveMight:     {"Might", "+12% damage, reactions included.", 5, func(player *Player) { player.DamageMultiplier *= 1.12 }},
-	PassiveReach:     {"Reach", "+12% area for novas, rain, flasks, blades.", 5, func(player *Player) { player.AreaMultiplier *= 1.12 }},
+	PassiveReach:     {"Reach", "+12% area for novas, rain, flasks, blades, slams, mines.", 5, func(player *Player) { player.AreaMultiplier *= 1.12 }},
 	PassiveLifesteal: {"Lifesteal", "Each kill restores 1% of max health. One time only.", 1, func(player *Player) {
 		player.KillHealFraction = lifestealKillHealFraction
 	}},

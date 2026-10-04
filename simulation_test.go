@@ -494,3 +494,60 @@ func TestDemoClipsNeverRunEmpty(t *testing.T) {
 		}
 	}
 }
+
+func TestSeismicHammerShattersEveryFrozenFoeInReach(t *testing.T) {
+	game := newHeadlessGame()
+	for slot := range 6 {
+		angle := float32(slot)
+		game.enemies.Spawn(EnemyBrute, game.player.X+cosine(angle)*80, game.player.Y+sine(angle)*80, 1)
+		game.enemies.ApplyStatus(game.enemies.Count-1, StatusFrozen)
+	}
+	game.grid.Rebuild(game.enemies.PositionX, game.enemies.PositionY, game.enemies.Count)
+	weapon := WeaponState{Kind: WeaponSeismicHammer, Level: 1}
+	game.slamSeismicHammer(&weapon, &weaponTable[WeaponSeismicHammer])
+	if game.reactionCounts[ReactionShatter] != 6 {
+		t.Fatalf("hammer shattered %d of 6 frozen brutes", game.reactionCounts[ReactionShatter])
+	}
+}
+
+func TestStaticMineArmsThenShocksWhoStepsNear(t *testing.T) {
+	game := newHeadlessGame()
+	weapon := WeaponState{Kind: WeaponStaticMines, Level: 1}
+	game.layStaticMines(&weapon, &weaponTable[WeaponStaticMines])
+	mine := game.mines[0]
+	game.enemies.Spawn(EnemyBrute, mine.X+10, mine.Y, 1)
+	game.grid.Rebuild(game.enemies.PositionX, game.enemies.PositionY, game.enemies.Count)
+	game.updateMines(mineArmSeconds / 2)
+	if len(game.mines) != 1 {
+		t.Fatalf("mine went off before arming")
+	}
+	game.updateMines(mineArmSeconds)
+	if len(game.mines) != 0 || game.enemies.Status[0]&StatusShocked == 0 {
+		t.Fatalf("armed mine did not shock the brute: mines %d, status %b", len(game.mines), game.enemies.Status[0])
+	}
+}
+
+func TestShockedFoesReactToFireBladesAndRain(t *testing.T) {
+	expectations := []struct {
+		element  Element
+		reaction ReactionKind
+	}{
+		{ElementFire, ReactionPlasma},
+		{ElementPhysical, ReactionOverload},
+		{ElementWater, ReactionConduction},
+	}
+	for _, expectation := range expectations {
+		game := newHeadlessGame()
+		game.enemies.Spawn(EnemyBrute, game.player.X+200, game.player.Y, 1)
+		game.enemies.Spawn(EnemyBrute, game.player.X+240, game.player.Y, 1)
+		game.enemies.ApplyStatus(0, StatusShocked)
+		game.enemies.ApplyStatus(1, StatusShocked|StatusWet*StatusFlags(boolToIndex(expectation.element == ElementWater)))
+		game.grid.Rebuild(game.enemies.PositionX, game.enemies.PositionY, game.enemies.Count)
+		game.HitEnemy(0, 5, expectation.element)
+		game.processBursts()
+		if game.reactionCounts[expectation.reaction] == 0 {
+			t.Fatalf("element %d on a shocked foe did not trigger %s", expectation.element, reactionTable[expectation.reaction].Name)
+		}
+		t.Logf("%s chained: %v", reactionTable[expectation.reaction].Name, game.reactionCounts)
+	}
+}

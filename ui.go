@@ -58,15 +58,6 @@ var (
 	highScoreColor = [3]float32{0.8, 0.42, 0.08}
 )
 
-var reactionHints = []string{
-	"Fire + Oiled = INFERNO (chains, ignites grass)",
-	"Shock + Wet = ELECTROCUTE (arcs through puddles)",
-	"Frost + Wet or Chilled = FREEZE",
-	"Blades or Shock + Frozen = SHATTER (x3 damage)",
-	"Fire + Chilled, Frost + Burning = STEAM",
-	"Burning enemies set grass ablaze. Fire hurts you too.",
-}
-
 // ===== Public API =====
 
 func NewUI() *UI {

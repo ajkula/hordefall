@@ -73,6 +73,9 @@ const (
 	ReactionShatter
 	ReactionElectrocute
 	ReactionExtinguish
+	ReactionPlasma
+	ReactionOverload
+	ReactionConduction
 	reactionKindCount
 )
 
@@ -82,7 +85,7 @@ var statusTable = [statusCount]StatusDefinition{
 	{Name: "Frozen", DurationSeconds: 1.8, Tint: [3]float32{0.85, 0.95, 1}, TintStrength: 0.85, SpeedFactor: 0},
 	{Name: "Oiled", DurationSeconds: 6, Tint: [3]float32{0.12, 0.08, 0.05}, TintStrength: 0.55, SpeedFactor: 0.8},
 	{Name: "Wet", DurationSeconds: 5, Tint: [3]float32{0.2, 0.45, 1}, TintStrength: 0.45, SpeedFactor: 0.9},
-	{Name: "Shocked", DurationSeconds: 0.6, Tint: [3]float32{1, 1, 0.4}, TintStrength: 0.7, SpeedFactor: 0.3},
+	{Name: "Shocked", DurationSeconds: 1.5, Tint: [3]float32{1, 1, 0.4}, TintStrength: 0.7, SpeedFactor: 0.3},
 }
 
 var elementStatus = [elementCount]StatusFlags{
@@ -125,6 +128,22 @@ var reactionTable = [reactionKindCount]ReactionDefinition{
 		Name: "HISS", Color: [3]float32{0.7, 0.75, 0.8}, DamageMultiplier: 0.5,
 		RemovesStatus: StatusBurning | StatusWet, SuppressedStatus: StatusBurning | StatusWet, Sound: SoundHiss,
 	},
+	ReactionPlasma: {
+		Name: "PLASMA", Color: [3]float32{1, 0.4, 0.9}, DamageMultiplier: 1.8,
+		RemovesStatus: StatusShocked, AddsStatus: StatusBurning,
+		AreaRadius: 70, AreaDamage: 18, AreaElement: ElementFire, AreaRequires: StatusShocked,
+		GroundStimulus: StimulusHeat, GroundRadiusCells: 1, ShakeStrength: 3, Sound: SoundExplosion,
+	},
+	ReactionOverload: {
+		Name: "OVERLOAD", Color: [3]float32{1, 0.92, 0.35}, DamageMultiplier: 2.5,
+		RemovesStatus: StatusShocked,
+		AreaRadius:    45, AreaDamage: 8, AreaElement: ElementPhysical, AreaRequires: StatusShocked, ShakeStrength: 2, Sound: SoundZap,
+	},
+	ReactionConduction: {
+		Name: "CONDUCTION", Color: [3]float32{0.45, 0.85, 1}, DamageMultiplier: 1,
+		RemovesStatus: StatusShocked, SuppressedStatus: StatusWet,
+		AreaRadius: 130, AreaDamage: 10, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 1.5, Sound: SoundElectrocute,
+	},
 }
 
 var reactionRules = []ReactionRule{
@@ -141,6 +160,9 @@ var reactionRules = []ReactionRule{
 	{ElementShock, StatusWet, ReactionElectrocute},
 	{ElementShock, StatusFrozen, ReactionShatter},
 	{ElementPhysical, StatusFrozen, ReactionShatter},
+	{ElementFire, StatusShocked, ReactionPlasma},
+	{ElementPhysical, StatusShocked, ReactionOverload},
+	{ElementWater, StatusShocked, ReactionConduction},
 }
 
 var statusPriority = []StatusFlags{StatusFrozen, StatusOiled, StatusWet, StatusBurning, StatusChilled, StatusShocked}

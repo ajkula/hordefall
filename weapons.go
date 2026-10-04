@@ -38,6 +38,8 @@ const (
 	WeaponOilFlask
 	WeaponDownpour
 	WeaponOrbitBlades
+	WeaponSeismicHammer
+	WeaponStaticMines
 	weaponKindCount
 )
 
@@ -58,7 +60,13 @@ const (
 	bladeHitCooldown    = 0.4
 	bladeKnockback      = 260
 	bladeSpinSpeed      = 3.4
+	hammerShake         = 3
+	hammerDustSparks    = 30
+	hammerInnerRing     = 0.55
+	hammerQuakeReach    = 2.6
 )
+
+var hammerDustColor = [3]float32{0.75, 0.68, 0.55}
 
 var weaponTable = [weaponKindCount]WeaponDefinition{
 	WeaponEmberBolt: {
@@ -68,43 +76,57 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 		BaseCount: 1, LevelsPerCount: 2,
 	},
 	WeaponFrostNova: {
-		Name: "Frost Nova", Description: "Pulses cold around you. Chills, freezes the wet, ices water.",
+		Name: "Frost Nova", Description: "Pulses cold around you.",
 		Element: ElementFrost, FireSound: SoundNova, Color: [3]float32{0.6, 0.85, 1},
 		BaseCooldown: 2.6, CooldownPerLevel: 0.06, BaseDamage: 5, DamagePerLevel: 3,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 95, RadiusPerLevel: 14,
 	},
 	WeaponArcLightning: {
-		Name: "Arc Lightning", Description: "Strikes the enemy you aim at, then chains. Electrocutes the wet.",
+		Name: "Arc Lightning", Description: "Strikes the enemy you aim at, then chains.",
 		Element: ElementShock, IsAimed: true, FireSound: SoundZap, Color: [3]float32{1, 1, 0.5},
 		BaseCooldown: 0.9, CooldownPerLevel: 0.06, BaseDamage: 12, DamagePerLevel: 4,
 		BaseCount: 3, LevelsPerCount: 1,
 	},
 	WeaponOilFlask: {
-		Name: "Oil Flask", Description: "Lobs oil where you aim. Soaks enemies and ground. Fire does the rest.",
+		Name: "Oil Flask", Description: "Lobs oil where you aim.",
 		Element: ElementOil, IsAimed: true, Color: [3]float32{0.35, 0.25, 0.4},
 		BaseCooldown: 3.2, CooldownPerLevel: 0.07, BaseDamage: 2, DamagePerLevel: 1,
 		BaseCount: 1, LevelsPerCount: 3, BaseRadius: 55, RadiusPerLevel: 8,
 	},
 	WeaponDownpour: {
-		Name: "Downpour", Description: "Calls rain where you aim. Wets enemies, douses flames.",
+		Name: "Downpour", Description: "Calls rain where you aim.",
 		Element: ElementWater, IsAimed: true, FireSound: SoundRain, Color: [3]float32{0.35, 0.6, 1},
 		BaseCooldown: 3.6, CooldownPerLevel: 0.07, BaseDamage: 3, DamagePerLevel: 1.5,
 		BaseCount: 1, LevelsPerCount: 3, BaseRadius: 85, RadiusPerLevel: 12,
 	},
 	WeaponOrbitBlades: {
-		Name: "Orbit Blades", Description: "Spinning blades. Shatter frozen enemies.",
+		Name: "Orbit Blades", Description: "Spinning blades.",
 		Element: ElementPhysical, Color: [3]float32{0.9, 0.9, 0.95},
 		BaseDamage: 9, DamagePerLevel: 4, BaseCount: 2, LevelsPerCount: 2, BaseRadius: 72, RadiusPerLevel: 6,
+	},
+	WeaponSeismicHammer: {
+		Name: "Seismic Hammer", Description: "Slams the ground.",
+		Element: ElementPhysical, FireSound: SoundStomp, Color: [3]float32{0.85, 0.72, 0.5},
+		BaseCooldown: 2.4, CooldownPerLevel: 0.06, BaseDamage: 14, DamagePerLevel: 5,
+		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 120, RadiusPerLevel: 12,
+	},
+	WeaponStaticMines: {
+		Name: "Static Mines", Description: "Drops shock mines.",
+		Element: ElementShock, Color: mineColor,
+		BaseCooldown: 1.8, CooldownPerLevel: 0.06, BaseDamage: 10, DamagePerLevel: 4,
+		BaseCount: 1, LevelsPerCount: 2, BaseRadius: 70, RadiusPerLevel: 8,
 	},
 }
 
 var weaponBehaviors = [weaponKindCount]weaponBehavior{
-	WeaponEmberBolt:    (*Game).fireEmberBolts,
-	WeaponFrostNova:    (*Game).pulseFrostNova,
-	WeaponArcLightning: (*Game).castArcLightning,
-	WeaponOilFlask:     (*Game).throwOilFlasks,
-	WeaponDownpour:     (*Game).callDownpour,
-	WeaponOrbitBlades:  (*Game).spinOrbitBlades,
+	WeaponEmberBolt:     (*Game).fireEmberBolts,
+	WeaponFrostNova:     (*Game).pulseFrostNova,
+	WeaponArcLightning:  (*Game).castArcLightning,
+	WeaponOilFlask:      (*Game).throwOilFlasks,
+	WeaponDownpour:      (*Game).callDownpour,
+	WeaponOrbitBlades:   (*Game).spinOrbitBlades,
+	WeaponSeismicHammer: (*Game).slamSeismicHammer,
+	WeaponStaticMines:   (*Game).layStaticMines,
 }
 
 // ===== Public API =====
@@ -219,6 +241,19 @@ func (g *Game) rainAt(x, y float32, definition *WeaponDefinition, level int) {
 	g.ground.StimulateArea(x, y, int(radius/groundCellSize), StimulusDouse)
 	g.effects.AddRing(x, y, radius, definition.Color)
 	g.effects.SpawnRain(x, y, radius, definition.Color)
+}
+
+func (g *Game) slamSeismicHammer(weapon *WeaponState, definition *WeaponDefinition) {
+	player := g.player
+	radius := definition.RadiusAt(weapon.Level) * player.AreaMultiplier
+	damage := definition.DamageAt(weapon.Level) * player.DamageMultiplier
+	g.ApplyBurst(Burst{X: player.X, Y: player.Y, Radius: radius, Damage: damage, Element: definition.Element})
+	g.QueueBurst(Burst{X: player.X, Y: player.Y, Radius: radius * hammerQuakeReach, Damage: damage, Element: definition.Element, Requires: StatusFrozen})
+	g.effects.AddRing(player.X, player.Y, radius*hammerQuakeReach, hammerDustColor)
+	g.effects.AddRing(player.X, player.Y, radius, definition.Color)
+	g.effects.AddRing(player.X, player.Y, radius*hammerInnerRing, hammerDustColor)
+	g.effects.SpawnSparks(player.X, player.Y, hammerDustSparks, hammerDustColor, radius*1.5)
+	g.effects.AddShake(hammerShake)
 }
 
 func (g *Game) spinOrbitBlades(weapon *WeaponState, definition *WeaponDefinition) {

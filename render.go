@@ -119,6 +119,7 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.queueGroundGlow(g)
 	r.queueSkidMarks(g)
 	r.queueGems(g)
+	r.queueMines(g)
 	r.queueEnemies(g)
 	r.queuePlayer(g)
 	r.queueSpiders(g)

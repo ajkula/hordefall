@@ -83,7 +83,7 @@ Every sound effect is synthesized on the fly from layered voices with a random p
 
 Aim follows your movement. Hold aim lock to freeze it and strafe or retreat while firing.
 On a gamepad with two sticks, the right stick aims (twin-stick): move with the left stick, aim with the right one; pushing it past the deadzone also fires automatically, so no button is needed; release it and the aim follows your movement again. Fire still works on button 1, which is how the arcade stick plays.
-Ember Bolt, Arc Lightning, Oil Flask and Downpour fire where you aim while Fire is held. Frost Nova and Orbit Blades are automatic.
+Ember Bolt, Arc Lightning, Oil Flask and Downpour fire where you aim while Fire is held. Frost Nova, Orbit Blades, Seismic Hammer and Static Mines are automatic.
 
 On the title screen, Select / F2 opens the button setup: press your Fire, Aim lock and Dash buttons in turn.
 The mapping is saved to `%AppData%\hordefall\controls.json` (raw button indices) and loaded on startup.
@@ -105,6 +105,9 @@ The mapping is saved to `%AppData%\hordefall\controls.json` (raw button indices)
 | Shock    | Wet              | ELECTROCUTE  | Arcs to every wet enemy nearby                 |
 | Physical / Shock | Frozen   | SHATTER      | x3 damage and ice shards                       |
 | Fire / Water | Wet / Burning | HISS        | Extinguished                                   |
+| Fire     | Shocked          | PLASMA       | x1.8, sets ablaze and leaps to every shocked enemy nearby |
+| Physical | Shocked          | OVERLOAD     | x2.5 and jolts the shocked enemies around      |
+| Water    | Shocked          | CONDUCTION   | The charge spreads to every wet enemy nearby (then ELECTROCUTE) |
 
 Reaction bursts carry an element too, so reactions chain into further reactions.
 
@@ -146,7 +149,7 @@ After three spider tanks, the fourth boss event is a horde closing in from every
 
 ## Weapons
 
-Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chains), Oil Flask (soaks ground and enemies), Downpour (wets, douses fires), Orbit Blades (physical, shatters frozen). Up to 5 weapons, level 7 each, plus 6 passives.
+Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chains), Oil Flask (soaks ground and enemies), Downpour (wets, douses fires), Orbit Blades (physical, shatters frozen), Seismic Hammer (physical slam with knockback; its wide quake shatters every frozen enemy far around), Static Mines (dropped at your feet, they shock whoever steps near; shocked enemies turn fire into PLASMA, blades and slams into OVERLOAD, rain into CONDUCTION). The last two keep fire builds whole: neither puts flames out. Up to 5 weapons, level 7 each, plus 6 passives.
 
 ## Architecture
 
@@ -168,6 +171,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `render.go`      | Batched circle sprites with `DrawTriangles32`, additive glow |
 | `tachikoma.go`   | Player rig: wheel springs, abdomen sway, gaze, recoil      |
 | `tachikoma_render.go` | Player drawing                                        |
+| `mines.go`       | Static mines: drop, arming, trigger, rendering             |
 | `skids.go`       | Wheel skid trails                                          |
 | `horde_event.go` | Horde boss event: spawning, tracking, bar                  |
 | `arranger.go`    | Arranges channels 11-16 from each pattern's chords          |

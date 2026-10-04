@@ -41,6 +41,7 @@ type Game struct {
 	chainedEnemies        []int32
 	spiders               []SpiderRig
 	demoReinforceCooldown float32
+	mines                 []StaticMine
 	bossKillsRequired     int
 	bossProgressKills     int
 	bossEventCount        int
@@ -207,6 +208,7 @@ func (g *Game) resetRun() {
 	g.reactionCounts = [reactionKindCount]int{}
 	g.elapsedSeconds, g.kills, g.killScore = 0, 0, 0
 	g.spiders = g.spiders[:0]
+	g.mines = g.mines[:0]
 	g.bossKillsRequired = bossKillsRequiredAt(0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
@@ -256,6 +258,7 @@ func (g *Game) simulate() {
 	g.grid.Rebuild(g.enemies.PositionX, g.enemies.PositionY, g.enemies.Count)
 	g.updatePlayer(deltaSeconds)
 	g.updateWeapons(deltaSeconds)
+	g.updateMines(deltaSeconds)
 	g.updateProjectiles(deltaSeconds)
 	g.updateEnemies(deltaSeconds)
 	g.processBursts()

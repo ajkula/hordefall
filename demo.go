@@ -24,21 +24,22 @@ type DemoSequence struct {
 // ===== Constants =====
 
 const (
-	demoSequenceSeconds = 5
-	demoOrbitSpeed      = 0.6
-	demoOrbitDrift      = 0.35
-	demoAimSearch       = 520
-	demoSpiderDistance  = 430
-	demoSpiderChargeLag = 1.1
-	randomClipName      = "LIVE ACTION"
-	randomSpiderChance  = 0.35
-	demoSpiderStagger   = 0.6
-	demoFirePeriod      = 1.2
-	reinforceThreshold  = 0.4
-	reinforceShare      = 0.5
-	reinforceInterval   = 0.5
-	reinforceNear       = 1
-	reinforceFar        = 1.3
+	demoSequenceSeconds      = 5
+	demoOrbitSpeed           = 0.6
+	demoOrbitDrift           = 0.35
+	demoAimSearch            = 520
+	demoSpiderDistance       = 430
+	demoSpiderChargeLag      = 1.1
+	randomClipName           = "LIVE ACTION"
+	randomSpiderChance       = 0.35
+	demoSpiderStagger        = 0.6
+	demoFirePeriod           = 1.2
+	reinforceThreshold       = 0.4
+	reinforceUrgentThreshold = 0.15
+	reinforceShare           = 0.5
+	reinforceInterval        = 0.5
+	reinforceNear            = 1
+	reinforceFar             = 1.3
 )
 
 var randomClipStatuses = []StatusFlags{0, StatusOiled, StatusWet, StatusBurning, StatusChilled}
@@ -212,8 +213,10 @@ func (g *Game) spawnDemoSpider(spider, spiderCount int) {
 func (g *Game) reinforceDemoIfThin() {
 	sequence := &g.currentDemo
 	g.demoReinforceCooldown = max(0, g.demoReinforceCooldown-deltaSeconds)
-	isThin := float32(g.enemies.Count-len(g.spiders)) < float32(sequence.EnemyCount)*reinforceThreshold
-	if !isThin || g.demoReinforceCooldown > 0 {
+	alive := float32(g.enemies.Count - len(g.spiders))
+	isThin := alive < float32(sequence.EnemyCount)*reinforceThreshold
+	isNearlyEmpty := alive < float32(sequence.EnemyCount)*reinforceUrgentThreshold
+	if !isThin || (g.demoReinforceCooldown > 0 && !isNearlyEmpty) {
 		return
 	}
 	g.demoReinforceCooldown = reinforceInterval
