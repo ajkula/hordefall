@@ -438,3 +438,44 @@ func TestEffectsDensityAndShakeFollowSettings(t *testing.T) {
 		t.Fatalf("screen shake off still moved the camera: %.2f %.2f", game.effects.ShakeX, game.effects.ShakeY)
 	}
 }
+
+func TestMenuListsEndOnQuitAndStayBelowTitle(t *testing.T) {
+	const minimumTop = 240
+	for _, optionCount := range []int{3, 4, 9, 14} {
+		options := make([]MenuOption, optionCount)
+		positions := menuOptionPositions(options, menuOptionSpacing, minimumTop, nil)
+		last := positions[len(positions)-1]
+		if abs(last-menuListBottom) > 0.01 || positions[0] < minimumTop-0.01 {
+			t.Fatalf("%d options: first %.1f, last %.1f (want last at %d, first >= %d)", optionCount, positions[0], last, menuListBottom, minimumTop)
+		}
+	}
+	mainPositions := menuOptionPositions(mainMenuOptions, mainMenuOptionSpacing, minimumTop, nil)
+	if abs(mainPositions[0]-mainMenuOptionsTop) > 0.01 {
+		t.Fatalf("main menu moved: first option at %.1f, want %d", mainPositions[0], mainMenuOptionsTop)
+	}
+}
+
+func TestMusicVolumeSliderStepsAndClamps(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.settings = DefaultSettings()
+	game.adjustMusicVolume(1)
+	if game.settings.MusicVolumeStep != musicVolumeSteps {
+		t.Fatalf("volume went past 100%%: step %d", game.settings.MusicVolumeStep)
+	}
+	for range musicVolumeSteps + 2 {
+		game.adjustMusicVolume(-1)
+	}
+	if game.settings.MusicVolumeStep != 0 || game.musicVolumeLabel() != "Music volume: 0%" {
+		t.Fatalf("volume did not stop at 0%%: %q", game.musicVolumeLabel())
+	}
+	game.cycleMusicVolume()
+	if game.musicVolumeLabel() != "Music volume: 20%" {
+		t.Fatalf("fire should raise the volume by one 20%% step: %q", game.musicVolumeLabel())
+	}
+	game.settings.MusicVolumeStep = musicVolumeSteps
+	game.cycleMusicVolume()
+	if game.settings.MusicVolumeStep != 0 {
+		t.Fatalf("fire at 100%% should wrap to 0%%, got step %d", game.settings.MusicVolumeStep)
+	}
+}

@@ -9,16 +9,17 @@ import (
 // ===== Types =====
 
 type Settings struct {
-	IsMusicOn    bool             `json:"musicOn"`
-	Tracks       map[string]bool  `json:"tracks"`
-	IsFullscreen bool             `json:"fullscreen"`
-	IsVsyncOn    bool             `json:"vsync"`
-	Resolution   RenderResolution `json:"resolution"`
-	IsFPSShown   bool             `json:"showFps"`
-	ShakeLevel   int              `json:"screenShake"`
-	EffectsLevel int              `json:"effects"`
-	BloomLevel   int              `json:"bloom"`
-	IsCRTOn      bool             `json:"crt"`
+	IsMusicOn       bool             `json:"musicOn"`
+	Tracks          map[string]bool  `json:"tracks"`
+	IsFullscreen    bool             `json:"fullscreen"`
+	IsVsyncOn       bool             `json:"vsync"`
+	Resolution      RenderResolution `json:"resolution"`
+	IsFPSShown      bool             `json:"showFps"`
+	ShakeLevel      int              `json:"screenShake"`
+	EffectsLevel    int              `json:"effects"`
+	BloomLevel      int              `json:"bloom"`
+	IsCRTOn         bool             `json:"crt"`
+	MusicVolumeStep int              `json:"musicVolume"`
 }
 
 // ===== Constants =====
@@ -32,7 +33,7 @@ func DefaultSettings() Settings {
 		IsMusicOn: true, Tracks: map[string]bool{},
 		IsVsyncOn: true, Resolution: Resolution720p, IsFPSShown: true,
 		ShakeLevel: defaultGraphicsLevel, EffectsLevel: defaultGraphicsLevel,
-		BloomLevel: defaultBloomLevel,
+		BloomLevel: defaultBloomLevel, MusicVolumeStep: musicVolumeSteps,
 	}
 }
 
@@ -49,6 +50,7 @@ func LoadSettings() (Settings, error) {
 	err = json.Unmarshal(content, &settings)
 	settings.Tracks = ensureTracks(settings.Tracks)
 	sanitizeGraphics(&settings)
+	settings.MusicVolumeStep = clampInt(settings.MusicVolumeStep, 0, musicVolumeSteps)
 	return settings, err
 }
 
@@ -83,6 +85,7 @@ func (g *Game) loadSettings() {
 		g.settings = DefaultSettings()
 	}
 	g.audio.SetMusicOn(g.settings.IsMusicOn)
+	g.applyMusicVolume()
 	g.applyGraphicsSettings()
 	g.buildPlaylistMenu()
 }

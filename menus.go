@@ -7,35 +7,52 @@ import "github.com/hajimehoshi/ebiten/v2"
 type MenuOption struct {
 	Label    func(game *Game) string
 	Activate func(game *Game)
+	Slider   *MenuSlider
+}
+
+type MenuSlider struct {
+	Steps  int
+	Level  func(game *Game) int
+	Adjust func(game *Game, delta int)
 }
 
 // ===== Constants =====
 
 var mainMenuOptions = []MenuOption{
-	{fixedLabel("Play"), (*Game).startRun},
-	{fixedLabel("Options"), (*Game).openOptions},
-	{fixedLabel("Quit"), (*Game).requestQuit},
+	{fixedLabel("Play"), (*Game).startRun, nil},
+	{fixedLabel("Options"), (*Game).openOptions, nil},
+	{fixedLabel("Quit"), (*Game).requestQuit, nil},
 }
 
 var optionsMenuOptions = []MenuOption{
-	{fixedLabel("Configure buttons"), (*Game).openRemapFromOptions},
-	{fixedLabel("Graphics"), (*Game).openGraphics},
-	{(*Game).musicLabel, (*Game).toggleMusic},
-	{fixedLabel("Playlist"), (*Game).openPlaylist},
-	{fixedLabel("Back"), (*Game).closeOptions},
+	{fixedLabel("Configure buttons"), (*Game).openRemapFromOptions, nil},
+	{fixedLabel("Graphics"), (*Game).openGraphics, nil},
+	{fixedLabel("Music"), (*Game).openMusicMenu, nil},
+	{fixedLabel("Back"), (*Game).closeOptions, nil},
 }
 
 var pauseMenuOptions = []MenuOption{
-	{fixedLabel("Resume"), (*Game).resumeRun},
-	{(*Game).musicLabel, (*Game).toggleMusic},
-	{fixedLabel("Back to main menu"), (*Game).abandonRun},
+	{fixedLabel("Resume"), (*Game).resumeRun, nil},
+	{(*Game).musicLabel, (*Game).toggleMusic, nil},
+	{fixedLabel("Back to main menu"), (*Game).abandonRun, nil},
 }
 
 var musicLabels = [2]string{"Music: OFF", "Music: ON"}
 
+const (
+	mainMenuOptionSpacing = 48
+	menuOptionSpacing     = 40
+	menuSliderExtraHeight = 18
+	menuSliderOffset      = 32
+	menuListBottom        = mainMenuOptionsTop + 2*mainMenuOptionSpacing
+)
+
 // ===== Internal =====
 
 func (g *Game) navigateMenu(options []MenuOption) {
+	if g.adjustSelectedSlider(options[g.menuSelection].Slider) {
+		return
+	}
 	isPrevious := g.controls.JustPressed&selectionDirections != 0
 	isNext := g.controls.JustPressed&(ActionRight|ActionDown) != 0
 	count := len(options)
@@ -46,6 +63,31 @@ func (g *Game) navigateMenu(options []MenuOption) {
 	}
 	g.playSound(SoundMenuSelect)
 	options[g.menuSelection].Activate(g)
+}
+
+func (g *Game) adjustSelectedSlider(slider *MenuSlider) bool {
+	delta := boolToIndex(g.controls.JustPressed&ActionRight != 0) - boolToIndex(g.controls.JustPressed&ActionLeft != 0)
+	if slider == nil || delta == 0 {
+		return false
+	}
+	slider.Adjust(g, delta)
+	g.playSound(SoundMenuMove)
+	return true
+}
+
+func menuOptionPositions(options []MenuOption, spacing, minimumTop float32, positions []float32) []float32 {
+	positions = positions[:0]
+	span := float32(0)
+	for index := range len(options) - 1 {
+		span += spacing + menuSliderExtraHeight*boolToFloat(options[index].Slider != nil)
+	}
+	compression := min(1, (menuListBottom-minimumTop)/max(1, span))
+	y := menuListBottom - span*compression
+	for index := range options {
+		positions = append(positions, y)
+		y += (spacing + menuSliderExtraHeight*boolToFloat(options[index].Slider != nil)) * compression
+	}
+	return positions
 }
 
 func (g *Game) startRun() {

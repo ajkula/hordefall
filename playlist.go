@@ -5,13 +5,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-// ===== Constants =====
-
-const (
-	menuOptionSpacing = 48
-	menuListBottomGap = 16
-)
-
 // ===== Public API =====
 
 func (g *Game) IsSongEnabled(index int) bool {
@@ -38,7 +31,7 @@ func (g *Game) buildPlaylistMenu() {
 			Activate: func(game *Game) { game.toggleSong(index) },
 		})
 	}
-	g.playlistMenu = append(g.playlistMenu, MenuOption{fixedLabel("Back"), (*Game).closePlaylist})
+	g.playlistMenu = append(g.playlistMenu, MenuOption{fixedLabel("Back"), (*Game).closePlaylist, nil})
 	g.audio.SetPlaylistEmpty(!g.HasEnabledSong())
 }
 
@@ -67,7 +60,7 @@ func (g *Game) openPlaylist() {
 }
 
 func (g *Game) closePlaylist() {
-	g.switchState(StateOptions)
+	g.switchState(StateMusic)
 }
 
 func (g *Game) updatePlaylist() {
@@ -88,13 +81,9 @@ func (u *UI) DrawPlaylistMenu(g *Game, screen *ebiten.Image, options []MenuOptio
 	dimScreen(screen, menuDim)
 	u.drawText(screen, "PLAYLIST", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
-	u.drawMenuOptions(g, screen, options, menuListTop(len(options)))
+	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to switch a track on or off, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
-	u.drawText(screen, "Only enabled tracks play, in game and on the main menu. All off means no music.", u.small, screenWidth/2, menuHintTop+24, mutedTextColor, 1, text.AlignCenter)
-}
-
-func menuListTop(optionCount int) float32 {
-	return min(mainMenuOptionsTop, menuHintTop-menuListBottomGap-float32(optionCount*menuOptionSpacing))
+	u.drawText(screen, "Up / Down to choose, Fire to switch a track on or off, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Only enabled tracks play, in game and on the main menu. All off means no music.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }

@@ -51,15 +51,15 @@ var effectsLevels = [graphicsLevelCount]GraphicsLevel{{"Low", 0.3}, {"Medium", 0
 var onOffLabels = [2]string{"OFF", "ON"}
 
 var graphicsMenuOptions = []MenuOption{
-	{(*Game).fullscreenLabel, (*Game).toggleFullscreen},
-	{(*Game).vsyncLabel, (*Game).toggleVsync},
-	{(*Game).resolutionLabel, (*Game).cycleResolution},
-	{(*Game).fpsLabel, (*Game).toggleFPS},
-	{(*Game).shakeLabel, (*Game).cycleShake},
-	{(*Game).effectsLabel, (*Game).cycleEffects},
-	{(*Game).bloomLabel, (*Game).cycleBloom},
-	{(*Game).crtLabel, (*Game).toggleCRT},
-	{fixedLabel("Back"), (*Game).closeGraphics},
+	{(*Game).fullscreenLabel, (*Game).toggleFullscreen, nil},
+	{(*Game).vsyncLabel, (*Game).toggleVsync, nil},
+	{(*Game).resolutionLabel, (*Game).cycleResolution, nil},
+	{(*Game).fpsLabel, (*Game).toggleFPS, nil},
+	{(*Game).shakeLabel, (*Game).cycleShake, nil},
+	{(*Game).effectsLabel, (*Game).cycleEffects, nil},
+	{(*Game).bloomLabel, (*Game).cycleBloom, nil},
+	{(*Game).crtLabel, (*Game).toggleCRT, nil},
+	{fixedLabel("Back"), (*Game).closeGraphics, nil},
 }
 
 var renderScale float32 = 1
@@ -70,11 +70,11 @@ func (u *UI) DrawGraphicsMenu(g *Game, screen *ebiten.Image, options []MenuOptio
 	dimScreen(screen, menuDim)
 	u.drawText(screen, "GRAPHICS", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
-	u.drawMenuOptions(g, screen, options, menuListTop(len(options)))
+	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to change, Start / Esc to go back. F11 toggles fullscreen anywhere.", u.small, screenWidth/2, menuHintTop, textColor, 0.9, text.AlignCenter)
-	u.drawText(screen, "Native renders at your screen resolution: sharper, heavier on the GPU.", u.small, screenWidth/2, menuHintTop+24, mutedTextColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Fire to change, Start / Esc to go back. F11 toggles fullscreen anywhere.", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Native renders at your screen resolution: sharper, heavier on the GPU.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
 // ===== Internal =====

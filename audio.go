@@ -152,6 +152,15 @@ func (e *AudioEngine) IsMusicOn() bool {
 	return !e.IsMusicMuted
 }
 
+func (e *AudioEngine) SetMusicVolume(volume float32) {
+	if e == nil {
+		return
+	}
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	e.MusicVolume = volume
+}
+
 func (e *AudioEngine) SetPlaylistEmpty(isEmpty bool) {
 	if e == nil {
 		return
