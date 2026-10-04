@@ -361,6 +361,25 @@ func TestRightStickAimsIndependentlyOfMovement(t *testing.T) {
 	}
 }
 
+func TestRightStickFiresAutomatically(t *testing.T) {
+	game := newHeadlessGame()
+	expectations := []struct {
+		controls   Controls
+		isExpected bool
+	}{
+		{Controls{AimX: 1, HasAimStick: true}, true},
+		{Controls{MoveX: 1}, false},
+		{Controls{Held: ActionFire}, true},
+	}
+	for _, expectation := range expectations {
+		game.controls = expectation.controls
+		game.updatePlayer(deltaSeconds)
+		if game.player.IsFiring != expectation.isExpected {
+			t.Fatalf("controls %+v: firing %v, want %v", expectation.controls, game.player.IsFiring, expectation.isExpected)
+		}
+	}
+}
+
 func TestBossKillsDoNotCarryOverAndRequirementGrows(t *testing.T) {
 	game := newHeadlessGame()
 	firstRequirement := game.bossKillsRequired

@@ -133,7 +133,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.DashCooldown = max(0, player.DashCooldown-deltaSeconds)
 	healBudgetCap := maximumKillHealPerSecond * player.MaximumHealth
 	player.KillHealBudget = min(healBudgetCap, player.KillHealBudget+healBudgetCap*deltaSeconds)
-	player.IsFiring = g.controls.Held&ActionFire != 0
+	player.IsFiring = g.controls.Held&ActionFire != 0 || g.controls.HasAimStick
 	player.IsAimLocked = g.controls.Held&ActionAimLock != 0
 	g.startDashIfRequested()
 	isDashing := player.DashSeconds > 0
