@@ -412,12 +412,12 @@ func TestFirstSongIsPickedAmongEnabledTracks(t *testing.T) {
 
 func TestGraphicsSettingsDefaultsAndSanitizing(t *testing.T) {
 	defaults := DefaultSettings()
-	if !defaults.IsVsyncOn || !defaults.IsFPSShown || defaults.IsFullscreen || defaults.ShakeLevel != graphicsLevelCount-1 || defaults.EffectsLevel != graphicsLevelCount-1 {
+	if !defaults.IsVsyncOn || !defaults.IsFPSShown || defaults.IsFullscreen || defaults.ShakeLevel != graphicsLevelCount-1 || defaults.EffectsLevel != graphicsLevelCount-1 || defaults.BloomLevel != defaultBloomLevel || defaults.IsCRTOn {
 		t.Fatalf("unexpected graphics defaults: %+v", defaults)
 	}
-	broken := Settings{Resolution: 9, ShakeLevel: -4, EffectsLevel: 12}
+	broken := Settings{Resolution: 9, ShakeLevel: -4, EffectsLevel: 12, BloomLevel: 7}
 	sanitizeGraphics(&broken)
-	if broken.Resolution != ResolutionNative || broken.ShakeLevel != 0 || broken.EffectsLevel != graphicsLevelCount-1 {
+	if broken.Resolution != ResolutionNative || broken.ShakeLevel != 0 || broken.EffectsLevel != graphicsLevelCount-1 || broken.BloomLevel != graphicsLevelCount-1 {
 		t.Fatalf("out of range values were not clamped: %+v", broken)
 	}
 }

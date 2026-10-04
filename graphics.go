@@ -35,6 +35,7 @@ const (
 	graphicsLevelCount   = 3
 	maximumRenderScale   = 3
 	defaultGraphicsLevel = graphicsLevelCount - 1
+	defaultBloomLevel    = 1
 )
 
 var resolutionChoices = [resolutionCount]ResolutionChoice{
@@ -56,6 +57,8 @@ var graphicsMenuOptions = []MenuOption{
 	{(*Game).fpsLabel, (*Game).toggleFPS},
 	{(*Game).shakeLabel, (*Game).cycleShake},
 	{(*Game).effectsLabel, (*Game).cycleEffects},
+	{(*Game).bloomLabel, (*Game).cycleBloom},
+	{(*Game).crtLabel, (*Game).toggleCRT},
 	{fixedLabel("Back"), (*Game).closeGraphics},
 }
 
@@ -90,6 +93,7 @@ func sanitizeGraphics(settings *Settings) {
 	settings.Resolution = min(settings.Resolution, resolutionCount-1)
 	settings.ShakeLevel = clampInt(settings.ShakeLevel, 0, graphicsLevelCount-1)
 	settings.EffectsLevel = clampInt(settings.EffectsLevel, 0, graphicsLevelCount-1)
+	settings.BloomLevel = clampInt(settings.BloomLevel, 0, graphicsLevelCount-1)
 }
 
 func (g *Game) applyGraphicsSettings() {
@@ -134,6 +138,26 @@ func (g *Game) cycleShake() {
 
 func (g *Game) cycleEffects() {
 	g.changeGraphics(func(settings *Settings) { settings.EffectsLevel = (settings.EffectsLevel + 1) % graphicsLevelCount })
+}
+
+func (g *Game) cycleBloom() {
+	g.changeGraphics(func(settings *Settings) { settings.BloomLevel = (settings.BloomLevel + 1) % graphicsLevelCount })
+}
+
+func (g *Game) toggleCRT() {
+	g.changeGraphics(func(settings *Settings) { settings.IsCRTOn = !settings.IsCRTOn })
+}
+
+func (g *Game) postSettings() PostSettings {
+	return PostSettings{BloomIntensity: bloomLevels[g.settings.BloomLevel].Factor, IsCRTOn: g.settings.IsCRTOn}
+}
+
+func (g *Game) bloomLabel() string {
+	return "Bloom: " + bloomLevels[g.settings.BloomLevel].Label
+}
+
+func (g *Game) crtLabel() string {
+	return "CRT filter: " + onOffLabels[boolToIndex(g.settings.IsCRTOn)]
 }
 
 func (g *Game) fullscreenLabel() string {

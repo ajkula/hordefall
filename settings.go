@@ -17,6 +17,8 @@ type Settings struct {
 	IsFPSShown   bool             `json:"showFps"`
 	ShakeLevel   int              `json:"screenShake"`
 	EffectsLevel int              `json:"effects"`
+	BloomLevel   int              `json:"bloom"`
+	IsCRTOn      bool             `json:"crt"`
 }
 
 // ===== Constants =====
@@ -30,6 +32,7 @@ func DefaultSettings() Settings {
 		IsMusicOn: true, Tracks: map[string]bool{},
 		IsVsyncOn: true, Resolution: Resolution720p, IsFPSShown: true,
 		ShakeLevel: defaultGraphicsLevel, EffectsLevel: defaultGraphicsLevel,
+		BloomLevel: defaultBloomLevel,
 	}
 }
 

@@ -130,6 +130,7 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.solid.Flush(screen)
 	r.glow.Flush(screen)
 	r.rings.Flush(screen)
+	g.post.ApplyBloom(bloomLevels[g.settings.BloomLevel].Factor)
 }
 
 func (r *Renderer) ToScreen(x, y float32) (float32, float32) {

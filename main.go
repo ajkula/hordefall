@@ -29,6 +29,7 @@ type Game struct {
 	ground               *Ground
 	grid                 *SpatialGrid
 	renderer             *Renderer
+	post                 *PostProcessor
 	audio                *AudioEngine
 	musicSignals         [musicSignalCount]float32
 	previousReactions    int
@@ -150,6 +151,7 @@ func NewGame() *Game {
 	}
 	game.resetRun()
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
+	game.post = NewPostProcessor()
 	game.loadBindings()
 	game.loadHighScore()
 	game.audio = NewAudioEngine()
@@ -175,7 +177,9 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	stateHandlers[g.state].Draw(g, screen)
+	postSettings := g.postSettings()
+	stateHandlers[g.state].Draw(g, g.post.Begin(screen, postSettings))
+	g.post.Finish(screen, postSettings)
 	if !g.isInputDebugVisible {
 		return
 	}
