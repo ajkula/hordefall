@@ -20,14 +20,26 @@ type bossEventStarter func(game *Game)
 // ===== Constants =====
 
 const (
-	bossEventsPerHorde     = 3
-	hordeEventBaseSize     = 500
-	hordeRingInnerDistance = 760
-	hordeRingOuterDistance = 1150
-	hordeClearBonusPerFoe  = 20
+	spidersBeforeHorde    = 3
+	bossEventsPerHorde    = spidersBeforeHorde + 1
+	hordeEventBaseSize    = 500
+	hordeShellPeriod      = 8
+	hordePowerBonus       = 2
+	hordeClearBonusPerFoe = 20
 )
 
-var hordeEventKinds = []EnemyKind{EnemyBrute, EnemyBrute, EnemyBloater}
+var hordeCoreKinds = []EnemyKind{
+	EnemyBrute, EnemyFrostling, EnemyRunner, EnemyBrute,
+	EnemySwarmer, EnemyFrostling, EnemyBrute,
+}
+
+var hordeShellKinds = []EnemyKind{EnemyBloater, EnemyEmberling}
+
+var hordeLayerStrides = [2]int{1, hordeShellPeriod}
+
+var hordeLayerKinds = [2][]EnemyKind{hordeCoreKinds, hordeShellKinds}
+
+var hordeLayerDistances = [2][2]float32{{760, 1040}, {1090, 1180}}
 
 var bossEventStarters = [2]bossEventStarter{(*Game).spawnSpiderEvent, (*Game).startHordeEvent}
 
@@ -58,15 +70,24 @@ func (g *Game) startHordeEvent() {
 }
 
 func (g *Game) spawnHordeEnemy(spawned int) bool {
+	layer := boolToIndex(spawned%hordeShellPeriod == hordeShellPeriod-1)
+	kinds := hordeLayerKinds[layer]
+	kind := kinds[spawned/hordeLayerStrides[layer]%len(kinds)]
 	angle := g.random.Angle()
-	distance := g.random.Between(hordeRingInnerDistance, hordeRingOuterDistance)
-	kind := hordeEventKinds[spawned%len(hordeEventKinds)]
+	distance := g.random.Between(hordeLayerDistances[layer][0], hordeLayerDistances[layer][1])
 	id := g.spawnEnemyAt(kind, g.player.X+cosine(angle)*distance, g.player.Y+sine(angle)*distance)
 	if id == 0 {
 		return false
 	}
-	g.enemies.IsHordeEvent[g.enemies.Count-1] = true
+	g.empowerHordeMember(g.enemies.Count - 1)
 	return true
+}
+
+func (g *Game) empowerHordeMember(index int) {
+	enemies := g.enemies
+	enemies.IsHordeEvent[index] = true
+	enemies.Health[index] *= hordePowerBonus
+	enemies.Power[index] *= hordePowerBonus
 }
 
 func (g *Game) recordHordeCasualtyIf(isHordeEnemy bool) {

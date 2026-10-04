@@ -125,7 +125,7 @@ func TestExperienceCostAlwaysGrows(t *testing.T) {
 func TestNoMoreThanThreeSpiderTanks(t *testing.T) {
 	game := newHeadlessGame()
 	for range 10 {
-		game.bossProgressKills = game.nextSpiderKills
+		game.bossProgressKills = game.bossKillsRequired
 		game.bossEventCount = 0
 		game.spawnSpiderIfDue()
 	}
@@ -147,7 +147,7 @@ func TestBoltStopsOnToughTarget(t *testing.T) {
 
 func TestSpiderLaserCycleLocksThenFires(t *testing.T) {
 	game := newHeadlessGame()
-	game.bossProgressKills = game.nextSpiderKills
+	game.bossProgressKills = game.bossKillsRequired
 	game.spawnSpiderIfDue()
 	phasesSeen := map[LaserPhase]bool{}
 	lockedAngle := float32(0)
@@ -266,11 +266,11 @@ func TestDemoSequencesLoopCleanly(t *testing.T) {
 	}
 }
 
-func TestEveryThirdBossEventIsAGrowingHorde(t *testing.T) {
+func TestThreeSpidersThenAGrowingHorde(t *testing.T) {
 	game := newHeadlessGame()
 	expectedHordeSizes := []int{500, 1000}
 	hordesSeen := 0
-	for event := 1; event <= 6; event++ {
+	for event := 1; event <= 2*bossEventsPerHorde; event++ {
 		game.spiders, game.enemies.Count, game.hordeEvent = game.spiders[:0], 0, HordeEvent{}
 		game.startBossEvent()
 		isHordeEvent := event%bossEventsPerHorde == 0
@@ -299,7 +299,7 @@ func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 	if game.hordeEvent.IsActive {
 		t.Fatalf("horde still active after every member died")
 	}
-	game.bossProgressKills = game.nextSpiderKills
+	game.bossProgressKills = game.bossKillsRequired
 	game.spawnSpiderIfDue()
 	if len(game.spiders) != 1 {
 		t.Fatalf("no boss after the horde was cleared")
@@ -310,7 +310,7 @@ func TestNoBossWhileHordeIsAlive(t *testing.T) {
 	game := newHeadlessGame()
 	game.bossEventCount = bossEventsPerHorde - 1
 	game.startBossEvent()
-	game.bossProgressKills = game.nextSpiderKills * 10
+	game.bossProgressKills = game.bossKillsRequired * 10
 	game.spawnSpiderIfDue()
 	if len(game.spiders) != 0 {
 		t.Fatalf("a spider tank arrived while the horde was alive")
@@ -358,5 +358,69 @@ func TestRightStickAimsIndependentlyOfMovement(t *testing.T) {
 	game.updatePlayer(deltaSeconds)
 	if game.player.AimY < 0.99 {
 		t.Fatalf("without the right stick the aim should follow movement, aim (%.2f, %.2f)", game.player.AimX, game.player.AimY)
+	}
+}
+
+func TestBossKillsDoNotCarryOverAndRequirementGrows(t *testing.T) {
+	game := newHeadlessGame()
+	firstRequirement := game.bossKillsRequired
+	game.elapsedSeconds = 600
+	game.bossProgressKills = firstRequirement * 5
+	game.spawnSpiderIfDue()
+	if len(game.spiders) != 1 || game.bossProgressKills != 0 {
+		t.Fatalf("spiders %d, leftover progress %d (want 1, 0)", len(game.spiders), game.bossProgressKills)
+	}
+	if game.bossKillsRequired <= firstRequirement {
+		t.Fatalf("requirement after ten minutes is %d, not above the opening %d", game.bossKillsRequired, firstRequirement)
+	}
+	game.bossProgressKills = game.bossKillsRequired - 1
+	game.spawnSpiderIfDue()
+	if len(game.spiders) != 1 {
+		t.Fatalf("a second boss arrived one kill short of its own requirement")
+	}
+	t.Logf("kills required at 0, 5, 10, 20 minutes: %d %d %d %d", bossKillsRequiredAt(0), bossKillsRequiredAt(300), bossKillsRequiredAt(600), bossKillsRequiredAt(1200))
+}
+
+func TestHordeIsVariedWithExplosivesOnTheOutside(t *testing.T) {
+	game := newHeadlessGame()
+	game.bossEventCount = bossEventsPerHorde - 1
+	game.startBossEvent()
+	kindCounts := [enemyKindCount]int{}
+	nearestExplosive, farthestCore := float32(1e9), float32(0)
+	for index := range game.enemies.Count {
+		kind := game.enemies.Kind[index]
+		kindCounts[kind]++
+		distance := length(game.enemies.PositionX[index]-game.player.X, game.enemies.PositionY[index]-game.player.Y)
+		isExplosive := enemyTable[kind].DeathElement != ElementNone && kind != EnemyFrostling
+		nearestExplosive = min(nearestExplosive, distance+1e9*boolToFloat(!isExplosive))
+		farthestCore = max(farthestCore, distance*boolToFloat(!isExplosive))
+	}
+	explosiveCount := kindCounts[EnemyBloater] + kindCounts[EnemyEmberling]
+	if explosiveCount*5 > game.enemies.Count || nearestExplosive <= farthestCore {
+		t.Fatalf("explosives %d of %d, nearest explosive %.0f, farthest core %.0f", explosiveCount, game.enemies.Count, nearestExplosive, farthestCore)
+	}
+	for _, kind := range []EnemyKind{EnemyBrute, EnemyFrostling, EnemyRunner, EnemySwarmer} {
+		if kindCounts[kind] == 0 {
+			t.Fatalf("horde has no %s", enemyTable[kind].Name)
+		}
+	}
+	t.Logf("horde composition: %v", kindCounts)
+}
+
+func TestHordeDoesNotDetonateAtOnce(t *testing.T) {
+	game := newHeadlessGame()
+	equipEveryWeapon(game)
+	game.elapsedSeconds = 900
+	game.bossEventCount = bossEventsPerHorde - 1
+	game.startBossEvent()
+	total := game.hordeEvent.Total
+	for second := 1; second <= 12; second++ {
+		for range ticksPerSecond {
+			stepHeadless(game)
+		}
+		t.Logf("after %2ds: %d / %d horde members alive", second, game.hordeEvent.Remaining, total)
+	}
+	if game.hordeEvent.Remaining*4 < total {
+		t.Fatalf("only %d of %d horde members survived twelve seconds", game.hordeEvent.Remaining, total)
 	}
 }

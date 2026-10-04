@@ -38,27 +38,27 @@ type SpiderRig struct {
 // ===== Constants =====
 
 const (
-	spiderLegCount        = 4
-	spiderScale           = 1.6
-	spiderThighLength     = 50 * spiderScale
-	spiderShinLength      = 56 * spiderScale
-	spiderStepThreshold   = 34 * spiderScale
-	spiderStepSeconds     = 0.26
-	spiderStepLead        = 0.35
-	spiderStepOvershoot   = 0.35
-	spiderStepLift        = 16 * spiderScale
-	spiderTurnRate        = 2.2
-	spiderStompRadius     = 52
-	spiderStompDamage     = 22
-	spiderStompPlayerHurt = 18
-	spiderSpawnDistance   = 840
-	firstSpiderKills      = 300
-	spiderKillsInterval   = 900
-	spiderTurretPivot     = 8
-	maximumSpidersAlive   = 3
-	spiderTurretLimit     = 2.3
-	spiderTurretStiffness = 34
-	spiderTurretDamping   = 8
+	spiderLegCount         = 4
+	spiderScale            = 1.6
+	spiderThighLength      = 50 * spiderScale
+	spiderShinLength       = 56 * spiderScale
+	spiderStepThreshold    = 34 * spiderScale
+	spiderStepSeconds      = 0.26
+	spiderStepLead         = 0.35
+	spiderStepOvershoot    = 0.35
+	spiderStepLift         = 16 * spiderScale
+	spiderTurnRate         = 2.2
+	spiderStompRadius      = 52
+	spiderStompDamage      = 22
+	spiderStompPlayerHurt  = 18
+	spiderSpawnDistance    = 840
+	bossKillsBase          = 300
+	bossKillsGrowthSeconds = 120
+	spiderTurretPivot      = 8
+	maximumSpidersAlive    = 3
+	spiderTurretLimit      = 2.3
+	spiderTurretStiffness  = 34
+	spiderTurretDamping    = 8
 )
 
 var spiderLegLayouts = [spiderLegCount]LegLayout{
@@ -121,11 +121,16 @@ func solveKneeCandidates(hipX, hipY, footX, footY float32) (float32, float32, fl
 }
 
 func (g *Game) spawnSpiderIfDue() {
-	if g.bossProgressKills < g.nextSpiderKills || len(g.spiders) >= maximumSpidersAlive || g.hordeEvent.IsActive {
+	if g.bossProgressKills < g.bossKillsRequired || len(g.spiders) >= maximumSpidersAlive || g.hordeEvent.IsActive {
 		return
 	}
-	g.nextSpiderKills += spiderKillsInterval
+	g.bossProgressKills = 0
+	g.bossKillsRequired = bossKillsRequiredAt(g.elapsedSeconds)
 	g.startBossEvent()
+}
+
+func bossKillsRequiredAt(seconds float32) int {
+	return int(bossKillsBase * (1 + seconds/bossKillsGrowthSeconds))
 }
 
 func (g *Game) spawnSpiderAt(angle, distance float32) {

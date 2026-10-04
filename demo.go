@@ -104,7 +104,7 @@ func (g *Game) startNextDemoSequence() {
 	g.demoSeconds = 0
 	g.director.accumulator = -1e9
 	g.director.nextWaveSeconds = 1e9
-	g.nextSpiderKills = 1 << 30
+	g.bossKillsRequired = 1 << 30
 	g.elapsedSeconds = sequence.ToughnessSeconds
 	g.equipDemoWeapons(sequence)
 	for range sequence.PassiveCount {

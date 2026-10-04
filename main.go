@@ -39,7 +39,7 @@ type Game struct {
 	separationCandidates []int32
 	chainedEnemies       []int32
 	spiders              []SpiderRig
-	nextSpiderKills      int
+	bossKillsRequired    int
 	bossProgressKills    int
 	bossEventCount       int
 	hordeEvent           HordeEvent
@@ -195,7 +195,7 @@ func (g *Game) resetRun() {
 	g.reactionCounts = [reactionKindCount]int{}
 	g.elapsedSeconds, g.kills, g.killScore = 0, 0, 0
 	g.spiders = g.spiders[:0]
-	g.nextSpiderKills = firstSpiderKills
+	g.bossKillsRequired = bossKillsRequiredAt(0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
 	g.isDemo, g.isNewHighScore = false, false

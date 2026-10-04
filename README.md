@@ -119,7 +119,7 @@ Tuning: constants and `tachikomaLegLayouts` in `tachikoma.go`, colors and shapes
 
 ## Boss: Spider Tank
 
-After 300 kills, then every 900, a Ghost in the Shell style spider tank walks in (at most 3 at once).
+Each boss event needs its own kills: the counter resets when a boss arrives, so kills never carry over to the next one. The requirement grows with the run: 300 kills at the start, 300 × (1 + minutes / 2) after that (1,050 at 5 minutes, 1,800 at 10, 3,300 at 20). A Ghost in the Shell style spider tank then walks in (at most 3 at once).
 Its four legs are procedural: each leg is a two-bone chain solved with inverse kinematics (the knee is the outward solution of the two-circle intersection), each foot stays planted until it drifts too far from its rest pose, then steps ahead of the body with an eased arc. Legs move in diagonal pairs.
 Every footfall is a stomp: dust, screen shake, a physical burst that crushes nearby enemies, shatters frozen ones and hurts you.
 Its cockpit, sensor and cannon sit on a turret ring that tracks you with a slow, heavy servo, independently of where the legs carry the body.
@@ -135,7 +135,7 @@ Tuning lives in the constants and `spiderLegLayouts` of `spider.go`; drawing is 
 
 ## Boss event: the Horde
 
-Every third boss event is not a spider tank but a horde of heavy enemies (brutes and bloaters) closing in from every side: 500 the first time, then 1,000, 1,500 and so on. It counts as a boss: its purple bar shows how many are left, no other boss arrives until it is wiped out, and the music adds a boss voice. Horde kills give experience and score but do not advance the boss counter. Clearing it awards a bonus of 20 points per member. Tuning in `horde_event.go`.
+After three spider tanks, the fourth boss event is a horde closing in from every side: 500 the first time, then 1,000, 1,500 and so on. Its core is a mix of brutes, frostlings, runners and swarmers, all twice as tough as usual; the explosive enemies (bloaters and emberlings, one in eight) form the outer shell, so the horde no longer goes up in one chain reaction. It counts as a boss: its purple bar shows how many are left, no other boss arrives until it is wiped out, and the music adds a boss voice. Horde kills give experience and score but do not advance the boss counter. Clearing it awards a bonus of 20 points per member. Tuning in `horde_event.go`.
 
 ## Weapons
 
