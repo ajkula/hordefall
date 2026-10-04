@@ -460,10 +460,10 @@ func TestMusicVolumeSliderStepsAndClamps(t *testing.T) {
 	game := newHeadlessGame()
 	game.settings = DefaultSettings()
 	game.adjustMusicVolume(1)
-	if game.settings.MusicVolumeStep != musicVolumeSteps {
+	if game.settings.MusicVolumeStep != volumeSteps {
 		t.Fatalf("volume went past 100%%: step %d", game.settings.MusicVolumeStep)
 	}
-	for range musicVolumeSteps + 2 {
+	for range volumeSteps + 2 {
 		game.adjustMusicVolume(-1)
 	}
 	if game.settings.MusicVolumeStep != 0 || game.musicVolumeLabel() != "Music volume: 0%" {
@@ -473,9 +473,29 @@ func TestMusicVolumeSliderStepsAndClamps(t *testing.T) {
 	if game.musicVolumeLabel() != "Music volume: 20%" {
 		t.Fatalf("fire should raise the volume by one 20%% step: %q", game.musicVolumeLabel())
 	}
-	game.settings.MusicVolumeStep = musicVolumeSteps
+	game.settings.MusicVolumeStep = volumeSteps
 	game.cycleMusicVolume()
 	if game.settings.MusicVolumeStep != 0 {
 		t.Fatalf("fire at 100%% should wrap to 0%%, got step %d", game.settings.MusicVolumeStep)
+	}
+}
+
+func TestEffectsVolumeSliderScalesSoundEffects(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.settings = DefaultSettings()
+	game.audio = &AudioEngine{}
+	game.isDemo = false
+	game.updateAudio()
+	fullVolume := game.audio.EffectsVolume
+	game.adjustEffectsVolume(-2)
+	game.updateAudio()
+	if game.effectsVolumeLabel() != "Effects volume: 60%" || abs(game.audio.EffectsVolume-fullVolume*0.6) > 0.001 {
+		t.Fatalf("60%% step: label %q, volume %.3f (full %.3f)", game.effectsVolumeLabel(), game.audio.EffectsVolume, fullVolume)
+	}
+	game.adjustEffectsVolume(-10)
+	game.updateAudio()
+	if game.audio.EffectsVolume != 0 || game.settings.MusicVolumeStep != volumeSteps {
+		t.Fatalf("0%% effects should be silent without touching music: effects %.3f, music step %d", game.audio.EffectsVolume, game.settings.MusicVolumeStep)
 	}
 }

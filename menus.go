@@ -27,7 +27,7 @@ var mainMenuOptions = []MenuOption{
 var optionsMenuOptions = []MenuOption{
 	{fixedLabel("Configure buttons"), (*Game).openRemapFromOptions, nil},
 	{fixedLabel("Graphics"), (*Game).openGraphics, nil},
-	{fixedLabel("Music"), (*Game).openMusicMenu, nil},
+	{fixedLabel("Audio"), (*Game).openAudioMenu, nil},
 	{fixedLabel("Back"), (*Game).closeOptions, nil},
 }
 

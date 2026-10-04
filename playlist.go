@@ -60,7 +60,7 @@ func (g *Game) openPlaylist() {
 }
 
 func (g *Game) closePlaylist() {
-	g.switchState(StateMusic)
+	g.switchState(StateAudio)
 }
 
 func (g *Game) updatePlaylist() {

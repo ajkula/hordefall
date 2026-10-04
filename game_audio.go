@@ -38,7 +38,8 @@ func (g *Game) updateAudio() {
 	if g.controls.JustPressed&ActionMute != 0 {
 		g.toggleMusic()
 	}
-	g.audio.SetEffectsVolume(menuEffectsVolume + (gameEffectsVolume-menuEffectsVolume)*boolToFloat(!g.isDemo))
+	contextVolume := menuEffectsVolume + (gameEffectsVolume-menuEffectsVolume)*boolToFloat(!g.isDemo)
+	g.audio.SetEffectsVolume(contextVolume * g.effectsVolumeScale())
 	g.rotateSong()
 	if g.frame%musicSignalFrames != 0 {
 		return

@@ -97,7 +97,7 @@ const (
 	StateOptions
 	StatePlaylist
 	StateGraphics
-	StateMusic
+	StateAudio
 	stateCount
 )
 
@@ -125,7 +125,7 @@ var stateHandlers = [stateCount]StateHandler{
 	StateOptions:  {(*Game).updateOptions, (*Game).drawOptions},
 	StatePlaylist: {(*Game).updatePlaylist, (*Game).drawPlaylist},
 	StateGraphics: {(*Game).updateGraphics, (*Game).drawGraphics},
-	StateMusic:    {(*Game).updateMusicMenu, (*Game).drawMusicMenu},
+	StateAudio:    {(*Game).updateAudioMenu, (*Game).drawAudioMenu},
 }
 
 // ===== Public API =====

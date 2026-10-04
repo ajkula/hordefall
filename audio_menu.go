@@ -10,7 +10,7 @@ import (
 // ===== Constants =====
 
 const (
-	musicVolumeSteps     = 5
+	volumeSteps          = 5
 	maximumMusicVolume   = 0.5
 	sliderTrayWidth      = 220
 	sliderSlotHeight     = 10
@@ -23,76 +23,104 @@ const (
 )
 
 var musicVolumeSlider = MenuSlider{
-	Steps:  musicVolumeSteps,
+	Steps:  volumeSteps,
 	Level:  func(game *Game) int { return game.settings.MusicVolumeStep },
 	Adjust: (*Game).adjustMusicVolume,
 }
 
-var musicMenuOptions = []MenuOption{
+var effectsVolumeSlider = MenuSlider{
+	Steps:  volumeSteps,
+	Level:  func(game *Game) int { return game.settings.EffectsVolumeStep },
+	Adjust: (*Game).adjustEffectsVolume,
+}
+
+var audioMenuOptions = []MenuOption{
 	{(*Game).musicLabel, (*Game).toggleMusic, nil},
 	{(*Game).musicVolumeLabel, (*Game).cycleMusicVolume, &musicVolumeSlider},
+	{(*Game).effectsVolumeLabel, (*Game).cycleEffectsVolume, &effectsVolumeSlider},
 	{fixedLabel("Playlist"), (*Game).openPlaylist, nil},
-	{fixedLabel("Back"), (*Game).closeMusicMenu, nil},
+	{fixedLabel("Back"), (*Game).closeAudioMenu, nil},
 }
 
 // ===== Public API =====
 
-func (u *UI) DrawMusicMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
+func (u *UI) DrawAudioMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, menuDim)
-	u.drawText(screen, "MUSIC", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, "AUDIO", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
 	u.drawText(screen, "Up / Down to choose, Left / Right to set the volume, Fire to confirm, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
-	u.drawText(screen, "Music only: sound effects stay on. Settings are saved.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Music OFF keeps the sound effects. Settings are saved.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
 // ===== Internal =====
 
-func (g *Game) openMusicMenu() {
+func (g *Game) openAudioMenu() {
 	g.settingsMessage = ""
-	g.switchState(StateMusic)
+	g.switchState(StateAudio)
 }
 
-func (g *Game) closeMusicMenu() {
+func (g *Game) closeAudioMenu() {
 	g.switchState(StateOptions)
 }
 
-func (g *Game) updateMusicMenu() {
+func (g *Game) updateAudioMenu() {
 	g.updateDemo()
 	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
-		g.closeMusicMenu()
+		g.closeAudioMenu()
 		return
 	}
-	g.navigateMenu(musicMenuOptions)
+	g.navigateMenu(audioMenuOptions)
 }
 
-func (g *Game) drawMusicMenu(screen *ebiten.Image) {
+func (g *Game) drawAudioMenu(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawMusicMenu(g, screen, musicMenuOptions)
+	g.ui.DrawAudioMenu(g, screen, audioMenuOptions)
 }
 
 func (g *Game) musicVolumeLabel() string {
-	return "Music volume: " + strconv.Itoa(g.settings.MusicVolumeStep*100/musicVolumeSteps) + "%"
+	return volumeLabel("Music volume", g.settings.MusicVolumeStep)
+}
+
+func (g *Game) effectsVolumeLabel() string {
+	return volumeLabel("Effects volume", g.settings.EffectsVolumeStep)
+}
+
+func volumeLabel(name string, step int) string {
+	return name + ": " + strconv.Itoa(step*100/volumeSteps) + "%"
 }
 
 func (g *Game) adjustMusicVolume(delta int) {
-	g.setMusicVolumeStep(clampInt(g.settings.MusicVolumeStep+delta, 0, musicVolumeSteps))
+	g.setVolumeStep(&g.settings.MusicVolumeStep, g.settings.MusicVolumeStep+delta)
 }
 
 func (g *Game) cycleMusicVolume() {
-	g.setMusicVolumeStep((g.settings.MusicVolumeStep + 1) % (musicVolumeSteps + 1))
+	g.setVolumeStep(&g.settings.MusicVolumeStep, (g.settings.MusicVolumeStep+1)%(volumeSteps+1))
 }
 
-func (g *Game) setMusicVolumeStep(step int) {
-	g.settings.MusicVolumeStep = step
+func (g *Game) adjustEffectsVolume(delta int) {
+	g.setVolumeStep(&g.settings.EffectsVolumeStep, g.settings.EffectsVolumeStep+delta)
+}
+
+func (g *Game) cycleEffectsVolume() {
+	g.setVolumeStep(&g.settings.EffectsVolumeStep, (g.settings.EffectsVolumeStep+1)%(volumeSteps+1))
+	g.playSound(SoundMenuMove)
+}
+
+func (g *Game) setVolumeStep(step *int, value int) {
+	*step = clampInt(value, 0, volumeSteps)
 	g.applyMusicVolume()
 	g.saveSettings()
 }
 
+func (g *Game) effectsVolumeScale() float32 {
+	return float32(g.settings.EffectsVolumeStep) / volumeSteps
+}
+
 func (g *Game) applyMusicVolume() {
-	g.audio.SetMusicVolume(maximumMusicVolume * float32(g.settings.MusicVolumeStep) / musicVolumeSteps)
+	g.audio.SetMusicVolume(maximumMusicVolume * float32(g.settings.MusicVolumeStep) / volumeSteps)
 }
 
 func (u *UI) drawSliderIf(g *Game, screen *ebiten.Image, slider *MenuSlider, top float32) {

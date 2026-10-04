@@ -9,17 +9,18 @@ import (
 // ===== Types =====
 
 type Settings struct {
-	IsMusicOn       bool             `json:"musicOn"`
-	Tracks          map[string]bool  `json:"tracks"`
-	IsFullscreen    bool             `json:"fullscreen"`
-	IsVsyncOn       bool             `json:"vsync"`
-	Resolution      RenderResolution `json:"resolution"`
-	IsFPSShown      bool             `json:"showFps"`
-	ShakeLevel      int              `json:"screenShake"`
-	EffectsLevel    int              `json:"effects"`
-	BloomLevel      int              `json:"bloom"`
-	IsCRTOn         bool             `json:"crt"`
-	MusicVolumeStep int              `json:"musicVolume"`
+	IsMusicOn         bool             `json:"musicOn"`
+	Tracks            map[string]bool  `json:"tracks"`
+	IsFullscreen      bool             `json:"fullscreen"`
+	IsVsyncOn         bool             `json:"vsync"`
+	Resolution        RenderResolution `json:"resolution"`
+	IsFPSShown        bool             `json:"showFps"`
+	ShakeLevel        int              `json:"screenShake"`
+	EffectsLevel      int              `json:"effects"`
+	BloomLevel        int              `json:"bloom"`
+	IsCRTOn           bool             `json:"crt"`
+	MusicVolumeStep   int              `json:"musicVolume"`
+	EffectsVolumeStep int              `json:"effectsVolume"`
 }
 
 // ===== Constants =====
@@ -33,7 +34,7 @@ func DefaultSettings() Settings {
 		IsMusicOn: true, Tracks: map[string]bool{},
 		IsVsyncOn: true, Resolution: Resolution720p, IsFPSShown: true,
 		ShakeLevel: defaultGraphicsLevel, EffectsLevel: defaultGraphicsLevel,
-		BloomLevel: defaultBloomLevel, MusicVolumeStep: musicVolumeSteps,
+		BloomLevel: defaultBloomLevel, MusicVolumeStep: volumeSteps, EffectsVolumeStep: volumeSteps,
 	}
 }
 
@@ -50,7 +51,8 @@ func LoadSettings() (Settings, error) {
 	err = json.Unmarshal(content, &settings)
 	settings.Tracks = ensureTracks(settings.Tracks)
 	sanitizeGraphics(&settings)
-	settings.MusicVolumeStep = clampInt(settings.MusicVolumeStep, 0, musicVolumeSteps)
+	settings.MusicVolumeStep = clampInt(settings.MusicVolumeStep, 0, volumeSteps)
+	settings.EffectsVolumeStep = clampInt(settings.EffectsVolumeStep, 0, volumeSteps)
 	return settings, err
 }
 
