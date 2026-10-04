@@ -66,7 +66,7 @@ type songParser struct {
 // ===== Constants =====
 
 const (
-	trackerChannels    = 10
+	trackerChannels    = 16
 	maximumInstruments = 32
 	noteEmpty          = -1
 	noteOff            = -2
@@ -123,13 +123,14 @@ var instrumentProperties = map[string]func(settings *VoiceSettings, value float3
 // ===== Public API =====
 
 func ParseSong(source string) (*Song, error) {
-	song := &Song{Tempo: 125, Speed: 6, Patterns: map[int]*Pattern{}, ChannelPans: [trackerChannels]float32{0.5, 0.5, 0.68, 0.34, 0.63, 0.5, 0.5, 0.5, 0.3, 0.7}}
+	song := &Song{Tempo: 125, Speed: 6, Patterns: map[int]*Pattern{}, ChannelPans: [trackerChannels]float32{0.5, 0.5, 0.68, 0.34, 0.63, 0.5, 0.5, 0.5, 0.3, 0.7, 0.74, 0.44, 0.5, 0.36, 0.62, 0.4}}
 	parser := &songParser{}
 	for lineNumber, line := range strings.Split(source, "\n") {
 		if err := parser.parseLine(song, strings.TrimSpace(line)); err != nil {
 			return nil, fmt.Errorf("line %d: %w", lineNumber+1, err)
 		}
 	}
+	ArrangeExtraLayers(song)
 	return song, validateSong(song)
 }
 
@@ -191,10 +192,10 @@ func (p *songParser) parseRow(song *Song, line string) error {
 		return fmt.Errorf("row outside of a pattern: %q", line)
 	}
 	cells := strings.Split(line, "|")
-	if len(cells) != trackerChannels {
-		return fmt.Errorf("expected %d cells separated by |, got %d", trackerChannels, len(cells))
+	if len(cells) > trackerChannels {
+		return fmt.Errorf("expected at most %d cells separated by |, got %d", trackerChannels, len(cells))
 	}
-	var row [trackerChannels]TrackerCell
+	row := emptyRow()
 	for channel, cell := range cells {
 		parsed, err := parseCell(strings.Fields(cell))
 		if err != nil {
@@ -279,8 +280,8 @@ func parseIntegerInto(target *int, fields []string) error {
 }
 
 func parsePan(song *Song, fields []string, _ *songParser) error {
-	if len(fields) != trackerChannels {
-		return fmt.Errorf("pan needs %d values", trackerChannels)
+	if len(fields) == 0 || len(fields) > trackerChannels {
+		return fmt.Errorf("pan needs 1 to %d values", trackerChannels)
 	}
 	for channel, field := range fields {
 		value, err := strconv.ParseFloat(field, 32)

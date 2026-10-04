@@ -536,3 +536,41 @@ func TestMusicIsBalancedAndWideInStereo(t *testing.T) {
 		}
 	}
 }
+
+func TestExtraLayersPlayChordTonesInEverySong(t *testing.T) {
+	theme, err := ParseSong(themeSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	songs := []*Song{theme}
+	for index := range musicStyles {
+		songs = append(songs, ComposeSong(&musicStyles[index], theme, uint32(index+1)*7919))
+	}
+	tonalChannels := []int{channelPad, channelPluck, channelOffbeat, channelHarmony}
+	for _, song := range songs {
+		notesPerChannel := [trackerChannels]int{}
+		for _, pattern := range song.Patterns {
+			chords := detectChords(pattern.Rows)
+			for rowIndex, row := range pattern.Rows {
+				for channel, cell := range row {
+					notesPerChannel[channel] += boolToIndex(cell.Note >= 0)
+				}
+				for _, channel := range tonalChannels {
+					cell := row[channel]
+					if cell.Note >= 0 && !chords[rowIndex].Contains(cell.Note) {
+						t.Fatalf("%s: channel %d plays %d outside chord %+v", song.Title, channel+1, cell.Note, chords[rowIndex])
+					}
+				}
+			}
+		}
+		for channel, count := range notesPerChannel {
+			if count == 0 {
+				t.Errorf("%s: channel %d never plays", song.Title, channel+1)
+			}
+		}
+		tracker := NewTracker(song)
+		tracker.SetSignals([musicSignalCount]float32{1, 1, maximumSpidersAlive, 1, 1})
+		peak, rms := renderStatistics(t, tracker, 6*sampleRate)
+		t.Logf("%-18s notes per channel %v  peak %.2f rms %.3f", song.Title, notesPerChannel, peak, rms)
+	}
+}

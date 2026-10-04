@@ -22,7 +22,7 @@ go run .
 ## Music and sound
 
 ### Adaptive tracker music
-The soundtrack is a small Amiga-style tracker running live: `music/theme.trk` is a plain-text song with 10 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
+The soundtrack is a small Amiga-style tracker running live: `music/theme.trk` is a plain-text song with 16 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
 
 The music is procedural in the sense that it follows the game. Every channel always plays in time, but is only heard while its game signal is above a threshold, with a smooth fade:
 
@@ -33,11 +33,18 @@ The music is procedural in the sense that it follows the game. Every channel alw
 | boss voices | `boss` | one deep voice per spider tank alive: saw stabs on the root (1 tank), a lower square growl on the fifth (2 tanks), the deepest saw drone sliding a semitone up and a tone down (3 tanks) |
 | crystal bells | `reactions` | infernos, freezes, shatters chaining |
 | tension pulse | `danger` | low health or a spider beam charging |
+| shaker, pad | `always` | 16th-note shaker in the gaps of the hi-hats, a soft sustained chord in the mids |
+| clap | `horde` 0.2 | doubles the snare, or marks the backbeat when the kick hides it |
+| pluck arpeggio | `horde` 0.3 | climbs the chord tones (every 8th note, every quarter in slow songs) |
+| offbeat stabs | `horde` 0.5 | short chords between the kicks |
+| lead harmony | `horde` 0.7 | a second voice on the nearest chord tone under the melody |
+
+Channels 11 to 16 are written by the arranger (`arranger.go`) for every song, the theme and the composed ones alike: it reads each pattern's chord from the arpeggio notes on channel 4 and its rhythm from the drums and hi-hats, so every added note is a chord tone and every added hit falls between or on the existing ones. A test checks this for each song. Write cells in one of those channels in `theme.trk` and the arranger leaves that channel alone.
 
 The tempo also rises with intensity (`tempoboost`). M mutes the music.
 
 ### Composing
-Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is 10 cells separated by `|`, each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (`stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test -run Theme` checks the song.
+Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is up to 16 cells separated by `|` (missing channels are empty), each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (`stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test -run Theme` checks the song.
 
 ### Song rotation and procedural composer
 The first song is picked at random among enabled tracks at launch. Then the next enabled track plays when a run starts, every 5 minutes during a run, and on the main menu after every full cycle of the attract-mode sequences, with a 3-second crossfade and a small banner: the hand-written theme first, then five songs composed procedurally at each launch from the styles in `composer.go`:
@@ -163,6 +170,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `tachikoma_render.go` | Player drawing                                        |
 | `skids.go`       | Wheel skid trails                                          |
 | `horde_event.go` | Horde boss event: spawning, tracking, bar                  |
+| `arranger.go`    | Arranges channels 11-16 from each pattern's chords          |
 | `stereo_room.go` | Stereo room on the music bus: crossed delays, no bass       |
 | `audio_menu.go`  | Audio submenu: music toggle, volume gauges, playlist entry |
 | `graphics.go`    | Graphics options, render scale, scaled text and rectangles |

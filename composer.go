@@ -136,6 +136,7 @@ func ComposeSong(style *MusicStyle, template *Song, seed uint32) *Song {
 		composer.composePattern(pattern)
 		composer.song.Order = append(composer.song.Order, pattern)
 	}
+	ArrangeExtraLayers(composer.song)
 	return composer.song
 }
 
