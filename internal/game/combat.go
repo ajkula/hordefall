@@ -137,6 +137,7 @@ func (g *Game) grantKillRewardsIf(x, y float32, definition *EnemyDefinition, isP
 		return
 	}
 	g.gems.Drop(x, y, definition.Experience)
+	g.dropHealOrbIf(x, y)
 	g.awardKillScore(definition.Experience)
 	g.kills++
 	g.bossProgressKills += 1 - boolToIndex(isHordeEnemy)

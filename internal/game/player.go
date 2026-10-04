@@ -156,6 +156,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	collected := g.gems.Collect(player.X, player.Y, player.MagnetRadius, deltaSeconds)
 	player.GainExperience(collected)
 	g.playSoundIf(audio.SoundGem, collected > 0)
+	g.updateHealOrbs(deltaSeconds)
 	g.updateTachikoma(deltaSeconds)
 }
 

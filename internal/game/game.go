@@ -47,6 +47,7 @@ type Game struct {
 	spiders               []SpiderRig
 	demoReinforceCooldown float32
 	mines                 []StaticMine
+	healOrbs              []HealOrb
 	bossKillsRequired     int
 	bossProgressKills     int
 	bossEventCount        int
@@ -212,6 +213,7 @@ func (g *Game) resetRun() {
 	g.elapsedSeconds, g.kills, g.killScore = 0, 0, 0
 	g.spiders = g.spiders[:0]
 	g.mines = g.mines[:0]
+	g.healOrbs = g.healOrbs[:0]
 	g.bossKillsRequired = bossKillsRequiredAt(0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}

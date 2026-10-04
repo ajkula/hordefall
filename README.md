@@ -18,6 +18,7 @@ go run .
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu. In every menu, Start / Esc or the aim lock button (button 2 / K) goes back, or resumes from pause; the button setup screen keeps button 2 free to be assigned.
 - **Game over**: Start / Enter to try again, Select / Backspace for the main menu.
 - **Level up**: when several upgrades are available the game pauses on a choice of cards; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption. Once every weapon is maxed and only passives remain, each level up applies the next remaining passive in turn (a b c d a b c d, then a b d a b d once c is maxed), also without pausing.
+- **Heal bubbles**: each enemy you kill has a 2% chance to also drop a green bubble with a white cross. It gives no experience but restores 20 health (up to your maximum), and it is drawn in by your pickup radius like experience gems (`heal_orbs.go`). Enemies killed by a boss drop none.
 
 ## Music and sound
 
@@ -186,6 +187,7 @@ Go builds one package per folder and a type's methods must live in its own packa
 | `mathutil.go` | Small math helpers |
 | `menus.go` | Main menu, pause, game over and remap states |
 | `menus_test.go` | Menus, settings, playlist and song rotation tests |
+| `heal_orbs.go` | Heal bubbles: 2% drop, pickup, +20 health, drawing |
 | `mines.go` | Static mines: drop, arming, trigger, rendering |
 | `player.go` | Player movement, dash, damage, experience |
 | `playlist.go` | Playlist menu and enabled tracks |

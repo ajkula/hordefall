@@ -20,3 +20,6 @@ Thumbs.db
 # Archives
 *.zip
 internal/audio/music/previews/
+
+# Local documentation pages
+*.html

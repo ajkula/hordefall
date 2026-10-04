@@ -563,3 +563,47 @@ func TestLaserChargeSoundLastsUntilTheShot(t *testing.T) {
 		t.Fatalf("charge sound lasts %.2fs, the beam fires after %.2fs", audio.LaserChargeSoundSeconds, laserChargeSeconds+laserLockSeconds)
 	}
 }
+
+func TestHealOrbsDropRarelyAndHealWithoutExperience(t *testing.T) {
+	game := newHeadlessGame()
+	const kills = 20000
+	for range kills {
+		game.dropHealOrbIf(game.player.X+300, game.player.Y)
+		dropped := len(game.healOrbs)
+		game.healOrbs = game.healOrbs[:0]
+		game.kills += dropped
+	}
+	rate := float32(game.kills) / kills
+	if rate < 0.015 || rate > 0.025 {
+		t.Fatalf("heal orb drop rate %.3f, want about %.2f", rate, healOrbDropChance)
+	}
+	game.player.Health = 50
+	experienceBefore, levelBefore := game.player.Experience, game.player.Level
+	game.healOrbs = append(game.healOrbs, HealOrb{X: game.player.X + 5, Y: game.player.Y})
+	game.updateHealOrbs(deltaSeconds)
+	if game.player.Health != 70 || len(game.healOrbs) != 0 {
+		t.Fatalf("heal orb gave %.0f health (want 20) and left %d orbs", game.player.Health-50, len(game.healOrbs))
+	}
+	if game.player.Experience != experienceBefore || game.player.Level != levelBefore {
+		t.Fatalf("heal orb gave experience")
+	}
+	game.player.Health = game.player.MaximumHealth - 5
+	game.healOrbs = append(game.healOrbs, HealOrb{X: game.player.X, Y: game.player.Y})
+	game.updateHealOrbs(deltaSeconds)
+	if game.player.Health != game.player.MaximumHealth {
+		t.Fatalf("heal orb overhealed to %.0f of %.0f", game.player.Health, game.player.MaximumHealth)
+	}
+}
+
+func TestBossKillsDropNoHealOrbs(t *testing.T) {
+	game := newHeadlessGame()
+	for range 500 {
+		game.enemies.Spawn(EnemySwarmer, game.player.X+300, game.player.Y, 1)
+		game.enemies.LastHitByBoss[game.enemies.Count-1] = true
+		game.enemies.Health[game.enemies.Count-1] = 0
+		game.removeDeadEnemies()
+	}
+	if len(game.healOrbs) != 0 {
+		t.Fatalf("enemies killed by a boss dropped %d heal orbs", len(game.healOrbs))
+	}
+}
