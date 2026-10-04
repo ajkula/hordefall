@@ -175,16 +175,19 @@ func (r *Renderer) drawTargetingBeam(laser *SpiderLaser, frame uint32) {
 	flicker := 0.7 + 0.3*sine(float32(frame)*0.9)
 	r.queueBeam(laser, 8, laserTargetingColor, (0.12+0.25*progress)*flicker)
 	r.queueBeam(laser, 1.6, laserCoreColor, (0.5+0.5*progress)*flicker)
-	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
-	r.glow.AddCircle(originX, originY, 8+34*progress, laserTargetingColor, 0.5+0.4*progress)
+	sphereRadius := chargeSphereMinimum + chargeSphereGrowth*progress + chargeSphereSwell(laser)
+	r.drawChargeMotes(laser, sphereRadius)
+	r.drawChargeSphere(laser, sphereRadius, 0.6+0.4*progress)
 }
 
 func (r *Renderer) drawLockedBeam(laser *SpiderLaser, frame uint32) {
 	blink := 0.45 + 0.55*float32((frame/3)%2)
 	r.queueBeam(laser, 14, laserTargetingColor, 0.4*blink)
 	r.queueBeam(laser, 3, laserCoreColor, blink)
-	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
-	r.glow.AddCircle(originX, originY, 46, laserCoreColor, 0.7*blink)
+	sphereRadius := chargeSphereMinimum + chargeSphereGrowth + chargeSphereSwell(laser)
+	flicker := 1 - dischargeSphereFlicker*float32((frame/2)%2)
+	r.drawChargeMotes(laser, sphereRadius)
+	r.drawChargeSphere(laser, sphereRadius, flicker)
 }
 
 func (r *Renderer) drawFiringBeam(laser *SpiderLaser, frame uint32) {

@@ -73,7 +73,7 @@ func (u *UI) DrawGraphicsMenu(g *Game, screen *ebiten.Image, options []MenuOptio
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to change, Start / Esc to go back. F11 toggles fullscreen anywhere.", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Fire to change, Start / Esc / Aim lock to go back. F11 toggles fullscreen anywhere.", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 	u.drawText(screen, "Native renders at your screen resolution: sharper, heavier on the GPU.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
@@ -195,7 +195,7 @@ func (g *Game) closeGraphics() {
 
 func (g *Game) updateGraphics() {
 	g.updateDemo()
-	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
+	if g.isGoingBack() {
 		g.closeGraphics()
 		return
 	}

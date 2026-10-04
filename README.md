@@ -15,7 +15,7 @@ go run .
 - **Options**: Configure buttons, Graphics (Fullscreen, also F11 anywhere; VSync; Resolution 720p / 1080p / Native, where Native renders at the screen's real pixel count for sharp lines and text; Show FPS; Screen shake Off / 50% / 100%; Effects Low / Medium / High, which keeps 30% / 60% / 100% of particles; Bloom Off / Soft / Strong, a glow on the world only (fire, lightning, explosions), never on the HUD; CRT filter, with curved screen, scanlines, RGB mask, colour fringing and vignette), Audio, a submenu with Music on/off (sound effects stay on), Music volume and Effects volume, each from 0 to 100% in 20% steps (Left / Right on its gauge, or Fire to step up and wrap), and Playlist (switch each track on or off: enabling a track plays it at once, disabling the current one moves to the next enabled track, rotation goes to the next enabled track; all off means no music), Back. Settings are saved to `%AppData%\hordefall\settings.json` and restored on launch; the playlist is a `"tracks": { "title": true/false }` map, and a track missing from it counts as enabled. Behind it runs an attract-mode benchmark: eight 5-second gameplay sequences on loop (Inferno chain, firing only half the time; Electrocution; Freeze and shatter; Wildfire; Spider tank; Horde x4000; Siege: 3 spider tanks and a horde of 2000; Full arsenal: all 6 weapons at max level against 2500 soaked foes) interleaved with randomly generated LIVE ACTION clips (random weapons and levels, passives, enemy mix and count, starting statuses, prepared ground, sometimes a spider tank), all played by an autopilot Tachikoma; whenever a chain reaction leaves fewer than 40% of the enemies, a fresh wave without status walks in from the edge so no clip runs empty; with live FPS, TPS, simulation time and entity counts.
 - **Score**: every kill is worth its experience x 10 (a spider tank is worth 1,500) and every second survived is worth 5. Score and high score are shown in the HUD.
 - **High score** is saved to `%AppData%\hordefall\highscore.json` on game over, when leaving a run for the main menu, on Quit and when the window is closed.
-- **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu.
+- **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Music on/off, Back to main menu. In every menu, Start / Esc or the aim lock button (button 2 / K) goes back, or resumes from pause; the button setup screen keeps button 2 free to be assigned.
 - **Game over**: Start / Enter to try again, Select / Backspace for the main menu.
 - **Level up**: when several upgrades are available the game pauses on a choice of cards; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption. Once every weapon is maxed and only passives remain, each level up applies the next remaining passive in turn (a b c d a b c d, then a b d a b d once c is maxed), also without pausing.
 
@@ -134,8 +134,8 @@ Its four legs are procedural: each leg is a two-bone chain solved with inverse k
 Every footfall is a stomp: dust, screen shake, a physical burst that crushes nearby enemies, shatters frozen ones and hurts you.
 Its cockpit, sensor and cannon sit on a turret ring that tracks you with a slow, heavy servo, independently of where the legs carry the body.
 **Devastator beam.** It spawns off screen and opens with its signature attack, so you know it is there:
-1. Charging (2.2 s): the ground crackles with sparks and arcs along the line of fire, and a thin, intense targeting beam leaves the cannon and tracks you through the turret servo.
-2. Locked (400 ms): the beam freezes and blinks. This is your window to get out, or to dash through.
+1. Charging (2.2 s): glowing white motes are sucked into the front of the cannon, where a white sphere grows, while a thin, intense targeting beam leaves the cannon and tracks you through the turret servo.
+2. Locked (400 ms): the beam freezes and blinks, and the full sphere radiates lightning that ricochets off the ground around it. This is your window to get out, or to dash through.
 3. Firing (0.35 s): a long, thick, blinding ray. It shreds your health (dashing makes you immune), burns every enemy it crosses, and scorches the ground: grass and oil catch fire, ice melts, dirt turns to ash.
 4. Cooldown (6 to 9 s), then again.
 Enemies killed by a boss give no experience, no kill and no lifesteal. Timings, damage and range are constants in `spider_laser.go`.
@@ -181,6 +181,7 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 | `postfx.go`      | Kage shaders: bloom (bright pass, blur) and CRT filter     |
 | `spider.go`      | Spider tank boss: spawn, procedural legs, gait, stomps     |
 | `spider_laser.go` | Spider tank beam: charge, lock, fire state machine         |
+| `spider_charge.go` | Beam charge visuals: drawn-in motes, sphere, discharge     |
 | `spider_render.go` | Spider tank drawing                                      |
 | `ui.go`          | HUD, menus, overlays                                       |
 | `input.go`       | Keyboard and gamepad bindings, raw button capture          |

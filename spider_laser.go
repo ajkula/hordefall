@@ -10,6 +10,8 @@ type SpiderLaser struct {
 	BeamAngle float32
 	OriginX   float32
 	OriginY   float32
+	Motes     [chargeMoteCount]ChargeMote
+	NextMote  int
 }
 
 type laserPhaseBehavior func(game *Game, rig *SpiderRig, deltaSeconds float32)
@@ -37,7 +39,6 @@ const (
 	laserPlayerDamagePerSec  = 140
 	laserEnemyDamagePerSec   = 420
 	laserGroundSampleSpacing = 18
-	laserCrackleSpacing      = 140
 )
 
 var laserPhaseDurations = [laserPhaseCount]float32{
@@ -62,7 +63,6 @@ var (
 	laserTargetingColor = [3]float32{1, 0.25, 0.15}
 	laserCoreColor      = [3]float32{1, 0.95, 0.8}
 	laserBeamColor      = [3]float32{1, 0.55, 0.2}
-	crackleColor        = [3]float32{1, 0.85, 0.45}
 )
 
 // ===== Public API =====
@@ -121,36 +121,11 @@ func (g *Game) aimLaser(rig *SpiderRig) {
 
 func (g *Game) chargeLaser(rig *SpiderRig, deltaSeconds float32) {
 	g.aimLaser(rig)
-	laser := &rig.Laser
-	directionX, directionY := laser.Direction()
-	crackleReach := min(laserRange, length(g.player.X-laser.OriginX, g.player.Y-laser.OriginY)+200)
-	for distance := float32(0); distance < crackleReach; distance += laserCrackleSpacing {
-		offset := distance + g.random.Float()*laserCrackleSpacing
-		g.crackleAt(laser.OriginX+directionX*offset, laser.OriginY+directionY*offset, laser.PhaseProgress())
-	}
-	g.crackleAt(rig.X+g.random.Between(-50, 50), rig.Y+g.random.Between(-50, 50), laser.PhaseProgress())
-}
-
-func (g *Game) crackleAt(x, y, intensity float32) {
-	if !g.random.Chance(0.15 + 0.5*intensity) {
-		return
-	}
-	g.effects.SpawnSparks(x, y, 1, crackleColor, 90)
-	isArcing := g.random.Chance(0.12 * intensity)
-	g.addCrackleArcIf(x, y, isArcing)
-}
-
-func (g *Game) addCrackleArcIf(x, y float32, isArcing bool) {
-	if !isArcing {
-		return
-	}
-	angle := g.random.Angle()
-	g.effects.AddLightning(x, y, x+cosine(angle)*24, y+sine(angle)*24)
+	g.drawInChargeMotes(&rig.Laser, deltaSeconds)
 }
 
 func (g *Game) holdLaser(rig *SpiderRig, deltaSeconds float32) {
-	laser := &rig.Laser
-	g.crackleAt(laser.OriginX+g.random.Between(-12, 12), laser.OriginY+g.random.Between(-12, 12), 1)
+	g.radiateDischarge(&rig.Laser, deltaSeconds)
 }
 
 func (g *Game) fireLaser(rig *SpiderRig, deltaSeconds float32) {

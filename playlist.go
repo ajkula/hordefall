@@ -65,7 +65,7 @@ func (g *Game) closePlaylist() {
 
 func (g *Game) updatePlaylist() {
 	g.updateDemo()
-	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
+	if g.isGoingBack() {
 		g.closePlaylist()
 		return
 	}
@@ -84,6 +84,6 @@ func (u *UI) DrawPlaylistMenu(g *Game, screen *ebiten.Image, options []MenuOptio
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to switch a track on or off, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Fire to switch a track on or off, Start / Esc / Aim lock to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 	u.drawText(screen, "Only enabled tracks play, in game and on the main menu. All off means no music.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }

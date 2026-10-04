@@ -51,7 +51,7 @@ func (u *UI) DrawAudioMenu(g *Game, screen *ebiten.Image, options []MenuOption) 
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Left / Right to set the volume, Fire to confirm, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Left / Right to set the volume, Fire to confirm, Start / Esc / Aim lock to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 	u.drawText(screen, "Music OFF keeps the sound effects. Settings are saved.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
@@ -68,7 +68,7 @@ func (g *Game) closeAudioMenu() {
 
 func (g *Game) updateAudioMenu() {
 	g.updateDemo()
-	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
+	if g.isGoingBack() {
 		g.closeAudioMenu()
 		return
 	}

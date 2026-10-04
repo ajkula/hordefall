@@ -44,6 +44,7 @@ const (
 	menuOptionSpacing     = 40
 	menuSliderExtraHeight = 18
 	menuSliderOffset      = 32
+	menuBackActions       = ActionPause | ActionAimLock
 	menuListBottom        = mainMenuOptionsTop + 2*mainMenuOptionSpacing
 )
 
@@ -63,6 +64,10 @@ func (g *Game) navigateMenu(options []MenuOption) {
 	}
 	g.playSound(SoundMenuSelect)
 	options[g.menuSelection].Activate(g)
+}
+
+func (g *Game) isGoingBack() bool {
+	return g.menuLockSeconds == 0 && g.controls.JustPressed&menuBackActions != 0
 }
 
 func (g *Game) adjustSelectedSlider(slider *MenuSlider) bool {
@@ -150,7 +155,7 @@ func (g *Game) updateMainMenu() {
 
 func (g *Game) updateOptions() {
 	g.updateDemo()
-	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
+	if g.isGoingBack() {
 		g.closeOptions()
 		return
 	}
@@ -158,7 +163,7 @@ func (g *Game) updateOptions() {
 }
 
 func (g *Game) updatePaused() {
-	if g.menuLockSeconds == 0 && g.controls.JustPressed&ActionPause != 0 {
+	if g.isGoingBack() {
 		g.resumeRun()
 		return
 	}

@@ -574,3 +574,28 @@ func TestExtraLayersPlayChordTonesInEverySong(t *testing.T) {
 		t.Logf("%-18s notes per channel %v  peak %.2f rms %.3f", song.Title, notesPerChannel, peak, rms)
 	}
 }
+
+func TestAimLockGoesBackInMenus(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.settings = DefaultSettings()
+	steps := []struct {
+		from GameState
+		to   GameState
+	}{
+		{StateAudio, StateOptions},
+		{StateGraphics, StateOptions},
+		{StatePlaylist, StateAudio},
+		{StateOptions, StateMainMenu},
+		{StatePaused, StatePlaying},
+	}
+	for _, step := range steps {
+		game.switchState(step.from)
+		game.menuLockSeconds = 0
+		game.controls = Controls{JustPressed: ActionAimLock}
+		stateHandlers[step.from].Update(game)
+		if game.state != step.to {
+			t.Fatalf("aim lock in state %d led to %d, want %d", step.from, game.state, step.to)
+		}
+	}
+}

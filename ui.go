@@ -117,7 +117,7 @@ func (u *UI) DrawPauseMenu(g *Game, screen *ebiten.Image, options []MenuOption) 
 	dimScreen(screen, menuDim)
 	u.drawText(screen, "PAUSED", u.title, screenWidth/2, menuTitleTop, textColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to resume", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc / Aim lock to resume", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawOptionsMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
@@ -128,7 +128,7 @@ func (u *UI) DrawOptionsMenu(g *Game, screen *ebiten.Image, options []MenuOption
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc / Aim lock to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 	u.drawText(screen, "Settings are saved automatically.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 

@@ -76,6 +76,22 @@ func (b *SpriteBatch) AddCircle(x, y, radius float32, tint [3]float32, alpha flo
 	b.indices = append(b.indices, base, base+1, base+2, base+1, base+3, base+2)
 }
 
+func (b *SpriteBatch) AddEllipse(x, y, radiusAlong, radiusAcross, directionX, directionY float32, tint [3]float32, alpha float32) {
+	base := uint32(len(b.vertices))
+	alongX, alongY := directionX*radiusAlong, directionY*radiusAlong
+	acrossX, acrossY := -directionY*radiusAcross, directionX*radiusAcross
+	for corner := range 4 {
+		offsetX, offsetY := float32(corner&1), float32(corner>>1)
+		alongSign, acrossSign := offsetX*2-1, offsetY*2-1
+		b.vertices = append(b.vertices, ebiten.Vertex{
+			DstX: x + alongX*alongSign + acrossX*acrossSign, DstY: y + alongY*alongSign + acrossY*acrossSign,
+			SrcX: offsetX * b.textureSize, SrcY: offsetY * b.textureSize,
+			ColorR: tint[0], ColorG: tint[1], ColorB: tint[2], ColorA: alpha,
+		})
+	}
+	b.indices = append(b.indices, base, base+1, base+2, base+1, base+3, base+2)
+}
+
 func (b *SpriteBatch) AddSegment(fromX, fromY, toX, toY, width float32, tint [3]float32, alpha float32) {
 	directionX, directionY := normalize(toX-fromX, toY-fromY)
 	normalX, normalY := -directionY*width/2, directionX*width/2
