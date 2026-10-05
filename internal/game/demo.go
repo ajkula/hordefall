@@ -110,13 +110,14 @@ func (g *Game) DemoSequenceSubtitle() string {
 }
 
 func (g *Game) DemoSequenceProgress() float32 {
-	return clamp(g.demoSeconds/demoSequenceSeconds, 0, 1)
+	return clamp(g.demoSeconds/g.demoClipSeconds, 0, 1)
 }
 
 // ===== Internal =====
 
 func (g *Game) startDemo() {
 	g.demoSlot = -1
+	g.demoClipCount, g.highScoreBoardSeconds = 0, 0
 	g.startNextDemoSequence()
 }
 
@@ -129,6 +130,7 @@ func (g *Game) startNextDemoSequence() {
 	g.resetRun()
 	g.isDemo = true
 	g.demoSeconds = 0
+	g.demoClipSeconds = demoSequenceSeconds
 	g.director.accumulator = -1e9
 	g.director.nextWaveSeconds = 1e9
 	g.bossKillsRequired = 1 << 30
@@ -227,9 +229,8 @@ func (g *Game) reinforceDemoIfThin() {
 
 func (g *Game) updateDemo() {
 	g.demoSeconds += deltaSeconds
-	if g.demoSeconds > demoSequenceSeconds {
-		g.startNextDemoSequence()
-	}
+	g.advanceDemoBoard()
+	g.startNextDemoSequenceIfDone()
 	menuControls := g.controls
 	g.controls = g.autopilotControls()
 	g.aimAtNearestEnemy()
@@ -238,6 +239,14 @@ func (g *Game) updateDemo() {
 	g.player.Health = g.player.MaximumHealth
 	g.player.PendingLevelUps = 0
 	g.controls = menuControls
+}
+
+func (g *Game) startNextDemoSequenceIfDone() {
+	if g.demoSeconds <= g.demoClipSeconds {
+		return
+	}
+	g.startNextDemoSequence()
+	g.startDemoBoardIfDue()
 }
 
 func (g *Game) autopilotControls() Controls {

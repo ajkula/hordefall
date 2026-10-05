@@ -196,7 +196,7 @@ func (g *Game) closeGraphics() {
 }
 
 func (g *Game) updateGraphics() {
-	g.updateDemo()
+	g.updateBackdropDemo()
 	if g.isGoingBack() {
 		g.closeGraphics()
 		return

@@ -30,6 +30,7 @@ var mainMenuOptions = []MenuOption{
 
 var optionsMenuOptions = []MenuOption{
 	{fixedLabel("Configure buttons"), (*Game).openRemapFromOptions, nil},
+	{fixedLabel("Gameplay"), (*Game).openGameplay, nil},
 	{fixedLabel("Graphics"), (*Game).openGraphics, nil},
 	{fixedLabel("Audio"), (*Game).openAudioMenu, nil},
 	{fixedLabel("Back"), (*Game).closeOptions, nil},
@@ -37,6 +38,7 @@ var optionsMenuOptions = []MenuOption{
 
 var pauseMenuOptions = []MenuOption{
 	{fixedLabel("Resume"), (*Game).resumeRun, nil},
+	{fixedLabel("Options"), (*Game).openOptionsFromPause, nil},
 	{(*Game).musicLabel, (*Game).toggleMusic, nil},
 	{fixedLabel("Back to main menu"), (*Game).abandonRun, nil},
 }
@@ -118,11 +120,24 @@ func (g *Game) musicLabel() string {
 }
 
 func (g *Game) openOptions() {
+	g.optionsReturnState = StateMainMenu
+	g.switchState(StateOptions)
+}
+
+func (g *Game) openOptionsFromPause() {
+	g.optionsReturnState = StatePaused
 	g.switchState(StateOptions)
 }
 
 func (g *Game) closeOptions() {
-	g.switchState(StateMainMenu)
+	g.switchState(g.optionsReturnState)
+}
+
+func (g *Game) updateBackdropDemo() {
+	if !g.isDemo {
+		return
+	}
+	g.updateDemo()
 }
 
 func (g *Game) openRemapFrom(returnState GameState) {
@@ -150,6 +165,9 @@ func (g *Game) abandonRun() {
 
 func (g *Game) updateMainMenu() {
 	g.updateDemo()
+	if g.dismissDemoBoardIfPressed() {
+		return
+	}
 	if g.controls.JustPressed&ActionSelect != 0 {
 		g.openRemapFrom(StateMainMenu)
 		return
@@ -158,7 +176,7 @@ func (g *Game) updateMainMenu() {
 }
 
 func (g *Game) updateOptions() {
-	g.updateDemo()
+	g.updateBackdropDemo()
 	if g.isGoingBack() {
 		g.closeOptions()
 		return
@@ -188,7 +206,7 @@ func (g *Game) updateGameOver() {
 }
 
 func (g *Game) updateRemap() {
-	g.updateDemo()
+	g.updateBackdropDemo()
 	if g.controls.JustPressed&ActionPause != 0 {
 		g.switchState(g.remapReturnState)
 		return
@@ -227,6 +245,10 @@ func (g *Game) finishRemap() {
 
 func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
+	if g.highScoreBoardSeconds > 0 {
+		g.ui.DrawHighScoreBoard(g, screen, boardElapsedSeconds(g.highScoreBoardSeconds), "Press any button")
+		return
+	}
 	g.ui.DrawMainMenu(g, screen, mainMenuOptions)
 }
 

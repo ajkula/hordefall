@@ -217,13 +217,14 @@ func TestHighScoreIsSavedAndReloaded(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
 	game.killScore, game.elapsedSeconds, game.kills = 4200, 90, 321
-	game.recordHighScore()
-	if !game.isNewHighScore {
-		t.Fatalf("first score was not flagged as a new high score")
+	game.recordHighScoreAs("GRG")
+	if game.newEntryRank != 0 {
+		t.Fatalf("first score ranked %d, want 0", game.newEntryRank)
 	}
-	reloaded, err := LoadHighScore()
-	if err != nil || reloaded.Score != game.CurrentScore() || reloaded.Kills != 321 {
-		t.Fatalf("reloaded %+v (err %v), want score %d", reloaded, err, game.CurrentScore())
+	reloaded, err := LoadHighScores()
+	best := reloaded.Best()
+	if err != nil || best.Score != game.CurrentScore() || best.Kills != 321 || best.Initials != "GRG" {
+		t.Fatalf("reloaded %+v (err %v), want score %d", best, err, game.CurrentScore())
 	}
 }
 
@@ -233,8 +234,8 @@ func TestDemoNeverRecordsHighScore(t *testing.T) {
 	game.startDemo()
 	game.killScore = 999999
 	game.recordHighScore()
-	if game.highScore.Score != 0 {
-		t.Fatalf("demo recorded a high score of %d", game.highScore.Score)
+	if len(game.highScores.Entries) != 0 {
+		t.Fatalf("demo recorded a high score of %d", game.highScores.Best().Score)
 	}
 }
 
@@ -258,8 +259,8 @@ func TestDemoSequencesLoopCleanly(t *testing.T) {
 	game.startDemo()
 	seen := map[int]bool{}
 	randomClips := 0
-	for range (2*len(demoSequences) + 1) * demoSequenceSeconds * ticksPerSecond {
-		isStarting := game.demoSeconds+deltaSeconds > demoSequenceSeconds
+	for game.demoClipCount <= 2*len(demoSequences) {
+		isStarting := game.demoSeconds+deltaSeconds > game.demoClipSeconds
 		game.updateDemo()
 		seen[game.demoSequence] = true
 		randomClips += boolToIndex(isStarting && game.currentDemo.Name == randomClipName)

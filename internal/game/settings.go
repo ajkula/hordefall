@@ -19,6 +19,7 @@ type Settings struct {
 	IsCRTOn           bool             `json:"crt"`
 	MusicVolumeStep   int              `json:"musicVolume"`
 	EffectsVolumeStep int              `json:"effectsVolume"`
+	Initials          string           `json:"initials"`
 }
 
 // ===== Constants =====
@@ -32,7 +33,7 @@ func DefaultSettings() Settings {
 		IsMusicOn: true, Tracks: map[string]bool{},
 		IsFullscreen: false, IsVsyncOn: false, Resolution: ResolutionNative, IsFPSShown: false,
 		ShakeLevel: defaultShakeLevel, EffectsLevel: defaultEffectsLevel, BloomLevel: defaultBloomLevel, IsCRTOn: true,
-		MusicVolumeStep: defaultMusicVolumeStep, EffectsVolumeStep: defaultEffectsVolumeStep,
+		MusicVolumeStep: defaultMusicVolumeStep, EffectsVolumeStep: defaultEffectsVolumeStep, Initials: defaultInitials,
 	}
 }
 
@@ -43,6 +44,7 @@ func LoadSettings() (Settings, error) {
 	sanitizeGraphics(&settings)
 	settings.MusicVolumeStep = clampInt(settings.MusicVolumeStep, 0, volumeSteps)
 	settings.EffectsVolumeStep = clampInt(settings.EffectsVolumeStep, 0, volumeSteps)
+	settings.Initials = sanitizeInitials(settings.Initials)
 	return settings, err
 }
 

@@ -64,7 +64,7 @@ func (g *Game) closePlaylist() {
 }
 
 func (g *Game) updatePlaylist() {
-	g.updateDemo()
+	g.updateBackdropDemo()
 	if g.isGoingBack() {
 		g.closePlaylist()
 		return

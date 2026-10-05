@@ -2,24 +2,34 @@ package game
 
 import (
 	"fmt"
+	"slices"
 
 	"hordefall/internal/config"
 )
 
 // ===== Types =====
 
-type HighScore struct {
+type HighScoreEntry struct {
+	Initials        string  `json:"initials"`
 	Score           int     `json:"score"`
 	SurvivedSeconds float32 `json:"survivedSeconds"`
 	Kills           int     `json:"kills"`
 	Level           int     `json:"level"`
 }
 
+type HighScoreTable struct {
+	Entries []HighScoreEntry `json:"entries"`
+}
+
 // ===== Constants =====
 
 const (
-	pointsPerExperience = 10
-	highScoreFileName   = "highscore.json"
+	pointsPerExperience     = 10
+	highScoreTableSize      = 10
+	highScoreTableFileName  = "highscores.json"
+	legacyHighScoreFileName = "highscore.json"
+	legacyInitials          = "---"
+	noRank                  = -1
 )
 
 // ===== Public API =====
@@ -28,14 +38,53 @@ func (g *Game) CurrentScore() int {
 	return g.killScore
 }
 
-func LoadHighScore() (HighScore, error) {
-	var highScore HighScore
-	err := config.Load(highScoreFileName, &highScore)
-	return highScore, err
+func (t *HighScoreTable) Best() HighScoreEntry {
+	return t.EntryAt(0)
 }
 
-func SaveHighScore(highScore HighScore) error {
-	return config.Save(highScoreFileName, highScore)
+func (t *HighScoreTable) EntryAt(rank int) HighScoreEntry {
+	if rank >= len(t.Entries) {
+		return HighScoreEntry{}
+	}
+	return t.Entries[rank]
+}
+
+func (t *HighScoreTable) RankOf(score int) int {
+	rank := len(t.Entries)
+	for index, entry := range t.Entries {
+		if score > entry.Score {
+			rank = index
+			break
+		}
+	}
+	isRanked := score > 0 && rank < highScoreTableSize
+	return [2]int{noRank, rank}[boolToIndex(isRanked)]
+}
+
+func (t *HighScoreTable) Insert(entry HighScoreEntry) int {
+	rank := t.RankOf(entry.Score)
+	if rank == noRank {
+		return noRank
+	}
+	t.Entries = slices.Insert(t.Entries, rank, entry)
+	t.Entries = t.Entries[:min(len(t.Entries), highScoreTableSize)]
+	return rank
+}
+
+func LoadHighScores() (HighScoreTable, error) {
+	var table HighScoreTable
+	if err := config.Load(highScoreTableFileName, &table); err == nil {
+		return table, nil
+	}
+	var legacy HighScoreEntry
+	err := config.Load(legacyHighScoreFileName, &legacy)
+	legacy.Initials = legacyInitials
+	table.Insert(legacy)
+	return table, err
+}
+
+func SaveHighScores(table HighScoreTable) error {
+	return config.Save(highScoreTableFileName, table)
 }
 
 func formatThousands(value int) string {
@@ -55,23 +104,41 @@ func (g *Game) awardKillScore(experience int) {
 	g.killScore += experience * pointsPerExperience
 }
 
-func (g *Game) loadHighScore() {
-	highScore, err := LoadHighScore()
-	if err != nil {
-		return
-	}
-	g.highScore = highScore
+func (g *Game) loadHighScores() {
+	table, _ := LoadHighScores()
+	g.highScores = table
+}
+
+func (g *Game) isScoreRanked() bool {
+	return !g.isDemo && !g.isScoreRecorded && g.highScores.RankOf(g.CurrentScore()) != noRank
 }
 
 func (g *Game) recordHighScore() {
-	score := g.CurrentScore()
-	if g.isDemo || score <= g.highScore.Score {
+	g.recordHighScoreAs(g.settings.Initials)
+}
+
+func (g *Game) recordHighScoreAs(initials string) {
+	if !g.isScoreRanked() {
 		return
 	}
-	g.highScore = HighScore{Score: score, SurvivedSeconds: g.elapsedSeconds, Kills: g.kills, Level: g.player.Level}
-	g.isNewHighScore = true
+	g.isScoreRecorded = true
+	g.newEntryRank = g.highScores.Insert(HighScoreEntry{
+		Initials: initials, Score: g.CurrentScore(), SurvivedSeconds: g.elapsedSeconds, Kills: g.kills, Level: g.player.Level,
+	})
+	g.saveHighScores()
+}
+
+func (g *Game) saveHighScores() {
 	g.scoreMessage = ""
-	if err := SaveHighScore(g.highScore); err != nil {
-		g.scoreMessage = "High score not saved: " + err.Error()
+	if err := SaveHighScores(g.highScores); err != nil {
+		g.scoreMessage = "High scores not saved: " + err.Error()
 	}
+}
+
+func (g *Game) finishRun() {
+	if g.isScoreRanked() {
+		g.openNameEntry()
+		return
+	}
+	g.switchState(StateGameOver)
 }

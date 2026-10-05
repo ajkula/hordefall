@@ -193,6 +193,7 @@ func TestGraphicsSettingsDefaultsAndSanitizing(t *testing.T) {
 	expected := Settings{
 		IsMusicOn: true, Tracks: map[string]bool{}, Resolution: ResolutionNative,
 		ShakeLevel: 1, EffectsLevel: 2, BloomLevel: 1, IsCRTOn: true, MusicVolumeStep: 3, EffectsVolumeStep: 4,
+		Initials: defaultInitials,
 	}
 	if fmt.Sprintf("%+v", defaults) != fmt.Sprintf("%+v", expected) {
 		t.Fatalf("unexpected defaults: got %+v, want %+v", defaults, expected)
@@ -306,5 +307,26 @@ func TestAimLockGoesBackInMenus(t *testing.T) {
 		if game.state != step.to {
 			t.Fatalf("aim lock in state %d led to %d, want %d", step.from, game.state, step.to)
 		}
+	}
+}
+
+func TestOptionsFromPauseKeepTheRunFrozen(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.state = StatePaused
+	game.openOptionsFromPause()
+	frame := game.frame
+	for range 120 {
+		game.menuLockSeconds = 0
+		game.controls = Controls{}
+		game.updateOptions()
+	}
+	if game.frame != frame || game.isDemo {
+		t.Fatalf("options advanced the paused run: frame %d -> %d", frame, game.frame)
+	}
+	game.controls = Controls{JustPressed: ActionPause}
+	game.updateOptions()
+	if game.state != StatePaused {
+		t.Fatalf("back from options went to state %d, want pause", game.state)
 	}
 }

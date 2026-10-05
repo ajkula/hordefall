@@ -71,7 +71,7 @@ func (g *Game) closeAudioMenu() {
 }
 
 func (g *Game) updateAudioMenu() {
-	g.updateDemo()
+	g.updateBackdropDemo()
 	if g.isGoingBack() {
 		g.closeAudioMenu()
 		return

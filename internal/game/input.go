@@ -12,6 +12,8 @@ import (
 
 type Action uint16
 
+type InputDevice uint8
+
 type Controls struct {
 	MoveX          float32
 	MoveY          float32
@@ -43,6 +45,7 @@ type InputReader struct {
 	rawPrevious    uint64
 	gamepadIDs     []ebiten.GamepadID
 	customBindings []RawBinding
+	lastDevice     InputDevice
 }
 
 // ===== Constants =====
@@ -62,6 +65,12 @@ const (
 	ActionStart
 	ActionMute
 	ActionFullscreen
+)
+
+const (
+	DeviceKeyboard InputDevice = iota
+	DeviceGamepad
+	inputDeviceCount
 )
 
 const (
@@ -108,6 +117,16 @@ var gamepadDefaultActionBindings = []GamepadBinding{
 	{ebiten.StandardGamepadButtonRightTop, ActionDash},
 }
 
+var keyboardButtonLabels = map[Action]string{
+	ActionFire: "J", ActionAimLock: "K", ActionDash: "SPACE",
+	ActionStart: "ENTER", ActionSelect: "BACKSPACE", ActionPause: "ESC",
+}
+
+var gamepadButtonLabels = map[Action]string{
+	ActionFire: "A", ActionAimLock: "B", ActionDash: "X",
+	ActionStart: "START", ActionSelect: "SELECT", ActionPause: "START",
+}
+
 var actionNames = []string{"Up", "Down", "Left", "Right", "Fire", "AimLock", "Dash", "Confirm", "Pause", "Select", "Debug", "Start", "Mute"}
 
 // ===== Public API =====
@@ -116,7 +135,10 @@ func (r *InputReader) Read() Controls {
 	r.gamepadIDs = ebiten.AppendGamepadIDs(r.gamepadIDs[:0])
 	analogX, analogY := r.readAnalog()
 	rawPressed := r.readRawPressed()
-	held := readKeyboard() | r.readGamepadButtons(rawPressed) | directionsFromAnalog(analogX, analogY)
+	keyboardHeld := readKeyboard()
+	gamepadHeld := r.readGamepadButtons(rawPressed) | directionsFromAnalog(analogX, analogY)
+	held := keyboardHeld | gamepadHeld
+	r.lastDevice = pickDevice(r.lastDevice, keyboardHeld != 0, gamepadHeld != 0 || rawPressed != 0)
 	digitalX := boolToFloat(held&ActionRight != 0) - boolToFloat(held&ActionLeft != 0)
 	digitalY := boolToFloat(held&ActionDown != 0) - boolToFloat(held&ActionUp != 0)
 	analogWeight := boolToFloat(length(analogX, analogY) > analogDeadzone)
@@ -133,6 +155,19 @@ func (r *InputReader) Read() Controls {
 	controls.AimX, controls.AimY = normalize(aimX, aimY)
 	r.previous, r.rawPrevious = held, rawPressed
 	return controls
+}
+
+func (r *InputReader) LastDevice() InputDevice {
+	return r.lastDevice
+}
+
+func (r *InputReader) ButtonLabel(action Action) string {
+	labels := [inputDeviceCount]map[Action]string{keyboardButtonLabels, gamepadButtonLabels}
+	label := labels[r.lastDevice][action]
+	for _, binding := range r.customBindings {
+		label = customButtonLabelIf(label, binding, action, r.lastDevice == DeviceGamepad)
+	}
+	return label
 }
 
 func (r *InputReader) UseCustomBindings(bindings ButtonBindings) {
@@ -152,6 +187,16 @@ func (r *InputReader) DescribeDevices(controls Controls) []string {
 }
 
 // ===== Internal =====
+
+func pickDevice(current InputDevice, isKeyboardUsed, isGamepadUsed bool) InputDevice {
+	afterKeyboard := [2]InputDevice{current, DeviceKeyboard}[boolToIndex(isKeyboardUsed)]
+	return [2]InputDevice{afterKeyboard, DeviceGamepad}[boolToIndex(isGamepadUsed)]
+}
+
+func customButtonLabelIf(label string, binding RawBinding, action Action, isGamepad bool) string {
+	isBound := isGamepad && binding.Action&action != 0
+	return [2]string{label, fmt.Sprintf("BUTTON %d", binding.Button)}[boolToIndex(isBound)]
+}
 
 func readKeyboard() Action {
 	held := Action(0)

@@ -68,8 +68,15 @@ type Game struct {
 	clockSeconds          float32
 	kills                 int
 	killScore             int
-	highScore             HighScore
-	isNewHighScore        bool
+	highScores            HighScoreTable
+	newEntryRank          int
+	isScoreRecorded       bool
+	nameEntryLetters      [initialsLength]byte
+	nameEntryCursor       int
+	highScoreBoardSeconds float32
+	boardOpenedSeconds    float32
+	demoClipSeconds       float32
+	demoClipCount         int
 	scoreMessage          string
 	frame                 uint32
 	runCount              uint32
@@ -83,6 +90,7 @@ type Game struct {
 	isInputDebugVisible   bool
 	remapStep             int
 	remapReturnState      GameState
+	optionsReturnState    GameState
 	remapButtons          [3]int
 	bindingsMessage       string
 	settings              Settings
@@ -106,6 +114,10 @@ const (
 	StatePlaylist
 	StateGraphics
 	StateAudio
+	StateGameplay
+	StateHighScores
+	StateResetScores
+	StateNameEntry
 	stateCount
 )
 
@@ -124,16 +136,20 @@ const (
 )
 
 var stateHandlers = [stateCount]StateHandler{
-	StateMainMenu: {(*Game).updateMainMenu, (*Game).drawMainMenu},
-	StatePlaying:  {(*Game).updatePlaying, (*Game).drawPlaying},
-	StateLevelUp:  {(*Game).updateLevelUp, (*Game).drawLevelUp},
-	StatePaused:   {(*Game).updatePaused, (*Game).drawPaused},
-	StateGameOver: {(*Game).updateGameOver, (*Game).drawGameOver},
-	StateRemap:    {(*Game).updateRemap, (*Game).drawRemap},
-	StateOptions:  {(*Game).updateOptions, (*Game).drawOptions},
-	StatePlaylist: {(*Game).updatePlaylist, (*Game).drawPlaylist},
-	StateGraphics: {(*Game).updateGraphics, (*Game).drawGraphics},
-	StateAudio:    {(*Game).updateAudioMenu, (*Game).drawAudioMenu},
+	StateMainMenu:    {(*Game).updateMainMenu, (*Game).drawMainMenu},
+	StatePlaying:     {(*Game).updatePlaying, (*Game).drawPlaying},
+	StateLevelUp:     {(*Game).updateLevelUp, (*Game).drawLevelUp},
+	StatePaused:      {(*Game).updatePaused, (*Game).drawPaused},
+	StateGameOver:    {(*Game).updateGameOver, (*Game).drawGameOver},
+	StateRemap:       {(*Game).updateRemap, (*Game).drawRemap},
+	StateOptions:     {(*Game).updateOptions, (*Game).drawOptions},
+	StatePlaylist:    {(*Game).updatePlaylist, (*Game).drawPlaylist},
+	StateGraphics:    {(*Game).updateGraphics, (*Game).drawGraphics},
+	StateAudio:       {(*Game).updateAudioMenu, (*Game).drawAudioMenu},
+	StateGameplay:    {(*Game).updateGameplay, (*Game).drawGameplay},
+	StateHighScores:  {(*Game).updateHighScores, (*Game).drawHighScores},
+	StateResetScores: {(*Game).updateResetScores, (*Game).drawResetScores},
+	StateNameEntry:   {(*Game).updateNameEntry, (*Game).drawNameEntry},
 }
 
 // ===== Public API =====
@@ -162,7 +178,7 @@ func NewGame() *Game {
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
 	game.post = NewPostProcessor()
 	game.loadBindings()
-	game.loadHighScore()
+	game.loadHighScores()
 	game.audio = audio.NewEngine()
 	game.loadSettings()
 	game.startDemo()
@@ -219,7 +235,8 @@ func (g *Game) resetRun() {
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
 	g.resetWeather()
-	g.isDemo, g.isNewHighScore = false, false
+	g.isDemo, g.isScoreRecorded = false, false
+	g.newEntryRank = noRank
 	g.levelUpBannerSeconds = 0
 	g.lastRotatedPassive = passiveKindCount - 1
 }
@@ -251,8 +268,7 @@ func (g *Game) updatePlaying() {
 	}
 	g.simulate()
 	if g.player.Health <= 0 {
-		g.recordHighScore()
-		g.switchState(StateGameOver)
+		g.finishRun()
 		return
 	}
 	g.openLevelUpIfPending()
