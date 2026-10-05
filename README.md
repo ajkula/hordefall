@@ -252,6 +252,19 @@ go test ./internal/game -bench .
 
 The long test runs 8 simulated minutes with every weapon maxed. `BenchmarkSimulateTenThousandEnemies` measures a tick with 10 000 live enemies packed around the player (about 5 ms on an i5-6200U).
 
+## Release builds
+
+Double-click `build.bat` on Windows, or run `./build.sh` (or `go run ./tools/release`) anywhere. Each platform is compiled and streamed straight into its own archive in `dist/`, named after the git version:
+
+| Target | Archive | Built from |
+|--------|---------|------------|
+| `windows-amd64`, `windows-arm64` | `.zip` with `Hordefall.exe` (no console window) | any OS |
+| `macos-universal` | `.tar.gz` with `Hordefall.app`, one binary for Apple Silicon and Intel, macOS 12+ | any OS |
+| `linux-amd64` | `.tar.gz` | Linux, or any OS with Docker running |
+| `freebsd-amd64` | `.tar.gz` | FreeBSD |
+
+Ebitengine needs cgo and the system graphics libraries on Linux and FreeBSD, so those targets are skipped, with the reason printed, when they cannot be built from the current machine. Pick targets with `-targets windows-amd64,macos-universal`. The Mac app is not signed: on first launch, right-click it and choose Open, or run `xattr -cr Hordefall.app`.
+
 ## Fonts
 
 The interface uses Rajdhani (Medium for text, Bold for titles and menus), by the Indian Type Foundry, under the SIL Open Font License (`internal/game/fonts/OFL.txt`). Characters Rajdhani lacks, such as the music note, fall back to the Go fonts.
