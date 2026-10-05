@@ -37,21 +37,27 @@ var rajdhaniMedium []byte
 var rajdhaniBold []byte
 
 const (
-	cardWidth          = 300
-	cardHeight         = 180
-	cardSpacing        = 28
-	descriptionWrapLen = 34
-	spiderBarTop       = 50
-	mainMenuOptionsTop = 505
-	menuTitleTop       = 70
-	menuHintTop        = 660
-	menuDim            = 0.42
-	levelUpBannerTop   = 150
-	levelUpBannerFade  = 0.6
-	spiderBarWidth     = 520
-	spiderBarHeight    = 18
-	spiderBarGap       = 3
-	textOutlineWidth   = 1
+	cardWidth                = 300
+	cardHeight               = 180
+	cardSpacing              = 28
+	descriptionWrapLen       = 34
+	spiderBarTop             = 50
+	mainMenuOptionsTop       = 505
+	menuTitleTop             = 70
+	menuHintTop              = 660
+	menuDim                  = 0.42
+	levelUpBannerTop         = 150
+	levelUpBannerFade        = 0.6
+	spiderBarWidth           = 520
+	spiderBarHeight          = 18
+	spiderBarGap             = 3
+	textOutlineWidth         = 1
+	selectionMarkerGap       = 14
+	selectionMarkerThickness = 3
+	selectionMarkerShade     = 0.5
+	selectionMarkerNudge     = 3
+	selectionMarkerSpeed     = 5
+	selectionMarkerCenter    = 0.5
 )
 
 var textOutlineOffsets = [8][2]float32{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
@@ -222,13 +228,38 @@ func (u *UI) drawMenuOptions(g *Game, screen *ebiten.Image, options []MenuOption
 	for index, option := range options {
 		isSelected := index == g.menuSelection
 		label := option.Label(g)
-		labels := [2]string{label, "> " + label + " <"}
 		colors := [2][3]float32{textColor, accentColor}
 		alpha := 1 - 0.3*boolToFloat(isSelected)*(1-pulse(g.clockSeconds))
 		y := u.menuPositions[index]
-		u.drawText(screen, labels[boolToIndex(isSelected)], u.bold, screenWidth/2, y, colors[boolToIndex(isSelected)], alpha, text.AlignCenter)
+		u.drawText(screen, label, u.bold, screenWidth/2, y, colors[boolToIndex(isSelected)], alpha, text.AlignCenter)
+		u.drawSelectionMarkersIf(g, screen, label, y, alpha, isSelected)
 		u.drawSliderIf(g, screen, option.Slider, y+menuSliderOffset)
 	}
+}
+
+func (u *UI) drawSelectionMarkersIf(g *Game, screen *ebiten.Image, label string, y, alpha float32, isSelected bool) {
+	if !isSelected {
+		return
+	}
+	labelWidth, labelHeight := text.Measure(label, u.bold, 0)
+	centerY := y + float32(labelHeight)*selectionMarkerCenter
+	nudge := selectionMarkerNudge * sine(g.clockSeconds*selectionMarkerSpeed)
+	offset := float32(labelWidth)/2 + selectionMarkerGap + nudge
+	side := float32(labelHeight)
+	top := centerY - side/2
+	edgeColor := mixColor(accentColor, [3]float32{0, 0, 0}, selectionMarkerShade)
+	for _, direction := range [2]float32{-1, 1} {
+		tipX := screenWidth/2 + direction*offset
+		baseX := tipX + direction*side
+		for depth := selectionMarkerThickness; depth > 0; depth-- {
+			fillTriangle(screen, markerTriangle(baseX, tipX, top, side, float32(depth)), edgeColor, alpha)
+		}
+		fillTriangle(screen, markerTriangle(baseX, tipX, top, side, 0), accentColor, alpha)
+	}
+}
+
+func markerTriangle(baseX, tipX, top, side, drop float32) [3][2]float32 {
+	return [3][2]float32{{baseX, top + drop}, {baseX, top + side + drop}, {tipX, top + side/2 + drop}}
 }
 
 func (u *UI) drawBenchmarkPanel(g *Game, screen *ebiten.Image) {

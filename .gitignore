@@ -23,3 +23,6 @@ internal/audio/music/previews/
 
 # Local documentation pages
 *.html
+
+# Release builds
+dist/

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -231,6 +232,29 @@ func mustCombineFaces(faces ...text.Face) text.Face {
 		panic(err)
 	}
 	return combined
+}
+
+func fillTriangle(screen *ebiten.Image, points [3][2]float32, tint [3]float32, alpha float32) {
+	vertices := make([]ebiten.Vertex, 0, 3)
+	for _, point := range points {
+		vertices = append(vertices, ebiten.Vertex{
+			DstX: point[0] * renderScale, DstY: point[1] * renderScale, SrcX: 1.5, SrcY: 1.5,
+			ColorR: tint[0] * alpha, ColorG: tint[1] * alpha, ColorB: tint[2] * alpha, ColorA: alpha,
+		})
+	}
+	solidPixel = ensureSolidPixel(solidPixel)
+	screen.DrawTriangles32(vertices, []uint32{0, 1, 2}, solidPixel, &ebiten.DrawTrianglesOptions{AntiAlias: true})
+}
+
+var solidPixel *ebiten.Image
+
+func ensureSolidPixel(existing *ebiten.Image) *ebiten.Image {
+	if existing != nil {
+		return existing
+	}
+	canvas := ebiten.NewImage(3, 3)
+	canvas.Fill(color.White)
+	return canvas.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 }
 
 func fillRect(screen *ebiten.Image, x, y, width, height float32, tint color.Color) {
