@@ -52,6 +52,7 @@ type Game struct {
 	bossProgressKills     int
 	bossEventCount        int
 	hordeEvent            HordeEvent
+	weather               Weather
 	offers                []UpgradeOffer
 	offerPool             []UpgradeOffer
 	selectedOffer         int
@@ -217,6 +218,7 @@ func (g *Game) resetRun() {
 	g.bossKillsRequired = bossKillsRequiredAt(0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
+	g.resetWeather()
 	g.isDemo, g.isNewHighScore = false, false
 	g.levelUpBannerSeconds = 0
 	g.lastRotatedPassive = passiveKindCount - 1
@@ -272,6 +274,7 @@ func (g *Game) simulate() {
 	g.updateSpawning(deltaSeconds)
 	g.spawnSpiderIfDue()
 	g.tickGroundIfDue()
+	g.updateWeather(deltaSeconds)
 	g.effects.Update(deltaSeconds)
 	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
 	g.musicBannerSeconds = max(0, g.musicBannerSeconds-deltaSeconds)

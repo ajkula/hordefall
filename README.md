@@ -114,6 +114,14 @@ Reaction bursts carry an element too, so reactions chain into further reactions.
 
 **Ground** (`ground.go`): a 256x256 cellular grid. Grass catches fire and spreads it, oil burns explosively, ice melts, water freezes under frost, ash regrows into grass. Standing on a cell applies its element to enemies (fire burns, water wets, oil soaks, ice chills) and fire hurts the player.
 
+**Weather** (`weather.go`): every 3 to 4 minutes, a 30 second weather event changes the whole map, with its own color grading and particles:
+
+| Weather  | Enemies                      | Ground                         | Extra                         |
+|----------|------------------------------|--------------------------------|-------------------------------|
+| STORM    | Soaked (Wet), fires put out  | Burning cells are doused       | Lightning strikes shock the area |
+| HEATWAVE |                              | Grass catches fire everywhere  | Warm grading, rising embers   |
+| BLIZZARD | First level of Chilled       | Water freezes, fires die out   | Cold grading, snow            |
+
 **Enemies** (`enemies.go`): Bloaters burst into oil, Frostlings leave ice and chill, Emberlings leave fire. The horde feeds the systems.
 
 ## The player: a Tachikoma
@@ -210,6 +218,7 @@ Go builds one package per folder and a type's methods must live in its own packa
 | `ui.go` | HUD, menus, overlays |
 | `upgrades.go` | Passives and level-up offers |
 | `weapons.go` | Weapon table and behaviors |
+| `weather.go` | Weather cycle, enemy and ground effects, lightning, precipitation, color grading |
 
 ### internal/audio
 

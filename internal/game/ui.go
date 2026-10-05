@@ -114,6 +114,7 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawWeaponList(g, screen)
 	u.drawSpiderBars(g, screen)
 	u.drawHordeEventBar(g, screen)
+	u.drawWeatherLabel(g, screen)
 	u.drawLevelUpBanner(g, screen)
 	u.drawMusicBanner(g, screen)
 	u.drawPopups(g, screen)
@@ -289,6 +290,15 @@ func (u *UI) drawLevelUpBanner(g *Game, screen *ebiten.Image) {
 	}
 	fade := clamp(g.levelUpBannerSeconds/levelUpBannerFade, 0, 1)
 	u.drawText(screen, g.levelUpBanner, u.bold, screenWidth/2, levelUpBannerTop, accentColor, fade, text.AlignCenter)
+}
+
+func (u *UI) drawWeatherLabel(g *Game, screen *ebiten.Image) {
+	intensity := g.weather.Intensity()
+	if intensity <= 0 {
+		return
+	}
+	definition := &weatherTable[g.weather.Kind]
+	u.drawText(screen, definition.Name, u.bold, screenWidth/2, weatherLabelTop, definition.LabelColor, intensity, text.AlignCenter)
 }
 
 func (u *UI) drawMusicBanner(g *Game, screen *ebiten.Image) {

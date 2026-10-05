@@ -149,9 +149,11 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.queueSpiderLasers(g)
 	r.queueRings(g)
 	r.queueLightning(g)
+	r.queuePrecipitation(g)
 	r.solid.Flush(screen)
 	r.glow.Flush(screen)
 	r.rings.Flush(screen)
+	r.applyWeatherGrade(g, screen)
 	g.post.ApplyBloom(bloomLevels[g.settings.BloomLevel].Factor)
 }
 
