@@ -20,6 +20,7 @@ type UI struct {
 	bold    *text.GoTextFace
 	title   *text.GoTextFace
 	pixels  PixelBatch
+	art     *ArtCanvas
 
 	scaledFaces     map[*text.GoTextFace]text.Face
 	fallbackSources map[*text.GoTextFaceSource]*text.GoTextFaceSource
@@ -91,6 +92,7 @@ func NewUI() *UI {
 		scaledFaces:     map[*text.GoTextFace]text.Face{},
 		fallbackSources: fallbackSources,
 		faceScale:       1,
+		art:             NewArtCanvas(),
 	}
 	_, titleHeight := text.Measure("HORDEFALL", ui.title, 0)
 	ui.titleHeight = float32(titleHeight)
@@ -162,18 +164,6 @@ func (u *UI) DrawLevelUp(g *Game, screen *ebiten.Image) {
 		u.drawOfferCard(screen, offer, startX+float32(index)*(cardWidth+cardSpacing), 260, index == g.selectedOffer)
 	}
 	u.drawText(screen, "Left / Right to choose, Fire to confirm", u.regular, screenWidth/2, 500, textColor, 1, text.AlignCenter)
-}
-
-func (u *UI) DrawRemap(screen *ebiten.Image, step int, buttons [3]int) {
-	dimScreen(screen, 0.75)
-	u.drawText(screen, "CONFIGURE BUTTONS", u.title, screenWidth/2, 110, accentColor, 1, text.AlignCenter)
-	for index, name := range remapStepNames {
-		labels := [3]string{fmt.Sprintf("%s:  button %d", name, buttons[index]), fmt.Sprintf("Press the button for %s", name), name}
-		state := boolToIndex(index == step) + 2*boolToIndex(index > step)
-		colors := [3][3]float32{textColor, accentColor, textColor}
-		u.drawText(screen, labels[state], u.bold, screenWidth/2, 270+float32(index)*56, colors[state], 1, text.AlignCenter)
-	}
-	u.drawText(screen, "Start / Esc to cancel", u.regular, screenWidth/2, 520, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawGameOver(g *Game, screen *ebiten.Image) {

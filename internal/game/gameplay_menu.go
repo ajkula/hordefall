@@ -2,6 +2,7 @@ package game
 
 import (
 	"image"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -23,6 +24,11 @@ const (
 	rankingScrollSeconds  = 5
 	highScoreBoardSeconds = 2*rankingPauseSeconds + rankingScrollSeconds
 	demoClipsPerBoard     = 4
+	rankingArtStart       = 0.3
+	rankingIntroSeconds   = 2.4
+	attractBoardSeconds   = rankingIntroSeconds + highScoreBoardSeconds
+	rankingFlashSeconds   = 0.12
+	attractBoardDim       = 0.7
 	rankingGameTitleTop   = 24
 	rankingTitleTop       = 122
 	rankingTitlePixel     = 8
@@ -50,6 +56,8 @@ var resetScoresMenuOptions = []MenuOption{
 }
 
 var rankOrdinals = [highScoreTableSize]string{"1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH", "9TH", "10TH"}
+
+var rankingFlashStarts = [2]float32{0.06, 0.26}
 
 var rankingColor = [3]float32{1, 0.44, 0.1}
 
@@ -133,7 +141,7 @@ func (g *Game) drawResetScores(screen *ebiten.Image) {
 func (g *Game) drawHighScores(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
 	elapsed := g.clockSeconds - g.boardOpenedSeconds
-	g.ui.DrawHighScoreBoard(g, screen, elapsed-highScoreBoardSeconds*float32(int(elapsed/highScoreBoardSeconds)), "Fire / Start / Esc / Aim lock to go back")
+	g.ui.DrawHighScoreBoard(g, screen, elapsed-highScoreBoardSeconds*float32(int(elapsed/highScoreBoardSeconds)), highScoreBoardDim, "Fire / Start / Esc / Aim lock to go back")
 }
 
 func (u *UI) DrawSubmenu(g *Game, screen *ebiten.Image, title string, options []MenuOption, hint string) {
@@ -145,8 +153,8 @@ func (u *UI) DrawSubmenu(g *Game, screen *ebiten.Image, title string, options []
 	u.drawText(screen, hint, u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 }
 
-func (u *UI) DrawHighScoreBoard(g *Game, screen *ebiten.Image, elapsedSeconds float32, hint string) {
-	dimScreen(screen, highScoreBoardDim)
+func (u *UI) DrawHighScoreBoard(g *Game, screen *ebiten.Image, elapsedSeconds, dim float32, hint string) {
+	dimScreen(screen, dim)
 	u.drawText(screen, "HORDEFALL", u.title, screenWidth/2, rankingGameTitleTop, accentColor, 1, text.AlignCenter)
 	u.pixels.DrawText(screen, "RANKING", screenWidth/2, rankingTitleTop, rankingTitlePixel, rankingColor, 1, text.AlignCenter)
 	for _, column := range highScoreColumns {
@@ -190,7 +198,31 @@ func rankingScrollOffset(elapsedSeconds float32) float32 {
 }
 
 func boardElapsedSeconds(remainingSeconds float32) float32 {
-	return highScoreBoardSeconds - remainingSeconds
+	return attractBoardSeconds - remainingSeconds
+}
+
+func (u *UI) DrawRankingAttract(g *Game, screen *ebiten.Image, elapsedSeconds float32) {
+	screen.Fill(color.Black)
+	u.drawRankingArt(g, screen, elapsedSeconds)
+	g.post.ApplyBloom(bloomLevels[g.settings.BloomLevel].Factor)
+	for _, start := range rankingFlashStarts {
+		flash := clamp(1-(elapsedSeconds-start)/rankingFlashSeconds, 0, 1) * boolToFloat(elapsedSeconds >= start)
+		fillRect(screen, 0, 0, screenWidth, screenHeight, toColor(textColor, flash))
+	}
+	if elapsedSeconds < rankingIntroSeconds {
+		return
+	}
+	u.DrawHighScoreBoard(g, screen, elapsedSeconds-rankingIntroSeconds, attractBoardDim, "Press any button")
+}
+
+func (u *UI) drawRankingArt(g *Game, screen *ebiten.Image, elapsedSeconds float32) {
+	if elapsedSeconds < rankingArtStart {
+		return
+	}
+	art := u.art.Render((elapsedSeconds-rankingArtStart)/(rankingIntroSeconds-rankingArtStart), g.clockSeconds)
+	options := &ebiten.DrawImageOptions{}
+	options.GeoM.Scale(float64(artPixelScale*renderScale), float64(artPixelScale*renderScale))
+	screen.DrawImage(art, options)
 }
 
 func (g *Game) advanceDemoBoard() {
@@ -202,8 +234,8 @@ func (g *Game) startDemoBoardIfDue() {
 	if g.demoClipCount%demoClipsPerBoard != 0 {
 		return
 	}
-	g.highScoreBoardSeconds = highScoreBoardSeconds
-	g.demoClipSeconds += highScoreBoardSeconds
+	g.highScoreBoardSeconds = attractBoardSeconds
+	g.demoClipSeconds += attractBoardSeconds
 }
 
 func (g *Game) dismissDemoBoardIfPressed() bool {

@@ -73,6 +73,7 @@ type Game struct {
 	isScoreRecorded       bool
 	nameEntryLetters      [initialsLength]byte
 	nameEntryCursor       int
+	nameEntryHoldSeconds  float32
 	highScoreBoardSeconds float32
 	boardOpenedSeconds    float32
 	demoClipSeconds       float32
@@ -91,7 +92,12 @@ type Game struct {
 	remapStep             int
 	remapReturnState      GameState
 	optionsReturnState    GameState
-	remapButtons          [3]int
+	remapDevice           InputDevice
+	remapListening        RemapAction
+	remapListenSeconds    float32
+	remapMessage          string
+	remapMenu             []MenuOption
+	controlBindings       ControlBindings
 	bindingsMessage       string
 	settings              Settings
 	settingsMessage       string
@@ -249,16 +255,6 @@ func (g *Game) switchState(state GameState) {
 	g.state = state
 	g.menuLockSeconds = menuLockDuration
 	g.menuSelection = 0
-}
-
-func (g *Game) loadBindings() {
-	bindings, err := LoadButtonBindings()
-	if err != nil {
-		g.bindingsMessage = "Default buttons. Select / F2 to configure."
-		return
-	}
-	g.input.UseCustomBindings(bindings)
-	g.bindingsMessage = "Custom buttons loaded. Select / F2 to reconfigure."
 }
 
 func (g *Game) updatePlaying() {

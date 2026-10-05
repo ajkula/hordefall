@@ -18,6 +18,8 @@ const (
 	nameEntryArrowSize    = 18
 	nameEntryArrowGap     = 14
 	nameEntryUnderlineGap = 96
+	letterRepeatDelay     = 2
+	letterRepeatInterval  = 0.07
 )
 
 // ===== Internal =====
@@ -31,7 +33,7 @@ func (g *Game) openNameEntry() {
 
 func (g *Game) updateNameEntry() {
 	pressed := g.controls.JustPressed
-	letterDelta := boolToIndex(pressed&ActionUp != 0) - boolToIndex(pressed&ActionDown != 0)
+	letterDelta := boolToIndex(pressed&ActionUp != 0) - boolToIndex(pressed&ActionDown != 0) + g.letterRepeatDelta()
 	cursorDelta := boolToIndex(pressed&ActionRight != 0) - boolToIndex(pressed&(ActionLeft|ActionAimLock) != 0)
 	g.shiftNameEntryLetter(letterDelta)
 	g.nameEntryCursor = clampInt(g.nameEntryCursor+cursorDelta, 0, initialsLength-1)
@@ -45,6 +47,19 @@ func (g *Game) updateNameEntry() {
 		return
 	}
 	g.commitNameEntry()
+}
+
+func (g *Game) letterRepeatDelta() int {
+	held := g.controls.Held
+	direction := boolToIndex(held&ActionUp != 0) - boolToIndex(held&ActionDown != 0)
+	isFreshPress := g.controls.JustPressed&(ActionUp|ActionDown) != 0
+	g.nameEntryHoldSeconds = (g.nameEntryHoldSeconds + deltaSeconds) * boolToFloat(direction != 0 && !isFreshPress)
+	repeats := letterRepeatCount(g.nameEntryHoldSeconds) - letterRepeatCount(g.nameEntryHoldSeconds-deltaSeconds)
+	return direction * repeats
+}
+
+func letterRepeatCount(holdSeconds float32) int {
+	return int(max(0, holdSeconds-letterRepeatDelay+letterRepeatInterval) / letterRepeatInterval)
 }
 
 func (g *Game) shiftNameEntryLetter(delta int) {

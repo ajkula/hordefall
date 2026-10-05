@@ -29,7 +29,7 @@ var mainMenuOptions = []MenuOption{
 }
 
 var optionsMenuOptions = []MenuOption{
-	{fixedLabel("Configure buttons"), (*Game).openRemapFromOptions, nil},
+	{fixedLabel("Controls"), (*Game).openRemapFromOptions, nil},
 	{fixedLabel("Gameplay"), (*Game).openGameplay, nil},
 	{fixedLabel("Graphics"), (*Game).openGraphics, nil},
 	{fixedLabel("Audio"), (*Game).openAudioMenu, nil},
@@ -140,16 +140,6 @@ func (g *Game) updateBackdropDemo() {
 	g.updateDemo()
 }
 
-func (g *Game) openRemapFrom(returnState GameState) {
-	g.remapStep = 0
-	g.remapReturnState = returnState
-	g.switchState(StateRemap)
-}
-
-func (g *Game) openRemapFromOptions() {
-	g.openRemapFrom(StateOptions)
-}
-
 func (g *Game) requestQuit() {
 	g.isQuitRequested = true
 }
@@ -205,50 +195,12 @@ func (g *Game) updateGameOver() {
 	}
 }
 
-func (g *Game) updateRemap() {
-	g.updateBackdropDemo()
-	if g.controls.JustPressed&ActionPause != 0 {
-		g.switchState(g.remapReturnState)
-		return
-	}
-	button := g.controls.RawJustPressed
-	isSystemButton := g.controls.Held&(ActionPause|ActionSelect) != 0
-	if button < 0 || isSystemButton || g.isAlreadyRemapped(button) {
-		return
-	}
-	g.remapButtons[g.remapStep] = button
-	g.remapStep++
-	if g.remapStep < len(g.remapButtons) {
-		return
-	}
-	g.finishRemap()
-}
-
-func (g *Game) isAlreadyRemapped(button int) bool {
-	for step := range g.remapStep {
-		if g.remapButtons[step] == button {
-			return true
-		}
-	}
-	return false
-}
-
-func (g *Game) finishRemap() {
-	bindings := BindingsFromSteps(g.remapButtons)
-	g.input.UseCustomBindings(bindings)
-	g.bindingsMessage = "Buttons saved."
-	if err := SaveButtonBindings(bindings); err != nil {
-		g.bindingsMessage = "Buttons active for this session, save failed: " + err.Error()
-	}
-	g.switchState(g.remapReturnState)
-}
-
 func (g *Game) drawMainMenu(screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
 	if g.highScoreBoardSeconds > 0 {
-		g.ui.DrawHighScoreBoard(g, screen, boardElapsedSeconds(g.highScoreBoardSeconds), "Press any button")
+		g.ui.DrawRankingAttract(g, screen, boardElapsedSeconds(g.highScoreBoardSeconds))
 		return
 	}
+	g.renderer.DrawWorld(g, screen)
 	g.ui.DrawMainMenu(g, screen, mainMenuOptions)
 }
 
@@ -265,9 +217,4 @@ func (g *Game) drawPaused(screen *ebiten.Image) {
 func (g *Game) drawGameOver(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
 	g.ui.DrawGameOver(g, screen)
-}
-
-func (g *Game) drawRemap(screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawRemap(screen, g.remapStep, g.remapButtons)
 }

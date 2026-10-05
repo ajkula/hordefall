@@ -40,6 +40,28 @@ func TestDeathWithRankedScoreAsksForInitials(t *testing.T) {
 	}
 }
 
+func TestHoldingUpScrollsLettersAfterTheDelay(t *testing.T) {
+	game := newHeadlessGame()
+	game.killScore = 5000
+	game.finishRun()
+	game.menuLockSeconds = 0
+	game.controls = Controls{Held: ActionUp, JustPressed: ActionUp}
+	game.updateNameEntry()
+	game.controls = Controls{Held: ActionUp}
+	for range letterRepeatDelay*ticksPerSecond - 2 {
+		game.updateNameEntry()
+	}
+	if game.nameEntryLetters[0] != 'B' {
+		t.Fatalf("letter %c before the delay, want B", game.nameEntryLetters[0])
+	}
+	for range ticksPerSecond {
+		game.updateNameEntry()
+	}
+	if game.nameEntryLetters[0] < 'L' {
+		t.Fatalf("letter %c one second after the delay, repeat too slow", game.nameEntryLetters[0])
+	}
+}
+
 func TestResetHighScoresNeedsConfirmation(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
@@ -74,18 +96,21 @@ func TestDemoShowsHighScoresEveryFewClips(t *testing.T) {
 	}
 	game.demoSeconds = game.demoClipSeconds + 1
 	game.startNextDemoSequenceIfDone()
-	if game.highScoreBoardSeconds != highScoreBoardSeconds || game.demoClipSeconds != demoSequenceSeconds+highScoreBoardSeconds {
+	if game.highScoreBoardSeconds != attractBoardSeconds || game.demoClipSeconds != demoSequenceSeconds+attractBoardSeconds {
 		t.Fatalf("board %v, clip %v", game.highScoreBoardSeconds, game.demoClipSeconds)
 	}
 }
 
 func TestButtonLabelsFollowTheLastDevice(t *testing.T) {
 	var reader InputReader
+	reader.UseBindings(DefaultControlBindings())
 	reader.lastDevice = pickDevice(DeviceGamepad, true, false)
 	if reader.ButtonLabel(ActionStart) != "ENTER" || reader.ButtonLabel(ActionSelect) != "BACKSPACE" {
 		t.Fatalf("keyboard labels %q %q", reader.ButtonLabel(ActionStart), reader.ButtonLabel(ActionSelect))
 	}
-	reader.UseCustomBindings(ButtonBindings{Fire: 2, AimLock: 3, Dash: 0})
+	bindings := DefaultControlBindings()
+	bindings.Buttons[RemapFire], bindings.Buttons[RemapAimLock], bindings.Buttons[RemapDash] = 2, 3, 0
+	reader.UseBindings(bindings)
 	reader.lastDevice = pickDevice(DeviceKeyboard, false, true)
 	if reader.ButtonLabel(ActionStart) != "START" || reader.ButtonLabel(ActionFire) != "BUTTON 2" {
 		t.Fatalf("gamepad labels %q %q", reader.ButtonLabel(ActionStart), reader.ButtonLabel(ActionFire))

@@ -3,9 +3,11 @@ package game
 import (
 	"fmt"
 	"math/bits"
+	"slices"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 // ===== Types =====
@@ -35,16 +37,12 @@ type GamepadBinding struct {
 	Action Action
 }
 
-type RawBinding struct {
-	Button ebiten.GamepadButton
-	Action Action
-}
-
 type InputReader struct {
 	previous       Action
 	rawPrevious    uint64
 	gamepadIDs     []ebiten.GamepadID
-	customBindings []RawBinding
+	bindings       ControlBindings
+	justPressedKey []ebiten.Key
 	lastDevice     InputDevice
 }
 
@@ -84,18 +82,10 @@ const (
 
 const actionFireConfirm = ActionFire | ActionConfirm
 
-var keyboardBindings = []KeyBinding{
-	{ebiten.KeyW, ActionUp}, {ebiten.KeyArrowUp, ActionUp},
-	{ebiten.KeyS, ActionDown}, {ebiten.KeyArrowDown, ActionDown},
-	{ebiten.KeyA, ActionLeft}, {ebiten.KeyArrowLeft, ActionLeft},
-	{ebiten.KeyD, ActionRight}, {ebiten.KeyArrowRight, ActionRight},
-	{ebiten.KeyJ, actionFireConfirm}, {ebiten.KeyZ, actionFireConfirm},
-	{ebiten.KeyK, ActionAimLock}, {ebiten.KeyX, ActionAimLock},
-	{ebiten.KeySpace, ActionDash}, {ebiten.KeyL, ActionDash}, {ebiten.KeyC, ActionDash},
+var keyboardSystemBindings = []KeyBinding{
+	{ebiten.KeyArrowUp, ActionUp}, {ebiten.KeyArrowDown, ActionDown},
+	{ebiten.KeyArrowLeft, ActionLeft}, {ebiten.KeyArrowRight, ActionRight},
 	{ebiten.KeyEnter, ActionConfirm | ActionStart},
-	{ebiten.KeyBackspace, ActionSelect},
-	{ebiten.KeyEscape, ActionPause}, {ebiten.KeyP, ActionPause},
-	{ebiten.KeyF2, ActionSelect},
 	{ebiten.KeyF1, ActionDebug},
 	{ebiten.KeyM, ActionMute},
 	{ebiten.KeyF11, ActionFullscreen},
@@ -106,26 +96,9 @@ var gamepadSystemBindings = []GamepadBinding{
 	{ebiten.StandardGamepadButtonLeftBottom, ActionDown},
 	{ebiten.StandardGamepadButtonLeftLeft, ActionLeft},
 	{ebiten.StandardGamepadButtonLeftRight, ActionRight},
-	{ebiten.StandardGamepadButtonCenterRight, ActionPause | ActionConfirm | ActionStart},
-	{ebiten.StandardGamepadButtonCenterLeft, ActionSelect},
 }
 
-var gamepadDefaultActionBindings = []GamepadBinding{
-	{ebiten.StandardGamepadButtonRightBottom, actionFireConfirm},
-	{ebiten.StandardGamepadButtonRightRight, ActionAimLock},
-	{ebiten.StandardGamepadButtonRightLeft, ActionDash},
-	{ebiten.StandardGamepadButtonRightTop, ActionDash},
-}
-
-var keyboardButtonLabels = map[Action]string{
-	ActionFire: "J", ActionAimLock: "K", ActionDash: "SPACE",
-	ActionStart: "ENTER", ActionSelect: "BACKSPACE", ActionPause: "ESC",
-}
-
-var gamepadButtonLabels = map[Action]string{
-	ActionFire: "A", ActionAimLock: "B", ActionDash: "X",
-	ActionStart: "START", ActionSelect: "SELECT", ActionPause: "START",
-}
+var keyboardFixedLabels = map[Action]string{ActionStart: "ENTER", ActionConfirm: "ENTER"}
 
 var actionNames = []string{"Up", "Down", "Left", "Right", "Fire", "AimLock", "Dash", "Confirm", "Pause", "Select", "Debug", "Start", "Mute"}
 
@@ -135,7 +108,7 @@ func (r *InputReader) Read() Controls {
 	r.gamepadIDs = ebiten.AppendGamepadIDs(r.gamepadIDs[:0])
 	analogX, analogY := r.readAnalog()
 	rawPressed := r.readRawPressed()
-	keyboardHeld := readKeyboard()
+	keyboardHeld := r.readKeyboard()
 	gamepadHeld := r.readGamepadButtons(rawPressed) | directionsFromAnalog(analogX, analogY)
 	held := keyboardHeld | gamepadHeld
 	r.lastDevice = pickDevice(r.lastDevice, keyboardHeld != 0, gamepadHeld != 0 || rawPressed != 0)
@@ -162,20 +135,29 @@ func (r *InputReader) LastDevice() InputDevice {
 }
 
 func (r *InputReader) ButtonLabel(action Action) string {
-	labels := [inputDeviceCount]map[Action]string{keyboardButtonLabels, gamepadButtonLabels}
-	label := labels[r.lastDevice][action]
-	for _, binding := range r.customBindings {
-		label = customButtonLabelIf(label, binding, action, r.lastDevice == DeviceGamepad)
+	label := [inputDeviceCount]map[Action]string{keyboardFixedLabels, nil}[r.lastDevice][action]
+	for _, remapAction := range slices.Backward(remapActionsByDevice[r.lastDevice]) {
+		definition := &remapTable[remapAction]
+		deviceActions := [inputDeviceCount]Action{definition.KeyboardActions, definition.GamepadActions}[r.lastDevice]
+		label = [2]string{label, r.bindings.Label(r.lastDevice, remapAction)}[boolToIndex(deviceActions&action != 0)]
 	}
 	return label
 }
 
-func (r *InputReader) UseCustomBindings(bindings ButtonBindings) {
-	r.customBindings = []RawBinding{
-		{ebiten.GamepadButton(bindings.Fire), actionFireConfirm},
-		{ebiten.GamepadButton(bindings.AimLock), ActionAimLock},
-		{ebiten.GamepadButton(bindings.Dash), ActionDash},
+func (r *InputReader) UseBindings(bindings ControlBindings) {
+	r.bindings = bindings
+}
+
+func (r *InputReader) Bindings() ControlBindings {
+	return r.bindings
+}
+
+func (r *InputReader) JustPressedKey() int {
+	r.justPressedKey = inpututil.AppendJustPressedKeys(r.justPressedKey[:0])
+	if len(r.justPressedKey) == 0 {
+		return -1
 	}
+	return int(r.justPressedKey[0])
 }
 
 func (r *InputReader) DescribeDevices(controls Controls) []string {
@@ -193,27 +175,49 @@ func pickDevice(current InputDevice, isKeyboardUsed, isGamepadUsed bool) InputDe
 	return [2]InputDevice{afterKeyboard, DeviceGamepad}[boolToIndex(isGamepadUsed)]
 }
 
-func customButtonLabelIf(label string, binding RawBinding, action Action, isGamepad bool) string {
-	isBound := isGamepad && binding.Action&action != 0
-	return [2]string{label, fmt.Sprintf("BUTTON %d", binding.Button)}[boolToIndex(isBound)]
-}
-
-func readKeyboard() Action {
+func (r *InputReader) readKeyboard() Action {
 	held := Action(0)
-	for _, binding := range keyboardBindings {
+	for _, binding := range keyboardSystemBindings {
 		held |= binding.Action * Action(boolToIndex(ebiten.IsKeyPressed(binding.Key)))
 	}
+	for _, action := range remapActionsByDevice[DeviceKeyboard] {
+		held |= remapTable[action].KeyboardActions * Action(boolToIndex(r.isRemappedKeyPressed(action)))
+	}
 	return held
+}
+
+func (r *InputReader) isRemappedKeyPressed(action RemapAction) bool {
+	binding := r.bindings.Keys[action]
+	keys := remapTable[action].DefaultKeys
+	isPressed := binding != defaultBinding && ebiten.IsKeyPressed(ebiten.Key(binding))
+	for _, key := range keys {
+		isPressed = isPressed || (binding == defaultBinding && ebiten.IsKeyPressed(key))
+	}
+	return isPressed
 }
 
 func (r *InputReader) readGamepadButtons(rawPressed uint64) Action {
 	held := Action(0)
 	for _, id := range r.gamepadIDs {
 		held |= readStandardButtons(id, gamepadSystemBindings)
-		held |= readStandardButtons(id, gamepadDefaultActionBindings) * Action(boolToIndex(r.customBindings == nil))
+		held |= r.readDefaultGamepadActions(id)
 	}
-	for _, binding := range r.customBindings {
-		held |= binding.Action * Action(rawPressed>>uint(binding.Button)&1)
+	for _, action := range remapActionsByDevice[DeviceGamepad] {
+		binding := r.bindings.Buttons[action]
+		isPressed := binding != defaultBinding && rawPressed>>uint(max(0, binding))&1 != 0
+		held |= remapTable[action].GamepadActions * Action(boolToIndex(isPressed))
+	}
+	return held
+}
+
+func (r *InputReader) readDefaultGamepadActions(id ebiten.GamepadID) Action {
+	held := Action(0)
+	for _, action := range remapActionsByDevice[DeviceGamepad] {
+		isDefault := r.bindings.Buttons[action] == defaultBinding
+		for _, button := range remapTable[action].DefaultButtons {
+			isPressed := isDefault && ebiten.IsStandardGamepadButtonPressed(id, button)
+			held |= remapTable[action].GamepadActions * Action(boolToIndex(isPressed))
+		}
 	}
 	return held
 }
