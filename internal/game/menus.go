@@ -52,6 +52,7 @@ const (
 	menuSliderOffset      = 32
 	menuBackActions       = ActionPause | ActionAimLock
 	menuListBottom        = mainMenuOptionsTop + 2*mainMenuOptionSpacing
+	gameOverIdleSeconds   = 20
 )
 
 // ===== Internal =====
@@ -159,10 +160,15 @@ func (g *Game) updateMainMenu() {
 		return
 	}
 	if g.controls.JustPressed&ActionSelect != 0 {
-		g.openRemapFrom(StateMainMenu)
+		g.toggleBenchmarkPanel()
 		return
 	}
 	g.navigateMenu(mainMenuOptions)
+}
+
+func (g *Game) toggleBenchmarkPanel() {
+	g.settings.IsBenchmarkHidden = !g.settings.IsBenchmarkHidden
+	g.saveSettings()
 }
 
 func (g *Game) updateOptions() {
@@ -183,6 +189,11 @@ func (g *Game) updatePaused() {
 }
 
 func (g *Game) updateGameOver() {
+	g.stateTicks++
+	if g.stateTicks >= gameOverIdleSeconds*ticksPerSecond {
+		g.goHomeWithRanking()
+		return
+	}
 	if g.menuLockSeconds > 0 {
 		return
 	}

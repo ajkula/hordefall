@@ -63,6 +63,7 @@ type Game struct {
 	levelUpBannerSeconds  float32
 	menuSelection         int
 	menuLockSeconds       float32
+	stateTicks            int
 	reactionCounts        [reactionKindCount]int
 	elapsedSeconds        float32
 	clockSeconds          float32
@@ -253,6 +254,7 @@ func (g *Game) isConfirming() bool {
 
 func (g *Game) switchState(state GameState) {
 	g.state = state
+	g.stateTicks = 0
 	g.menuLockSeconds = menuLockDuration
 	g.menuSelection = 0
 }

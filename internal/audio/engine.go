@@ -68,6 +68,10 @@ func NewEngine() *Engine {
 	return engine
 }
 
+func ThemeSource() string {
+	return themeSource
+}
+
 func ParseTheme() (*Song, error) {
 	return ParseSong(themeSource)
 }

@@ -20,6 +20,7 @@ type Settings struct {
 	MusicVolumeStep   int              `json:"musicVolume"`
 	EffectsVolumeStep int              `json:"effectsVolume"`
 	Initials          string           `json:"initials"`
+	IsBenchmarkHidden bool             `json:"benchmarkHidden"`
 }
 
 // ===== Constants =====

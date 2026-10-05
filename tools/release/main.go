@@ -60,6 +60,7 @@ func main() {
 // ===== Internal =====
 
 func run() error {
+	os.RemoveAll("dist")
 	requested := flag.String("targets", allTargets, "comma-separated targets: "+targetNames())
 	flag.Parse()
 	sourceDir, err := os.Getwd()
@@ -192,8 +193,8 @@ func packageLinux(release *Release, archivePath string) error {
 }
 
 func compileLinuxInDocker(release *Release, output string) error {
-	script := fmt.Sprintf("apt-get update -qq && apt-get install -y -qq %s >/dev/null && go build -buildvcs=false -trimpath -ldflags '%s' -o /out/%s .", linuxPackages, stripFlags, filepath.Base(output))
-	command := exec.Command("docker", "run", "--rm", "--platform", "linux/amd64",
+	script := fmt.Sprintf("apt-get update -qq >/dev/null && apt-get install -y -qq %s >/dev/null 2>&1 && go build -buildvcs=false -trimpath -ldflags '%s' -o /out/%s .", linuxPackages, stripFlags, filepath.Base(output))
+	command := exec.Command("docker", "run", "--rm", "--platform", "linux/amd64", "-e", "DEBIAN_FRONTEND=noninteractive",
 		"-v", filepath.ToSlash(release.SourceDir)+":/src", "-v", filepath.ToSlash(filepath.Dir(output))+":/out",
 		"-w", "/src", dockerGoImage, "bash", "-c", script)
 	command.Stdout, command.Stderr = os.Stdout, os.Stderr

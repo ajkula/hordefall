@@ -238,6 +238,14 @@ func (g *Game) startDemoBoardIfDue() {
 	g.demoClipSeconds += attractBoardSeconds
 }
 
+func (g *Game) goHomeWithRanking() {
+	rank := g.newEntryRank
+	g.goHome()
+	g.newEntryRank = rank
+	g.highScoreBoardSeconds = attractBoardSeconds
+	g.demoClipSeconds += attractBoardSeconds
+}
+
 func (g *Game) dismissDemoBoardIfPressed() bool {
 	if g.highScoreBoardSeconds <= 0 || g.controls.JustPressed == 0 {
 		return false

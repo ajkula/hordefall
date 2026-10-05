@@ -330,3 +330,38 @@ func TestOptionsFromPauseKeepTheRunFrozen(t *testing.T) {
 		t.Fatalf("back from options went to state %d, want pause", game.state)
 	}
 }
+
+func TestSelectTogglesTheBenchmarkPanelOnTheTitle(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.startDemo()
+	game.state = StateMainMenu
+	game.controls = Controls{JustPressed: ActionSelect}
+	game.updateMainMenu()
+	if game.state != StateMainMenu || !game.settings.IsBenchmarkHidden {
+		t.Fatalf("select opened state %d instead of hiding the benchmark", game.state)
+	}
+	game.updateMainMenu()
+	if game.settings.IsBenchmarkHidden {
+		t.Fatal("select did not show the benchmark again")
+	}
+}
+
+func TestIdleGameOverShowsTheRankingThenTheTitle(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.killScore = 4000
+	game.recordHighScoreAs("GRG")
+	game.switchState(StateGameOver)
+	for range gameOverIdleSeconds*ticksPerSecond - 1 {
+		game.controls = Controls{}
+		game.updateGameOver()
+	}
+	if game.state != StateGameOver {
+		t.Fatal("game over left before the idle delay")
+	}
+	game.updateGameOver()
+	if game.state != StateMainMenu || game.highScoreBoardSeconds != attractBoardSeconds || game.newEntryRank != 0 {
+		t.Fatalf("state %d, board %v, rank %d", game.state, game.highScoreBoardSeconds, game.newEntryRank)
+	}
+}

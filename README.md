@@ -16,7 +16,7 @@ go run .
 - **Score**: every kill is worth its experience x 10 (a spider tank is worth 1,500), and a cleared horde adds 20 per member. Survival time gives no points: the score measures skill. Score and high score are shown in the HUD.
 - **Ranking**: a top 10 sorted by score, saved to `%AppData%\hordefall\highscores.json` (an old single `highscore.json` is imported as `---`). When a run ends with a ranked score, you enter 3 initials arcade style (Up / Down: letter, held for 2 seconds it scrolls fast; Left / Right: move, Fire: confirm, Aim lock: back); after confirming, the game over screen shows your ranked line in the pixel font, blinking, above the Start / Select choices; your last initials are offered by default and reused when a ranked run is left from the pause menu or by closing the window. The board shows the game title, RANKING and columns RANK, SCORE, TIME, NAME in a blocky 5x7 pixel font (`pixel_font.go`), half of it on screen: it pauses, scrolls to the bottom, pauses again.
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Options (the same options as the main menu; the run stays frozen behind them and Back returns to the pause menu), Music on/off, Back to main menu. In every menu, Start / Esc or the aim lock button (button 2 / K) goes back, or resumes from pause; the button setup screen keeps button 2 free to be assigned.
-- **Game over**: START to retry, SELECT for the main menu. Button names follow the last device used: keyboard keys (ENTER, BACKSPACE) or gamepad buttons, including the buttons you configured.
+- **Game over**: START to retry, SELECT for the main menu. The music plays with every layer in. Left idle for 20 seconds, the screen moves on to the RANKING interlude, then the title. Button names follow the last device used: keyboard keys (ENTER, BACKSPACE) or gamepad buttons, including the buttons you configured.
 - **Level up**: when several upgrades are available the game pauses on a choice of cards; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption. Once every weapon is maxed and only passives remain, each level up applies the next remaining passive in turn (a b c d a b c d, then a b d a b d once c is maxed), also without pausing.
 - **Heal bubbles**: each enemy you kill has a 2% chance to also drop a green bubble with a white cross. It gives no experience but restores 20 health (up to your maximum), and it is drawn in by your pickup radius like experience gems (`heal_orbs.go`). Enemies killed by a boss drop none.
 
@@ -79,14 +79,14 @@ Every sound effect is synthesized on the fly from layered voices with a random p
 | Aim lock (hold) | Button 2              | K / X           |
 | Dash          | Button 3                | Space / L / C   |
 | Pause         | Start                   | Esc / P         |
-| Controls (title) | Select               | Backspace / F2  |
+| Live benchmark on / off (title) | Select | Backspace / F2 |
 | Input debug (in game) | Select          | F1              |
 
 Aim follows your movement. Hold aim lock to freeze it and strafe or retreat while firing.
 On a gamepad with two sticks, the right stick aims (twin-stick): move with the left stick, aim with the right one; pushing it past the deadzone also fires automatically, so no button is needed; release it and the aim follows your movement again. Fire still works on button 1, which is how the arcade stick plays.
 Ember Bolt, Arc Lightning, Oil Flask and Downpour fire where you aim while Fire is held. Frost Nova, Orbit Blades, Seismic Hammer and Static Mines are automatic.
 
-Every control can be remapped, separately for the keyboard and the gamepad: the Controls screen (Select / F2 on the title, or Options > Controls, also from the pause menu) sets up the device you opened it with.
+Every control can be remapped, separately for the keyboard and the gamepad: the Controls screen (Options > Controls, also from the pause menu) sets up the device you opened it with.
 - The first time for a device, it asks for Fire, Aim lock and Dash in turn (Start / Esc cancels).
 - Then it lists every action with its key or button: Fire, Aim lock, Dash, Pause, Select, plus Up, Down, Left and Right on the keyboard. Choose a line with Up / Down and press Fire: the line listens for 5 seconds and takes the next key or button. A key already used by another action swaps places with it. Reset to defaults restores the device.
 - Arrows, Enter, F1, M and F11 stay reserved so the menus always work; the gamepad D-pad and sticks always move. A gamepad button that still holds another action's default (Start, Select, A, B, X) is refused until that action is remapped.

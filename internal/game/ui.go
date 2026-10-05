@@ -260,7 +260,7 @@ func markerTriangle(baseX, tipX, top, side, drop float32) [3][2]float32 {
 }
 
 func (u *UI) drawBenchmarkPanel(g *Game, screen *ebiten.Image) {
-	if !g.isDemo {
+	if !g.isDemo || g.settings.IsBenchmarkHidden {
 		return
 	}
 	lines := []string{

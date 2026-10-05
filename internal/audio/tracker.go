@@ -145,6 +145,17 @@ func (t *Tracker) SetSignals(signals [SignalCount]float32) {
 	t.signals[SignalAlways] = 1
 }
 
+func (t *Tracker) Position() (int, int) {
+	return t.orderIndex, t.row
+}
+
+func (t *Tracker) Seek(orderIndex, row int) {
+	t.orderIndex = clampInt(orderIndex, 0, len(t.song.Order)-1)
+	pattern := t.song.Patterns[t.song.Order[t.orderIndex]]
+	t.row = clampInt(row, 0, len(pattern.Rows)-1)
+	t.tick, t.samplesUntilTick = 0, 0
+}
+
 func (t *Tracker) Intensity() float32 {
 	return max(t.signals[SignalHorde], min(1, t.signals[SignalBoss]), t.signals[SignalDanger])
 }

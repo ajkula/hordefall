@@ -325,3 +325,39 @@ func TestSongCrossfadeStaysClean(t *testing.T) {
 		}
 	}
 }
+
+func TestMusicPreviewPlaysSeeksAndAuditions(t *testing.T) {
+	song, err := ParseTheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview := NewMusicPreview()
+	preview.SetSong(song)
+	buffer := make([]byte, bytesPerFrame*4096)
+	preview.Read(buffer)
+	if peakOf(buffer) != 0 {
+		t.Fatal("a stopped preview is not silent")
+	}
+	preview.Play(1, 3)
+	if orderIndex, row := preview.Position(); orderIndex != 1 || row != 3 {
+		t.Fatalf("play started at %d/%d, want 1/3", orderIndex, row)
+	}
+	preview.Read(buffer)
+	if peakOf(buffer) == 0 {
+		t.Fatal("a playing preview is silent")
+	}
+	preview.Stop()
+	preview.Audition(1, 48, 0.5)
+	preview.Read(buffer)
+	if peakOf(buffer) == 0 {
+		t.Fatal("audition is silent")
+	}
+}
+
+func peakOf(buffer []byte) float32 {
+	peak := float32(0)
+	for offset := 0; offset+4 <= len(buffer); offset += 4 {
+		peak = max(peak, abs(math.Float32frombits(binary.LittleEndian.Uint32(buffer[offset:]))))
+	}
+	return peak
+}

@@ -28,7 +28,7 @@ func (g *Game) loadBindings() {
 	bindings, err := LoadControlBindings()
 	g.controlBindings = bindings
 	g.input.UseBindings(bindings)
-	messages := [2]string{"Custom controls loaded. Select / F2 to configure.", "Default controls. Select / F2 to configure."}
+	messages := [2]string{"Custom controls loaded. Options > Controls to configure.", "Default controls. Options > Controls to configure."}
 	g.bindingsMessage = messages[boolToIndex(err != nil)]
 }
 
@@ -169,7 +169,7 @@ func (g *Game) resetRemapDevice() {
 func (g *Game) applyControlBindings(message string) {
 	g.input.UseBindings(g.controlBindings)
 	g.remapMessage = message
-	g.bindingsMessage = "Custom controls loaded. Select / F2 to configure."
+	g.bindingsMessage = "Custom controls loaded. Options > Controls to configure."
 	if err := SaveControlBindings(g.controlBindings); err != nil {
 		g.remapMessage = "Active for this session, save failed: " + err.Error()
 	}

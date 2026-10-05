@@ -25,6 +25,10 @@ const (
 
 var laserDangerPhases = [laserPhaseCount]float32{LaserCharging: 1, LaserLocked: 1, LaserFiring: 1}
 
+var fullMusicSignals = [audio.SignalCount]float32{
+	audio.SignalAlways: 1, audio.SignalHorde: 1, audio.SignalBoss: 3, audio.SignalReactions: 1, audio.SignalDanger: 1,
+}
+
 // ===== Internal =====
 
 func (g *Game) playSound(kind audio.SoundKind) {
@@ -108,14 +112,16 @@ func (g *Game) playSong(index int) {
 }
 
 func (g *Game) computeMusicSignals() [audio.SignalCount]float32 {
+	if g.state == StateGameOver {
+		return fullMusicSignals
+	}
 	var signals [audio.SignalCount]float32
-	isFighting := boolToFloat(g.state != StateGameOver)
 	signals[audio.SignalAlways] = 1
-	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1) * isFighting
+	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1)
 	signals[audio.SignalHorde] = max(hordeSignal, menuShowcaseIntensity*boolToFloat(g.isDemo))
-	signals[audio.SignalBoss] = float32(len(g.spiders)+boolToIndex(g.hordeEvent.IsActive)) * isFighting
-	signals[audio.SignalReactions] = g.reactionSignal() * isFighting
-	signals[audio.SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal()) * isFighting
+	signals[audio.SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive))
+	signals[audio.SignalReactions] = g.reactionSignal()
+	signals[audio.SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())
 	return signals
 }
 
