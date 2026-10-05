@@ -20,7 +20,7 @@ const (
 	songRotationSeconds     = 300
 	noMusicSlot             = -1
 	menuShowcaseIntensity   = 0.7
-	musicBannerDuration     = 4
+	musicBannerDuration     = 45
 )
 
 var laserDangerPhases = [laserPhaseCount]float32{LaserCharging: 1, LaserLocked: 1, LaserFiring: 1}

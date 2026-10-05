@@ -19,14 +19,13 @@ type HighScore struct {
 
 const (
 	pointsPerExperience = 10
-	pointsPerSecond     = 5
 	highScoreFileName   = "highscore.json"
 )
 
 // ===== Public API =====
 
 func (g *Game) CurrentScore() int {
-	return g.killScore + int(g.elapsedSeconds)*pointsPerSecond
+	return g.killScore
 }
 
 func LoadHighScore() (HighScore, error) {
