@@ -25,6 +25,9 @@ type Controls struct {
 	AimX           float32
 	AimY           float32
 	HasAimStick    bool
+	HasMouseAim    bool
+	CursorX        float32
+	CursorY        float32
 }
 
 type KeyBinding struct {
@@ -44,6 +47,10 @@ type InputReader struct {
 	bindings       ControlBindings
 	justPressedKey []ebiten.Key
 	lastDevice     InputDevice
+	cursorX        int
+	cursorY        int
+	hasCursor      bool
+	isMouseAiming  bool
 }
 
 // ===== Constants =====
@@ -109,9 +116,13 @@ func (r *InputReader) Read() Controls {
 	analogX, analogY := r.readAnalog()
 	rawPressed := r.readRawPressed()
 	keyboardHeld := r.readKeyboard()
+	mouseHeld := readMouseButtons()
 	gamepadHeld := r.readGamepadButtons(rawPressed) | directionsFromAnalog(analogX, analogY)
-	held := keyboardHeld | gamepadHeld
-	r.lastDevice = pickDevice(r.lastDevice, keyboardHeld != 0, gamepadHeld != 0 || rawPressed != 0)
+	isGamepadUsed := gamepadHeld != 0 || rawPressed != 0
+	isMouseUsed := r.trackCursor() || mouseHeld != 0
+	r.isMouseAiming = (r.isMouseAiming || isMouseUsed) && !isGamepadUsed
+	held := keyboardHeld | mouseHeld | gamepadHeld
+	r.lastDevice = pickDevice(r.lastDevice, keyboardHeld != 0 || isMouseUsed, isGamepadUsed)
 	digitalX := boolToFloat(held&ActionRight != 0) - boolToFloat(held&ActionLeft != 0)
 	digitalY := boolToFloat(held&ActionDown != 0) - boolToFloat(held&ActionUp != 0)
 	analogWeight := boolToFloat(length(analogX, analogY) > analogDeadzone)
@@ -124,6 +135,9 @@ func (r *InputReader) Read() Controls {
 		Held: held, JustPressed: held &^ r.previous,
 		RawJustPressed: lowestButton(rawPressed &^ r.rawPrevious),
 		HasAimStick:    length(aimX, aimY) > aimStickDeadzone,
+		HasMouseAim:    r.isMouseAiming,
+		CursorX:        float32(r.cursorX),
+		CursorY:        float32(r.cursorY),
 	}
 	controls.AimX, controls.AimY = normalize(aimX, aimY)
 	r.previous, r.rawPrevious = held, rawPressed
@@ -169,6 +183,19 @@ func (r *InputReader) DescribeDevices(controls Controls) []string {
 }
 
 // ===== Internal =====
+
+func (r *InputReader) trackCursor() bool {
+	x, y := ebiten.CursorPosition()
+	hasMoved := r.hasCursor && (x != r.cursorX || y != r.cursorY)
+	r.cursorX, r.cursorY, r.hasCursor = x, y, true
+	return hasMoved
+}
+
+func readMouseButtons() Action {
+	isFiring := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	isDashing := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
+	return ActionFire*Action(boolToIndex(isFiring)) | ActionDash*Action(boolToIndex(isDashing))
+}
 
 func pickDevice(current InputDevice, isKeyboardUsed, isGamepadUsed bool) InputDevice {
 	afterKeyboard := [2]InputDevice{current, DeviceKeyboard}[boolToIndex(isKeyboardUsed)]

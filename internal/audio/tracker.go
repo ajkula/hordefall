@@ -55,6 +55,7 @@ type Tracker struct {
 	samplesUntilTick float32
 	seed             uint32
 	signals          [SignalCount]float32
+	pumpAge          float32
 }
 
 type songDirective func(song *Song, fields []string, parser *songParser) error
@@ -75,6 +76,8 @@ const (
 	effectVolume       = 'C'
 	maximumVolumeParam = 0x40
 	layerFadeSeconds   = 0.9
+	pumpSeconds        = 0.22
+	idlePumpAge        = 1e6
 )
 
 const (
@@ -107,17 +110,28 @@ var songDirectives = map[string]songDirective{
 }
 
 var instrumentProperties = map[string]func(settings *VoiceSettings, value float32){
-	"attack":  func(settings *VoiceSettings, value float32) { settings.Envelope.Attack = value },
-	"decay":   func(settings *VoiceSettings, value float32) { settings.Envelope.Decay = value },
-	"sustain": func(settings *VoiceSettings, value float32) { settings.Envelope.Sustain = value },
-	"release": func(settings *VoiceSettings, value float32) { settings.Envelope.Release = value },
-	"volume":  func(settings *VoiceSettings, value float32) { settings.Volume = value },
-	"duty":    func(settings *VoiceSettings, value float32) { settings.Duty = value },
-	"slide":   func(settings *VoiceSettings, value float32) { settings.SlideOctaves = value },
-	"filter":  func(settings *VoiceSettings, value float32) { settings.Filter = value },
-	"sub":     func(settings *VoiceSettings, value float32) { settings.SubLevel = value },
-	"detune":  func(settings *VoiceSettings, value float32) { settings.Detune = value },
-	"drive":   func(settings *VoiceSettings, value float32) { settings.Drive = value },
+	"attack":    func(settings *VoiceSettings, value float32) { settings.Envelope.Attack = value },
+	"decay":     func(settings *VoiceSettings, value float32) { settings.Envelope.Decay = value },
+	"sustain":   func(settings *VoiceSettings, value float32) { settings.Envelope.Sustain = value },
+	"release":   func(settings *VoiceSettings, value float32) { settings.Envelope.Release = value },
+	"volume":    func(settings *VoiceSettings, value float32) { settings.Volume = value },
+	"duty":      func(settings *VoiceSettings, value float32) { settings.Duty = value },
+	"slide":     func(settings *VoiceSettings, value float32) { settings.SlideOctaves = value },
+	"filter":    func(settings *VoiceSettings, value float32) { settings.Filter = value },
+	"sub":       func(settings *VoiceSettings, value float32) { settings.SubLevel = value },
+	"detune":    func(settings *VoiceSettings, value float32) { settings.Detune = value },
+	"drive":     func(settings *VoiceSettings, value float32) { settings.Drive = value },
+	"resonance": func(settings *VoiceSettings, value float32) { settings.Resonance = value },
+	"sweep":     func(settings *VoiceSettings, value float32) { settings.Sweep = value },
+	"sweeptime": func(settings *VoiceSettings, value float32) { settings.SweepTime = value },
+	"fold":      func(settings *VoiceSettings, value float32) { settings.Fold = value },
+	"crush":     func(settings *VoiceSettings, value float32) { settings.Crush = value },
+	"unison":    func(settings *VoiceSettings, value float32) { settings.Unison = value },
+	"fifth":     func(settings *VoiceSettings, value float32) { settings.Fifth = value },
+	"punch":     func(settings *VoiceSettings, value float32) { settings.Punch = value },
+	"click":     func(settings *VoiceSettings, value float32) { settings.Click = value },
+	"duck":      func(settings *VoiceSettings, value float32) { settings.Duck = value },
+	"trigger":   func(settings *VoiceSettings, value float32) { settings.Trigger = value },
 }
 
 // ===== Public API =====
@@ -135,7 +149,7 @@ func ParseSong(source string) (*Song, error) {
 }
 
 func NewTracker(song *Song) *Tracker {
-	tracker := &Tracker{song: song, seed: 0x7AC4}
+	tracker := &Tracker{song: song, seed: 0x7AC4, pumpAge: idlePumpAge}
 	tracker.signals[SignalAlways] = 1
 	return tracker
 }
@@ -166,6 +180,7 @@ func (t *Tracker) Render() (float32, float32) {
 		t.processTick()
 		t.samplesUntilTick += sampleRate * 2.5 / (float32(t.song.Tempo) + float32(t.song.TempoBoost)*t.Intensity())
 	}
+	t.pumpAge += sampleSeconds
 	left, right := float32(0), float32(0)
 	for channel := range t.channels {
 		channelLeft, channelRight := t.renderChannel(channel)
@@ -405,6 +420,7 @@ func (t *Tracker) playCell(channel int, cell TrackerCell) {
 	settings.Volume *= cellVolume(cell)
 	t.seed++
 	state.Voice.Start(settings, t.seed*2654435761)
+	t.pumpAge *= boolToFloat(settings.Trigger == 0)
 }
 
 func (state *ChannelState) updateArpeggio(cell TrackerCell) {
@@ -446,7 +462,9 @@ func (t *Tracker) renderChannel(channel int) (float32, float32) {
 		return 0, 0
 	}
 	left, right := state.Voice.Render()
-	return left * state.Gain, right * state.Gain
+	pump := clamp(1-t.pumpAge/pumpSeconds, 0, 1)
+	gain := state.Gain * (1 - state.Voice.Settings.Duck*pump*pump)
+	return left * gain, right * gain
 }
 
 func parseLayer(song *Song, fields []string, _ *songParser) error {

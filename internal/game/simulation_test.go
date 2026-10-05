@@ -260,7 +260,7 @@ func TestDemoSequencesLoopCleanly(t *testing.T) {
 	seen := map[int]bool{}
 	randomClips := 0
 	for game.demoClipCount <= 2*len(demoSequences) {
-		isStarting := game.demoSeconds+deltaSeconds > game.demoClipSeconds
+		isStarting := game.demoSeconds+deltaSeconds > demoSequenceSeconds
 		game.updateDemo()
 		seen[game.demoSequence] = true
 		randomClips += boolToIndex(isStarting && game.currentDemo.Name == randomClipName)
@@ -674,5 +674,37 @@ func TestShotEvolvesIntoOneElementOnly(t *testing.T) {
 		if isOtherShot {
 			t.Fatalf("after choosing Frost Shard, %s is still offered", weaponTable[offer.Weapon].Name)
 		}
+	}
+}
+
+func TestSpiderTanksDoNotOverlap(t *testing.T) {
+	game := newHeadlessGame()
+	game.spawnSpiderAt(0, 400)
+	game.spawnSpiderAt(0.01, 400)
+	game.spawnSpiderAt(0.02, 410)
+	spacing := enemyTable[EnemySpiderTank].Radius * 2 * spiderSpacingFactor
+	for range 3 * ticksPerSecond {
+		stepHeadlessIdle(game)
+	}
+	for first := range game.spiders {
+		for second := first + 1; second < len(game.spiders); second++ {
+			a := game.enemies.IndexOfID(game.spiders[first].EnemyID)
+			b := game.enemies.IndexOfID(game.spiders[second].EnemyID)
+			gap := length(game.enemies.PositionX[a]-game.enemies.PositionX[b], game.enemies.PositionY[a]-game.enemies.PositionY[b])
+			if gap < spacing*0.9 {
+				t.Fatalf("spider tanks %d and %d overlap: %.0f apart, want %.0f", first, second, gap, spacing)
+			}
+		}
+	}
+}
+
+func TestMouseAimsTheCannonAndClicksFireAndDash(t *testing.T) {
+	game := newHeadlessGame()
+	game.renderer = &Renderer{CameraX: game.player.X - screenWidth/2, CameraY: game.player.Y - screenHeight/2}
+	cursorX, cursorY := float32(screenWidth/2)*renderScale, float32(screenHeight/2+200)*renderScale
+	game.controls = Controls{HasMouseAim: true, CursorX: cursorX, CursorY: cursorY, Held: ActionFire, JustPressed: ActionDash}
+	game.updatePlayer(deltaSeconds)
+	if game.player.AimY < 0.99 || !game.player.IsFiring || game.player.DashSeconds <= 0 {
+		t.Fatalf("aim %.2f,%.2f firing %v dash %.2f", game.player.AimX, game.player.AimY, game.player.IsFiring, game.player.DashSeconds)
 	}
 }

@@ -110,7 +110,7 @@ func (g *Game) DemoSequenceSubtitle() string {
 }
 
 func (g *Game) DemoSequenceProgress() float32 {
-	return clamp(g.demoSeconds/g.demoClipSeconds, 0, 1)
+	return clamp(g.demoSeconds/demoSequenceSeconds, 0, 1)
 }
 
 // ===== Internal =====
@@ -130,7 +130,6 @@ func (g *Game) startNextDemoSequence() {
 	g.resetRun()
 	g.isDemo = true
 	g.demoSeconds = 0
-	g.demoClipSeconds = demoSequenceSeconds
 	g.director.accumulator = -1e9
 	g.director.nextWaveSeconds = 1e9
 	g.bossKillsRequired = 1 << 30
@@ -228,8 +227,11 @@ func (g *Game) reinforceDemoIfThin() {
 }
 
 func (g *Game) updateDemo() {
+	if g.highScoreBoardSeconds > 0 {
+		g.advanceDemoBoard()
+		return
+	}
 	g.demoSeconds += deltaSeconds
-	g.advanceDemoBoard()
 	g.startNextDemoSequenceIfDone()
 	menuControls := g.controls
 	g.controls = g.autopilotControls()
@@ -242,7 +244,7 @@ func (g *Game) updateDemo() {
 }
 
 func (g *Game) startNextDemoSequenceIfDone() {
-	if g.demoSeconds <= g.demoClipSeconds {
+	if g.demoSeconds <= demoSequenceSeconds {
 		return
 	}
 	g.startNextDemoSequence()

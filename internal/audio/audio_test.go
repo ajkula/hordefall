@@ -361,3 +361,69 @@ func peakOf(buffer []byte) float32 {
 	}
 	return peak
 }
+
+func TestPunchyVoiceSettingsShapeTheSound(t *testing.T) {
+	plain := VoiceSettings{Waveform: WaveSaw, Frequency: 55, Volume: 0.5, Filter: 0.5, Envelope: Envelope{Attack: 0.001, Decay: 0.3, Sustain: 0.8, Release: 0.1}}
+	variants := map[string]func(settings *VoiceSettings){
+		"resonance": func(settings *VoiceSettings) { settings.Resonance = 0.8 },
+		"sweep":     func(settings *VoiceSettings) { settings.Sweep = 0.6; settings.SweepTime = 0.1 },
+		"fold":      func(settings *VoiceSettings) { settings.Fold = 0.6; settings.Drive = 3 },
+		"crush":     func(settings *VoiceSettings) { settings.Crush = 0.7 },
+		"unison":    func(settings *VoiceSettings) { settings.Unison = 7; settings.Detune = 0.3 },
+		"fifth":     func(settings *VoiceSettings) { settings.Fifth = 0.8 },
+		"punch":     func(settings *VoiceSettings) { settings.Punch = 1 },
+		"click":     func(settings *VoiceSettings) { settings.Click = 1 },
+	}
+	reference := renderVoice(plain)
+	for name, apply := range variants {
+		settings := plain
+		apply(&settings)
+		samples := renderVoice(settings)
+		if samples == reference {
+			t.Errorf("%s did not change the sound", name)
+		}
+		for _, sample := range samples {
+			if math.IsNaN(float64(sample)) || abs(sample) > 4 {
+				t.Fatalf("%s produced an unstable sample %v", name, sample)
+			}
+		}
+	}
+}
+
+func renderVoice(settings VoiceSettings) [4096]float32 {
+	var voice Voice
+	voice.Start(settings, 7)
+	var samples [4096]float32
+	for index := range samples {
+		samples[index], _ = voice.Render()
+	}
+	return samples
+}
+
+func TestTriggerPumpsDuckingChannels(t *testing.T) {
+	song, err := ParseSong(`tempo 125
+speed 6
+instrument 1 kick sine decay 0.2 trigger 1
+instrument 2 pad saw sustain 1 volume 0.3 duck 0.9
+order 0
+pattern 0
+C-3 01 ... | A-3 02 ...
+--- .. ... | --- .. ...
+--- .. ... | --- .. ...
+--- .. ... | --- .. ...`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tracker := NewTracker(song)
+	early, late := float32(0), float32(0)
+	for sample := range sampleRate / 2 {
+		_, right := tracker.Render()
+		isEarly := sample > sampleRate/50 && sample < sampleRate/10
+		isLate := sample > sampleRate*3/10
+		early = max(early, abs(right)*boolToFloat(isEarly))
+		late = max(late, abs(right)*boolToFloat(isLate))
+	}
+	if early >= late*0.6 {
+		t.Fatalf("the pad was not ducked after the kick: early %.3f late %.3f", early, late)
+	}
+}

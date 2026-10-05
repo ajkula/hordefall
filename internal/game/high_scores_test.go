@@ -84,20 +84,39 @@ func TestResetHighScoresNeedsConfirmation(t *testing.T) {
 	}
 }
 
+func TestRankingBoardPausesTheDemo(t *testing.T) {
+	game := newHeadlessGame()
+	game.startDemo()
+	game.highScoreBoardSeconds = attractBoardSeconds
+	frame, demoSeconds := game.frame, game.demoSeconds
+	for range 60 {
+		game.updateDemo()
+	}
+	if game.frame != frame || game.demoSeconds != demoSeconds {
+		t.Fatal("the demo kept running behind the ranking")
+	}
+	game.highScoreBoardSeconds = deltaSeconds
+	game.updateDemo()
+	game.updateDemo()
+	if game.frame == frame {
+		t.Fatal("the demo did not resume after the ranking")
+	}
+}
+
 func TestDemoShowsHighScoresEveryFewClips(t *testing.T) {
 	game := newHeadlessGame()
 	game.startDemo()
 	for clip := 1; clip < demoClipsPerBoard; clip++ {
-		game.demoSeconds = game.demoClipSeconds + 1
+		game.demoSeconds = demoSequenceSeconds + 1
 		game.startNextDemoSequenceIfDone()
 		if game.highScoreBoardSeconds > 0 {
 			t.Fatalf("board shown after clip %d", clip)
 		}
 	}
-	game.demoSeconds = game.demoClipSeconds + 1
+	game.demoSeconds = demoSequenceSeconds + 1
 	game.startNextDemoSequenceIfDone()
-	if game.highScoreBoardSeconds != attractBoardSeconds || game.demoClipSeconds != demoSequenceSeconds+attractBoardSeconds {
-		t.Fatalf("board %v, clip %v", game.highScoreBoardSeconds, game.demoClipSeconds)
+	if game.highScoreBoardSeconds != attractBoardSeconds {
+		t.Fatalf("board %v", game.highScoreBoardSeconds)
 	}
 }
 

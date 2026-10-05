@@ -28,6 +28,11 @@ type UI struct {
 
 	titleHeight   float32
 	menuPositions []float32
+
+	benchmarkLeft    string
+	benchmarkRight   string
+	fpsText          string
+	nextStatsRefresh float32
 }
 
 // ===== Constants =====
@@ -60,6 +65,9 @@ const (
 	selectionMarkerNudge     = 3
 	selectionMarkerSpeed     = 5
 	selectionMarkerCenter    = 0.5
+	statsRefreshSeconds      = 0.5
+	benchmarkPanelHeight     = 6*24 + 16
+	benchmarkRightColumn     = 196
 )
 
 var textOutlineOffsets = [8][2]float32{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
@@ -107,7 +115,8 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawText(screen, fmt.Sprintf("%.0f / %.0f", max(0, player.Health), player.MaximumHealth), u.small, 22, 20, textColor, 1, text.AlignStart)
 	u.drawText(screen, fmt.Sprintf("Lv %d", player.Level), u.bold, 290, 16, accentColor, 1, text.AlignStart)
 	u.drawText(screen, formatClock(g.elapsedSeconds), u.bold, screenWidth/2, 16, textColor, 1, text.AlignCenter)
-	fpsTexts := [2]string{"", fmt.Sprintf("   FPS %.0f", ebiten.ActualFPS())}
+	u.refreshStatsIfDue(g)
+	fpsTexts := [2]string{"", u.fpsText}
 	status := fmt.Sprintf("Kills %d   Horde %d", g.kills, g.enemies.Count) + fpsTexts[boolToIndex(g.settings.IsFPSShown)]
 	u.drawText(screen, status, u.regular, screenWidth-16, 18, textColor, 1, text.AlignEnd)
 	highScoreText := "HI " + formatThousands(max(g.highScores.Best().Score, g.CurrentScore()))
@@ -263,16 +272,35 @@ func (u *UI) drawBenchmarkPanel(g *Game, screen *ebiten.Image) {
 	if !g.isDemo || g.settings.IsBenchmarkHidden {
 		return
 	}
-	lines := []string{
-		"LIVE BENCHMARK",
-		fmt.Sprintf("FPS %.0f    TPS %.0f", ebiten.ActualFPS(), ebiten.ActualTPS()),
-		fmt.Sprintf("Simulation %.2f ms / tick", g.simulationMillis),
-		fmt.Sprintf("Enemies %d    Spider tanks %d", g.enemies.Count, len(g.spiders)),
-		fmt.Sprintf("Particles %d    Projectiles %d", g.effects.ParticleCount, g.projectiles.Count),
-		fmt.Sprintf("Ground cells %d    Reactions %d", g.ground.Columns*g.ground.Rows, sumReactions(g.reactionCounts)),
+	u.refreshStatsIfDue(g)
+	fillRect(screen, 16, 470, 330, benchmarkPanelHeight, toColor(panelColor, 0.75))
+	u.drawText(screen, u.benchmarkLeft, u.small, 28, 478, textColor, 1, text.AlignStart)
+	u.drawText(screen, u.benchmarkRight, u.small, benchmarkRightColumn, 478, textColor, 1, text.AlignStart)
+}
+
+func (u *UI) refreshStatsIfDue(g *Game) {
+	if g.clockSeconds < u.nextStatsRefresh {
+		return
 	}
-	fillRect(screen, 16, 470, 330, float32(len(lines))*24+16, toColor(panelColor, 0.75))
-	u.drawText(screen, strings.Join(lines, "\n"), u.small, 28, 478, textColor, 1, text.AlignStart)
+	u.nextStatsRefresh = g.clockSeconds + statsRefreshSeconds
+	u.fpsText = fmt.Sprintf("   FPS %.0f", ebiten.ActualFPS())
+	left := []string{
+		"LIVE BENCHMARK",
+		fmt.Sprintf("FPS  %.0f", ebiten.ActualFPS()),
+		fmt.Sprintf("Simulation  %.2f ms / tick", g.simulationMillis),
+		fmt.Sprintf("Enemies  %d", g.enemies.Count),
+		fmt.Sprintf("Particles  %d", g.effects.ParticleCount),
+		fmt.Sprintf("Ground cells  %d", g.ground.Columns*g.ground.Rows),
+	}
+	right := []string{
+		"",
+		fmt.Sprintf("TPS  %.0f", ebiten.ActualTPS()),
+		"",
+		fmt.Sprintf("Spider tanks  %d", len(g.spiders)),
+		fmt.Sprintf("Projectiles  %d", g.projectiles.Count),
+		fmt.Sprintf("Reactions  %d", sumReactions(g.reactionCounts)),
+	}
+	u.benchmarkLeft, u.benchmarkRight = strings.Join(left, "\n"), strings.Join(right, "\n")
 }
 
 func (u *UI) drawDemoSequence(g *Game, screen *ebiten.Image) {

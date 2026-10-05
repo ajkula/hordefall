@@ -151,6 +151,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.DashSeconds = max(0, player.DashSeconds-deltaSeconds)
 	g.updateFacing()
 	g.applyAimStick()
+	g.applyMouseAim()
 	dashWeight := boolToFloat(isDashing)
 	directionX := g.controls.MoveX + (player.DashDirectionX-g.controls.MoveX)*dashWeight
 	directionY := g.controls.MoveY + (player.DashDirectionY-g.controls.MoveY)*dashWeight
@@ -186,6 +187,19 @@ func (g *Game) applyAimStick() {
 		return
 	}
 	g.player.AimX, g.player.AimY = g.controls.AimX, g.controls.AimY
+}
+
+func (g *Game) applyMouseAim() {
+	if !g.controls.HasMouseAim || g.renderer == nil {
+		return
+	}
+	cursorX, cursorY := g.renderer.ScreenToWorld(g.controls.CursorX/renderScale, g.controls.CursorY/renderScale)
+	player := g.player
+	offsetX, offsetY := cursorX-player.X, cursorY-player.Y
+	if length(offsetX, offsetY) < mouseAimDeadzone {
+		return
+	}
+	player.AimX, player.AimY = normalize(offsetX, offsetY)
 }
 
 func (g *Game) startDashIfRequested() {

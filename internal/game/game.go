@@ -77,7 +77,6 @@ type Game struct {
 	nameEntryHoldSeconds  float32
 	highScoreBoardSeconds float32
 	boardOpenedSeconds    float32
-	demoClipSeconds       float32
 	demoClipCount         int
 	scoreMessage          string
 	frame                 uint32
@@ -204,6 +203,7 @@ func (g *Game) Update() error {
 	g.menuLockSeconds = max(0, g.menuLockSeconds-deltaSeconds)
 	stateHandlers[g.state].Update(g)
 	g.toggleFullscreenIfRequested()
+	g.updateCursorVisibility()
 	g.updateAudio()
 	return nil
 }
@@ -246,6 +246,12 @@ func (g *Game) resetRun() {
 	g.newEntryRank = noRank
 	g.levelUpBannerSeconds = 0
 	g.lastRotatedPassive = passiveKindCount - 1
+}
+
+func (g *Game) updateCursorVisibility() {
+	isPlayingWithMouse := g.controls.HasMouseAim && g.state == StatePlaying
+	modes := [2]ebiten.CursorModeType{ebiten.CursorModeVisible, ebiten.CursorModeHidden}
+	ebiten.SetCursorMode(modes[boolToIndex(isPlayingWithMouse)])
 }
 
 func (g *Game) isConfirming() bool {

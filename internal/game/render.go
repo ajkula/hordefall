@@ -35,6 +35,8 @@ const (
 	auraRimWidth      = 1.2
 	auraFlickerBase   = 0.75
 	auraFlickerSpeed  = 0.55
+	crosshairRadius   = 11
+	mouseAimDeadzone  = 6
 )
 
 var (
@@ -43,6 +45,7 @@ var (
 	shadowColor    = [3]float32{0, 0, 0}
 	hurtColor      = [3]float32{1, 0.25, 0.25}
 	fireCellGlow   = [3]float32{1, 0.5, 0.15}
+	crosshairTicks = [4][2]float32{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
 )
 
 // ===== Public API =====
@@ -150,6 +153,7 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.queueRings(g)
 	r.queueLightning(g)
 	r.queuePrecipitation(g)
+	r.queueMouseCrosshair(g)
 	r.solid.Flush(screen)
 	r.glow.Flush(screen)
 	r.rings.Flush(screen)
@@ -159,6 +163,10 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 
 func (r *Renderer) ToScreen(x, y float32) (float32, float32) {
 	return x - r.CameraX, y - r.CameraY
+}
+
+func (r *Renderer) ScreenToWorld(x, y float32) (float32, float32) {
+	return x + r.CameraX, y + r.CameraY
 }
 
 // ===== Internal =====
@@ -309,6 +317,20 @@ func (r *Renderer) queuePlayer(g *Game) {
 		bladeX, bladeY := r.ToScreen(player.BladePosition(blade))
 		r.solid.AddCircle(bladeX, bladeY, 7, weaponTable[WeaponOrbitBlades].Color, 1)
 		r.glow.AddCircle(bladeX, bladeY, 20, [3]float32{0.8, 0.85, 1}, 0.45)
+	}
+}
+
+func (r *Renderer) queueMouseCrosshair(g *Game) {
+	isShown := g.controls.HasMouseAim && !g.isDemo
+	if !isShown {
+		return
+	}
+	x, y := g.controls.CursorX/renderScale, g.controls.CursorY/renderScale
+	tint := [2][3]float32{{0.9, 0.95, 1}, {1, 0.75, 0.3}}[boolToIndex(g.player.IsFiring)]
+	r.rings.AddCircle(x, y, crosshairRadius, tint, 0.85)
+	r.solid.AddCircle(x, y, 1.8, tint, 1)
+	for _, offset := range crosshairTicks {
+		r.solid.AddSegment(x+offset[0]*crosshairRadius*0.55, y+offset[1]*crosshairRadius*0.55, x+offset[0]*crosshairRadius*1.25, y+offset[1]*crosshairRadius*1.25, 2, tint, 0.9)
 	}
 }
 

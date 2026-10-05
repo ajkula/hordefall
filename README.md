@@ -71,16 +71,18 @@ Every sound effect is synthesized on the fly from layered voices with a random p
 
 ## Controls
 
-| Action        | Arcade stick / gamepad  | Keyboard        |
-|---------------|-------------------------|-----------------|
-| Move          | Stick (D-pad or analog) | WASD / arrows   |
-| Aim           | Right stick (twin-stick pads) | follows movement |
-| Fire (hold)   | Button 1                | J / Z           |
-| Aim lock (hold) | Button 2              | K / X           |
-| Dash          | Button 3                | Space / L / C   |
-| Pause         | Start                   | Esc / P         |
-| Live benchmark on / off (title) | Select | Backspace / F2 |
-| Input debug (in game) | Select          | F1              |
+| Action        | Arcade stick / gamepad  | Keyboard        | Mouse |
+|---------------|-------------------------|-----------------|-------|
+| Move          | Stick (D-pad or analog) | WASD / arrows   |       |
+| Aim           | Right stick (twin-stick pads) | follows movement | cursor around the Tachikoma |
+| Fire (hold)   | Button 1                | J / Z           | left button |
+| Aim lock (hold) | Button 2              | K / X           |       |
+| Dash          | Button 3                | Space / L / C   | right button |
+| Pause         | Start                   | Esc / P         |       |
+| Live benchmark on / off (title) | Select | Backspace / F2 |      |
+| Input debug (in game) | Select          | F1              |       |
+
+Mouse aiming switches on as soon as the mouse moves or clicks: the cannon points at the cursor, drawn as a crosshair while the system cursor is hidden in play. Touching the gamepad hands the aim back to it; a keyboard-only player who never touches the mouse keeps the aim that follows movement.
 
 Aim follows your movement. Hold aim lock to freeze it and strafe or retreat while firing.
 On a gamepad with two sticks, the right stick aims (twin-stick): move with the left stick, aim with the right one; pushing it past the deadzone also fires automatically, so no button is needed; release it and the aim follows your movement again. Fire still works on button 1, which is how the arcade stick plays.

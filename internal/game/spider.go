@@ -50,6 +50,7 @@ const (
 	spiderStepOvershoot    = 0.35
 	spiderStepLift         = 16 * spiderScale
 	spiderTurnRate         = 2.2
+	spiderSpacingFactor    = 1.5
 	spiderStompRadius      = 52
 	spiderStompDamage      = 22
 	spiderStompPlayerHurt  = 18
@@ -151,6 +152,7 @@ func (g *Game) spawnSpiderAt(angle, distance float32) {
 }
 
 func (g *Game) updateSpiders(deltaSeconds float32) {
+	g.separateSpiders()
 	kept := g.spiders[:0]
 	for index := range g.spiders {
 		enemyIndex := g.enemies.IndexOfID(g.spiders[index].EnemyID)
@@ -158,6 +160,33 @@ func (g *Game) updateSpiders(deltaSeconds float32) {
 		kept = appendIf(kept, g.spiders[index], enemyIndex >= 0)
 	}
 	g.spiders = kept
+}
+
+func (g *Game) separateSpiders() {
+	for first := range g.spiders {
+		for second := first + 1; second < len(g.spiders); second++ {
+			g.pushSpidersApart(g.enemies.IndexOfID(g.spiders[first].EnemyID), g.enemies.IndexOfID(g.spiders[second].EnemyID))
+		}
+	}
+}
+
+func (g *Game) pushSpidersApart(first, second int) {
+	if first < 0 || second < 0 {
+		return
+	}
+	enemies := g.enemies
+	offsetX, offsetY := enemies.PositionX[second]-enemies.PositionX[first], enemies.PositionY[second]-enemies.PositionY[first]
+	distance := length(offsetX, offsetY)
+	spacing := (enemyTable[enemies.Kind[first]].Radius + enemyTable[enemies.Kind[second]].Radius) * spiderSpacingFactor
+	if distance >= spacing {
+		return
+	}
+	directionX, directionY := normalize(offsetX+boolToFloat(distance == 0), offsetY)
+	push := (spacing - distance) / 2
+	enemies.PositionX[first] = clamp(enemies.PositionX[first]-directionX*push, 0, arenaSize)
+	enemies.PositionY[first] = clamp(enemies.PositionY[first]-directionY*push, 0, arenaSize)
+	enemies.PositionX[second] = clamp(enemies.PositionX[second]+directionX*push, 0, arenaSize)
+	enemies.PositionY[second] = clamp(enemies.PositionY[second]+directionY*push, 0, arenaSize)
 }
 
 func (g *Game) updateSpider(rig *SpiderRig, enemyIndex int, deltaSeconds float32) {

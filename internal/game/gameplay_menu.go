@@ -235,7 +235,6 @@ func (g *Game) startDemoBoardIfDue() {
 		return
 	}
 	g.highScoreBoardSeconds = attractBoardSeconds
-	g.demoClipSeconds += attractBoardSeconds
 }
 
 func (g *Game) goHomeWithRanking() {
@@ -243,7 +242,6 @@ func (g *Game) goHomeWithRanking() {
 	g.goHome()
 	g.newEntryRank = rank
 	g.highScoreBoardSeconds = attractBoardSeconds
-	g.demoClipSeconds += attractBoardSeconds
 }
 
 func (g *Game) dismissDemoBoardIfPressed() bool {
