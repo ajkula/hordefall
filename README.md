@@ -91,7 +91,7 @@ The mapping is saved to `%AppData%\hordefall\controls.json` (raw button indices)
 
 ## The systems
 
-**Statuses** (`status.go`): Burning, Chilled, Frozen, Oiled, Wet, Shocked. Each is a bit in `StatusFlags` with a duration, tint, speed factor and damage over time.
+**Statuses** (`status.go`): Burning, Chilled, Frozen, Oiled, Wet, Shocked. Each is a bit in `StatusFlags` with a duration, tint, speed factor and damage over time. Burning, Chilled and Shocked stack up to level 3 with repeated hits: the tint grows stronger (and hotter for fire, from red to glowing yellow), a light aura appears from level 2 and a 1 px rim of light at level 3. Burning deals 6 / 12 / 18 per second, Chilled and Shocked slow more at each level, and the third frost hit freezes.
 
 **Reactions**: an element hitting an enemy that carries a status triggers a reaction from `reactionRules`:
 
@@ -149,6 +149,8 @@ Tuning lives in the constants and `spiderLegLayouts` of `spider.go`; drawing is 
 After three spider tanks, the fourth boss event is a horde closing in from every side: 500 the first time, then 1,000, 1,500 and so on. Its core is a mix of brutes, frostlings, runners and swarmers, all twice as tough as usual; the explosive enemies (bloaters and emberlings, one in eight) form the outer shell, so the horde no longer goes up in one chain reaction. It counts as a boss: its purple bar shows how many are left, no other boss arrives until it is wiped out, and the music adds a boss voice. Horde kills give experience and score but do not advance the boss counter. Clearing it awards a bonus of 20 points per member. Tuning in `horde_event.go`.
 
 ## Weapons
+
+You start with **Pulse Shot**, a neutral bolt. At level up it can evolve, keeping its level, into **one** elemental shot: Ember Bolt (fire), Frost Shard (frost) or Volt Bolt (shock). Once one is chosen, the others are no longer offered, only its upgrades.
 
 Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chains), Oil Flask (soaks ground and enemies), Downpour (wets, douses fires), Orbit Blades (physical, shatters frozen), Seismic Hammer (physical slam with knockback; its wide quake shatters every frozen enemy far around), Static Mines (dropped at your feet, they shock whoever steps near; shocked enemies turn fire into PLASMA, blades and slams into OVERLOAD, rain into CONDUCTION). The last two keep fire builds whole: neither puts flames out. Up to 5 weapons, level 7 each, plus 6 passives.
 
@@ -249,3 +251,7 @@ go test ./internal/game -bench .
 ```
 
 The long test runs 8 simulated minutes with every weapon maxed. `BenchmarkSimulateTenThousandEnemies` measures a tick with 10 000 live enemies packed around the player (about 5 ms on an i5-6200U).
+
+## Fonts
+
+The interface uses Rajdhani (Medium for text, Bold for titles and menus), by the Indian Type Foundry, under the SIL Open Font License (`internal/game/fonts/OFL.txt`). Characters Rajdhani lacks, such as the music note, fall back to the Go fonts.

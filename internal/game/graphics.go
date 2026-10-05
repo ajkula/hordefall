@@ -208,7 +208,7 @@ func (g *Game) drawGraphics(screen *ebiten.Image) {
 	g.ui.DrawGraphicsMenu(g, screen, graphicsMenuOptions)
 }
 
-func (u *UI) scaledFace(face *text.GoTextFace) *text.GoTextFace {
+func (u *UI) scaledFace(face *text.GoTextFace) text.Face {
 	if u.faceScale != renderScale {
 		clear(u.scaledFaces)
 		u.faceScale = renderScale
@@ -217,9 +217,20 @@ func (u *UI) scaledFace(face *text.GoTextFace) *text.GoTextFace {
 	if isCached {
 		return scaled
 	}
-	scaled = &text.GoTextFace{Source: face.Source, Size: face.Size * float64(renderScale)}
+	size := face.Size * float64(renderScale)
+	primary := &text.GoTextFace{Source: face.Source, Size: size}
+	fallback := &text.GoTextFace{Source: u.fallbackSources[face.Source], Size: size}
+	scaled = mustCombineFaces(primary, fallback)
 	u.scaledFaces[face] = scaled
 	return scaled
+}
+
+func mustCombineFaces(faces ...text.Face) text.Face {
+	combined, err := text.NewMultiFace(faces...)
+	if err != nil {
+		panic(err)
+	}
+	return combined
 }
 
 func fillRect(screen *ebiten.Image, x, y, width, height float32, tint color.Color) {

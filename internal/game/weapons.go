@@ -6,6 +6,8 @@ import "hordefall/internal/audio"
 
 type WeaponKind uint8
 
+type WeaponFamily uint8
+
 type WeaponDefinition struct {
 	Name             string
 	Description      string
@@ -21,6 +23,8 @@ type WeaponDefinition struct {
 	LevelsPerCount   int
 	BaseRadius       float32
 	RadiusPerLevel   float32
+	Family           WeaponFamily
+	IsFamilyBase     bool
 }
 
 type WeaponState struct {
@@ -42,7 +46,15 @@ const (
 	WeaponOrbitBlades
 	WeaponSeismicHammer
 	WeaponStaticMines
+	WeaponPulseShot
+	WeaponFrostShard
+	WeaponVoltBolt
 	weaponKindCount
+)
+
+const (
+	FamilyNone WeaponFamily = iota
+	FamilyMainShot
 )
 
 const (
@@ -75,7 +87,7 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 		Name: "Ember Bolt", Description: "Fires burning bolts where you aim.",
 		Element: ElementFire, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{1, 0.55, 0.15},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 11, DamagePerLevel: 4,
-		BaseCount: 1, LevelsPerCount: 2,
+		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},
 	WeaponFrostNova: {
 		Name: "Frost Nova", Description: "Pulses cold around you.",
@@ -112,6 +124,24 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 		BaseCooldown: 2.4, CooldownPerLevel: 0.06, BaseDamage: 14, DamagePerLevel: 5,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 120, RadiusPerLevel: 12,
 	},
+	WeaponPulseShot: {
+		Name: "Pulse Shot", Description: "Fires plain energy bolts where you aim.",
+		Element: ElementNone, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{0.85, 0.88, 1},
+		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
+		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot, IsFamilyBase: true,
+	},
+	WeaponFrostShard: {
+		Name: "Frost Shard", Description: "Fires ice shards where you aim.",
+		Element: ElementFrost, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{0.6, 0.88, 1},
+		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
+		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
+	},
+	WeaponVoltBolt: {
+		Name: "Volt Bolt", Description: "Fires charged bolts where you aim.",
+		Element: ElementShock, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{1, 0.95, 0.4},
+		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
+		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
+	},
 	WeaponStaticMines: {
 		Name: "Static Mines", Description: "Drops shock mines.",
 		Element: ElementShock, Color: mineColor,
@@ -121,7 +151,10 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 }
 
 var weaponBehaviors = [weaponKindCount]weaponBehavior{
-	WeaponEmberBolt:     (*Game).fireEmberBolts,
+	WeaponEmberBolt:     (*Game).fireBolts,
+	WeaponPulseShot:     (*Game).fireBolts,
+	WeaponFrostShard:    (*Game).fireBolts,
+	WeaponVoltBolt:      (*Game).fireBolts,
 	WeaponFrostNova:     (*Game).pulseFrostNova,
 	WeaponArcLightning:  (*Game).castArcLightning,
 	WeaponOilFlask:      (*Game).throwOilFlasks,
@@ -170,7 +203,7 @@ func (g *Game) updateWeapon(weapon *WeaponState, deltaSeconds float32) {
 	g.player.Rig.ArmRecoil = max(g.player.Rig.ArmRecoil, boolToFloat(definition.IsAimed))
 }
 
-func (g *Game) fireEmberBolts(weapon *WeaponState, definition *WeaponDefinition) {
+func (g *Game) fireBolts(weapon *WeaponState, definition *WeaponDefinition) {
 	player := g.player
 	baseAngle := atan2(player.AimY, player.AimX)
 	count := definition.CountAt(weapon.Level)

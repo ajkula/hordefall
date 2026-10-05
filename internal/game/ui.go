@@ -2,13 +2,14 @@ package game
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
+	"golang.org/x/image/font/gofont/gobold"
+	"golang.org/x/image/font/gofont/goregular"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/gofont/goregular"
 )
 
 // ===== Types =====
@@ -19,14 +20,21 @@ type UI struct {
 	bold    *text.GoTextFace
 	title   *text.GoTextFace
 
-	scaledFaces map[*text.GoTextFace]*text.GoTextFace
-	faceScale   float32
+	scaledFaces     map[*text.GoTextFace]text.Face
+	fallbackSources map[*text.GoTextFaceSource]*text.GoTextFaceSource
+	faceScale       float32
 
 	titleHeight   float32
 	menuPositions []float32
 }
 
 // ===== Constants =====
+
+//go:embed fonts/Rajdhani-Medium.ttf
+var rajdhaniMedium []byte
+
+//go:embed fonts/Rajdhani-Bold.ttf
+var rajdhaniBold []byte
 
 const (
 	cardWidth          = 300
@@ -61,16 +69,21 @@ var (
 // ===== Public API =====
 
 func NewUI() *UI {
-	regularSource := mustLoadFace(goregular.TTF)
-	boldSource := mustLoadFace(gobold.TTF)
+	regularSource := mustLoadFace(rajdhaniMedium)
+	boldSource := mustLoadFace(rajdhaniBold)
+	fallbackSources := map[*text.GoTextFaceSource]*text.GoTextFaceSource{
+		regularSource: mustLoadFace(goregular.TTF),
+		boldSource:    mustLoadFace(gobold.TTF),
+	}
 	ui := &UI{
-		small:   &text.GoTextFace{Source: regularSource, Size: 14},
-		regular: &text.GoTextFace{Source: regularSource, Size: 18},
-		bold:    &text.GoTextFace{Source: boldSource, Size: 22},
-		title:   &text.GoTextFace{Source: boldSource, Size: 72},
+		small:   &text.GoTextFace{Source: regularSource, Size: 16},
+		regular: &text.GoTextFace{Source: regularSource, Size: 20},
+		bold:    &text.GoTextFace{Source: boldSource, Size: 24},
+		title:   &text.GoTextFace{Source: boldSource, Size: 80},
 
-		scaledFaces: map[*text.GoTextFace]*text.GoTextFace{},
-		faceScale:   1,
+		scaledFaces:     map[*text.GoTextFace]text.Face{},
+		fallbackSources: fallbackSources,
+		faceScale:       1,
 	}
 	_, titleHeight := text.Measure("HORDEFALL", ui.title, 0)
 	ui.titleHeight = float32(titleHeight)
@@ -190,7 +203,7 @@ func (u *UI) drawText(screen *ebiten.Image, message string, face *text.GoTextFac
 	scaledFace := u.scaledFace(face)
 	options := &text.DrawOptions{}
 	options.PrimaryAlign = align
-	options.LineSpacing = scaledFace.Size * 1.45
+	options.LineSpacing = face.Size * float64(renderScale) * 1.45
 	options.ColorScale.ScaleWithColor(toColor(outlineColor, alpha))
 	for _, offset := range textOutlineOffsets {
 		options.GeoM.Reset()

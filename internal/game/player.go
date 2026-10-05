@@ -70,7 +70,7 @@ func NewPlayer() *Player {
 		Level: 1, ExperienceToNext: experienceForLevel(1),
 		MoveSpeed: playerStartSpeed, MagnetRadius: playerStartMagnet,
 		CooldownMultiplier: 1, DamageMultiplier: 1, AreaMultiplier: 1,
-		Weapons: []WeaponState{{Kind: WeaponEmberBolt, Level: 1}},
+		Weapons: []WeaponState{{Kind: WeaponPulseShot, Level: 1}},
 	}
 }
 
@@ -86,6 +86,15 @@ func (p *Player) WeaponLevel(kind WeaponKind) int {
 		}
 	}
 	return 0
+}
+
+func (p *Player) FamilyWeapon(family WeaponFamily) (WeaponKind, int) {
+	for _, weapon := range p.Weapons {
+		if family != FamilyNone && weaponTable[weapon.Kind].Family == family {
+			return weapon.Kind, weapon.Level
+		}
+	}
+	return 0, 0
 }
 
 func (p *Player) GainExperience(amount int) {

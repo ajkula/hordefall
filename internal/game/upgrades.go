@@ -16,10 +16,11 @@ type PassiveDefinition struct {
 type UpgradeKind uint8
 
 type UpgradeOffer struct {
-	Kind      UpgradeKind
-	Weapon    WeaponKind
-	Passive   PassiveKind
-	NextLevel int
+	Kind        UpgradeKind
+	Weapon      WeaponKind
+	Passive     PassiveKind
+	NextLevel   int
+	IsEvolution bool
 }
 
 type upgradeApplier func(game *Game, offer UpgradeOffer)
@@ -85,9 +86,10 @@ func (offer UpgradeOffer) Title() string {
 }
 
 func (offer UpgradeOffer) Subtitle() string {
-	isNew := offer.NextLevel == 1 && offer.Kind != UpgradeHeal
+	isNew := offer.NextLevel == 1 && offer.Kind != UpgradeHeal && !offer.IsEvolution
 	levelLabels := [2]string{fmt.Sprintf("Level %d", offer.NextLevel), "NEW"}
-	kindLabels := [2]string{levelLabels[boolToIndex(isNew)], fmt.Sprintf("+%d health", healUpgradeAmount)}
+	weaponLabels := [2]string{levelLabels[boolToIndex(isNew)], "EVOLVE YOUR SHOT"}
+	kindLabels := [2]string{weaponLabels[boolToIndex(offer.IsEvolution)], fmt.Sprintf("+%d health", healUpgradeAmount)}
 	return kindLabels[boolToIndex(offer.Kind == UpgradeHeal)]
 }
 
@@ -162,13 +164,18 @@ func appendHealIfEmpty(offers []UpgradeOffer) []UpgradeOffer {
 }
 
 func (g *Game) appendWeaponOffer(pool []UpgradeOffer, kind WeaponKind) []UpgradeOffer {
+	definition := &weaponTable[kind]
 	level := g.player.WeaponLevel(kind)
+	familyKind, familyLevel := g.player.FamilyWeapon(definition.Family)
+	isFamilyTaken := familyLevel > 0 && familyKind != kind
+	isEvolution := isFamilyTaken && weaponTable[familyKind].IsFamilyBase && !definition.IsFamilyBase
 	isUpgradable := level > 0 && level < maximumWeaponLevel
-	isAcquirable := level == 0 && len(g.player.Weapons) < maximumWeaponSlots
-	if !isUpgradable && !isAcquirable {
+	isAcquirable := level == 0 && !isFamilyTaken && len(g.player.Weapons) < maximumWeaponSlots
+	if !isUpgradable && !isAcquirable && !isEvolution {
 		return pool
 	}
-	return append(pool, UpgradeOffer{Kind: UpgradeWeapon, Weapon: kind, NextLevel: level + 1})
+	nextLevels := [2]int{level + 1, familyLevel}
+	return append(pool, UpgradeOffer{Kind: UpgradeWeapon, Weapon: kind, NextLevel: nextLevels[boolToIndex(isEvolution)], IsEvolution: isEvolution})
 }
 
 func (g *Game) appendPassiveOffer(pool []UpgradeOffer, kind PassiveKind) []UpgradeOffer {
@@ -187,8 +194,10 @@ func (g *Game) applyOffer(offer UpgradeOffer) {
 func (g *Game) applyWeaponUpgrade(offer UpgradeOffer) {
 	player := g.player
 	for slot := range player.Weapons {
-		if player.Weapons[slot].Kind == offer.Weapon {
-			player.Weapons[slot].Level = offer.NextLevel
+		weapon := &player.Weapons[slot]
+		isEvolving := offer.IsEvolution && weaponTable[weapon.Kind].Family == weaponTable[offer.Weapon].Family
+		if weapon.Kind == offer.Weapon || isEvolving {
+			weapon.Kind, weapon.Level = offer.Weapon, offer.NextLevel
 			return
 		}
 	}

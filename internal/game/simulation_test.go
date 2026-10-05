@@ -607,3 +607,71 @@ func TestBossKillsDropNoHealOrbs(t *testing.T) {
 		t.Fatalf("enemies killed by a boss dropped %d heal orbs", len(game.healOrbs))
 	}
 }
+
+func TestRepeatedFireHitsHeatEnemiesUpToLevelThree(t *testing.T) {
+	game := newHeadlessGame()
+	game.enemies.Spawn(EnemyBrute, game.player.X+300, game.player.Y, 1)
+	burning := statusBitIndex(StatusBurning)
+	for hit := 1; hit <= 4; hit++ {
+		game.HitEnemy(0, 0, ElementFire)
+		want := uint8(min(hit, maximumStatusLevel))
+		if game.enemies.LevelsOf(0)[burning] != want {
+			t.Fatalf("after %d fire hits burn level %d, want %d", hit, game.enemies.LevelsOf(0)[burning], want)
+		}
+	}
+	before := game.enemies.Health[0]
+	game.enemies.TickStatuses(0, 1)
+	if burned := before - game.enemies.Health[0]; burned != statusTable[burning].DamagePerSecond*maximumStatusLevel {
+		t.Fatalf("level 3 burn dealt %.1f per second, want %.1f", burned, statusTable[burning].DamagePerSecond*maximumStatusLevel)
+	}
+	game.enemies.TickStatuses(0, statusTable[burning].DurationSeconds)
+	game.HitEnemy(0, 0, ElementFire)
+	if game.enemies.LevelsOf(0)[burning] != 1 {
+		t.Fatalf("a burn that went out should restart at level 1")
+	}
+}
+
+func TestFrostFreezesOnTheThirdHit(t *testing.T) {
+	game := newHeadlessGame()
+	game.enemies.Spawn(EnemyBrute, game.player.X+300, game.player.Y, 1)
+	for hit := 1; hit <= 3; hit++ {
+		isFrozen := game.enemies.Status[0]&StatusFrozen != 0
+		if isFrozen {
+			t.Fatalf("frozen after only %d frost hits", hit-1)
+		}
+		game.HitEnemy(0, 0, ElementFrost)
+	}
+	if game.enemies.Status[0]&StatusFrozen == 0 || game.reactionCounts[ReactionFreeze] != 1 {
+		t.Fatalf("three frost hits did not freeze: status %b", game.enemies.Status[0])
+	}
+}
+
+func TestShotEvolvesIntoOneElementOnly(t *testing.T) {
+	game := newHeadlessGame()
+	game.player.Weapons = []WeaponState{{Kind: WeaponPulseShot, Level: 3}}
+	game.offerPool = game.offerPool[:0]
+	for kind := range weaponKindCount {
+		game.offerPool = game.appendWeaponOffer(game.offerPool, kind)
+	}
+	evolutions := map[WeaponKind]bool{}
+	for _, offer := range game.offerPool {
+		evolutions[offer.Weapon] = offer.IsEvolution
+	}
+	if !evolutions[WeaponEmberBolt] || !evolutions[WeaponFrostShard] || !evolutions[WeaponVoltBolt] {
+		t.Fatalf("pulse shot should offer the three elemental evolutions: %v", evolutions)
+	}
+	game.applyWeaponUpgrade(UpgradeOffer{Kind: UpgradeWeapon, Weapon: WeaponFrostShard, NextLevel: 3, IsEvolution: true})
+	if len(game.player.Weapons) != 1 || game.player.Weapons[0] != (WeaponState{Kind: WeaponFrostShard, Level: 3}) {
+		t.Fatalf("evolution should replace the pulse shot and keep its level: %+v", game.player.Weapons)
+	}
+	game.offerPool = game.offerPool[:0]
+	for kind := range weaponKindCount {
+		game.offerPool = game.appendWeaponOffer(game.offerPool, kind)
+	}
+	for _, offer := range game.offerPool {
+		isOtherShot := weaponTable[offer.Weapon].Family == FamilyMainShot && offer.Weapon != WeaponFrostShard
+		if isOtherShot {
+			t.Fatalf("after choosing Frost Shard, %s is still offered", weaponTable[offer.Weapon].Name)
+		}
+	}
+}

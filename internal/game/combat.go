@@ -29,7 +29,7 @@ func (g *Game) HitEnemy(index int, damage float32, element Element) {
 		return
 	}
 	enemies.LastHitByBoss[index] = false
-	reaction := FindReaction(element, enemies.Status[index])
+	reaction := FindReaction(element, enemies.Status[index], enemies.LevelsOf(index))
 	definition := &reactionTable[reaction]
 	enemies.ApplyStatus(index, elementStatus[element]&^definition.SuppressedStatus)
 	enemies.Status[index] &^= definition.RemovesStatus

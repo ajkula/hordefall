@@ -46,6 +46,7 @@ type EnemyStore struct {
 	Kind          []EnemyKind
 	Status        []StatusFlags
 	StatusTimers  [statusCount][]float32
+	StatusLevels  [statusCount][]uint8
 	HitFlash      []float32
 	BladeCooldown []float32
 }
@@ -123,6 +124,7 @@ func NewEnemyStore(capacity int) *EnemyStore {
 	}
 	for statusIndex := range statusCount {
 		store.StatusTimers[statusIndex] = make([]float32, capacity)
+		store.StatusLevels[statusIndex] = make([]uint8, capacity)
 	}
 	return store
 }
@@ -147,6 +149,7 @@ func (s *EnemyStore) Spawn(kind EnemyKind, x, y, healthScale float32) uint32 {
 	s.BladeCooldown[index] = 0
 	for statusIndex := range statusCount {
 		s.StatusTimers[statusIndex][index] = 0
+		s.StatusLevels[statusIndex][index] = 0
 	}
 	return s.nextID
 }
@@ -175,18 +178,33 @@ func (s *EnemyStore) Remove(index int) {
 	s.BladeCooldown[index] = s.BladeCooldown[last]
 	for statusIndex := range statusCount {
 		s.StatusTimers[statusIndex][index] = s.StatusTimers[statusIndex][last]
+		s.StatusLevels[statusIndex][index] = s.StatusLevels[statusIndex][last]
 	}
 	s.Count--
 }
 
 func (s *EnemyStore) ApplyStatus(index int, flags StatusFlags) {
 	flags &^= enemyTable[s.Kind[index]].Immunities
+	previous := s.Status[index]
 	s.Status[index] |= flags
 	for statusIndex := range statusCount {
 		isApplied := flags&(1<<statusIndex) != 0
+		hadStatus := previous&(1<<statusIndex) != 0
 		timers := s.StatusTimers[statusIndex]
 		timers[index] = max(timers[index], statusTable[statusIndex].DurationSeconds*boolToFloat(isApplied))
+		levels := s.StatusLevels[statusIndex]
+		heldLevel := levels[index] * uint8(boolToIndex(hadStatus))
+		raisedLevel := min(statusTable[statusIndex].MaximumLevel, heldLevel+1)
+		levels[index] = [2]uint8{heldLevel, raisedLevel}[boolToIndex(isApplied)]
 	}
+}
+
+func (s *EnemyStore) LevelsOf(index int) StatusLevels {
+	var levels StatusLevels
+	for statusIndex := range statusCount {
+		levels[statusIndex] = s.StatusLevels[statusIndex][index] * uint8(boolToIndex(s.Status[index]&(1<<statusIndex) != 0))
+	}
+	return levels
 }
 
 func (s *EnemyStore) TickStatuses(index int, deltaSeconds float32) {
@@ -196,7 +214,7 @@ func (s *EnemyStore) TickStatuses(index int, deltaSeconds float32) {
 		timers := s.StatusTimers[statusIndex]
 		timers[index] = max(0, timers[index]-deltaSeconds)
 		s.Status[index] &^= StatusFlags(boolToIndex(timers[index] == 0)) << statusIndex
-		damage += statusTable[statusIndex].DamagePerSecond * deltaSeconds
+		damage += statusTable[statusIndex].DamagePerSecond * float32(s.StatusLevels[statusIndex][index]) * deltaSeconds
 	}
 	s.Health[index] -= damage
 }
@@ -204,7 +222,8 @@ func (s *EnemyStore) TickStatuses(index int, deltaSeconds float32) {
 func (s *EnemyStore) SpeedFactor(index int) float32 {
 	factor := float32(1)
 	for remaining := s.Status[index]; remaining != 0; remaining &= remaining - 1 {
-		factor *= statusTable[bits.TrailingZeros8(uint8(remaining))].SpeedFactor
+		statusIndex := bits.TrailingZeros8(uint8(remaining))
+		factor *= statusSpeedByLevel[statusIndex][s.StatusLevels[statusIndex][index]]
 	}
 	return factor
 }
@@ -212,8 +231,13 @@ func (s *EnemyStore) SpeedFactor(index int) float32 {
 func (s *EnemyStore) TintedColor(index int) [3]float32 {
 	tinted := enemyTable[s.Kind[index]].Color
 	for remaining := s.Status[index]; remaining != 0; remaining &= remaining - 1 {
-		status := &statusTable[bits.TrailingZeros8(uint8(remaining))]
-		tinted = mixColor(tinted, status.Tint, status.TintStrength)
+		statusIndex := bits.TrailingZeros8(uint8(remaining))
+		status := &statusTable[statusIndex]
+		level := s.StatusLevels[statusIndex][index]
+		levelShare := float32(level) / float32(status.MaximumLevel)
+		peakShare := float32(level-1) / float32(max(1, status.MaximumLevel-1))
+		levelTint := mixColor(status.Tint, status.PeakTint, peakShare)
+		tinted = mixColor(tinted, levelTint, status.TintStrength*(statusTintFloor+(1-statusTintFloor)*levelShare))
 	}
 	return mixColor(tinted, [3]float32{1, 1, 1}, clamp(s.HitFlash[index]*8, 0, 1))
 }

@@ -32,13 +32,17 @@ const (
 	ringTextureSize   = 256
 	batchQuadCapacity = 32768
 	cullMargin        = 40
+	auraRimWidth      = 1.2
+	auraFlickerBase   = 0.75
+	auraFlickerSpeed  = 0.55
 )
 
 var (
-	shadowColor  = [3]float32{0, 0, 0}
-	hurtColor    = [3]float32{1, 0.25, 0.25}
-	burningGlow  = [3]float32{1, 0.45, 0.1}
-	fireCellGlow = [3]float32{1, 0.5, 0.15}
+	auraGlowScales = [maximumStatusLevel + 1]float32{0, 1.6, 2.1, 2.6}
+	auraGlowAlphas = [maximumStatusLevel + 1]float32{0, 0.16, 0.28, 0.42}
+	shadowColor    = [3]float32{0, 0, 0}
+	hurtColor      = [3]float32{1, 0.25, 0.25}
+	fireCellGlow   = [3]float32{1, 0.5, 0.15}
 )
 
 // ===== Public API =====
@@ -264,9 +268,21 @@ func (r *Renderer) queueEnemyBody(g *Game, index int) {
 	screenX, screenY := r.ToScreen(x, y)
 	tint := enemies.TintedColor(index)
 	directionX, directionY := normalize(g.player.X-x, g.player.Y-y)
+	r.queueStatusAuras(g, index, screenX, screenY, radius)
 	r.solid.AddCircle(screenX, screenY, radius, tint, 1)
 	r.solid.AddCircleIf(screenX+directionX*radius*0.4, screenY+directionY*radius*0.4, radius*0.38, mixColor(tint, [3]float32{1, 1, 1}, 0.5), 0.9, radius >= 12)
-	r.glow.AddCircleIf(screenX, screenY, radius*2.4, burningGlow, 0.3, enemies.Status[index]&StatusBurning != 0)
+}
+
+func (r *Renderer) queueStatusAuras(g *Game, index int, screenX, screenY, radius float32) {
+	enemies := g.enemies
+	flicker := auraFlickerBase + (1-auraFlickerBase)*sine(float32(g.frame)*auraFlickerSpeed+float32(index))
+	for _, statusIndex := range leveledStatuses {
+		hasStatus := enemies.Status[index]&(1<<statusIndex) != 0
+		level := enemies.StatusLevels[statusIndex][index] * uint8(boolToIndex(hasStatus))
+		color := statusTable[statusIndex].AuraColor
+		r.glow.AddCircleIf(screenX, screenY, radius*auraGlowScales[level], color, auraGlowAlphas[level]*flicker, level > 0)
+		r.solid.AddCircleIf(screenX, screenY, radius+auraRimWidth, color, flicker, level == maximumStatusLevel)
+	}
 }
 
 func (r *Renderer) queueProjectiles(g *Game) {
