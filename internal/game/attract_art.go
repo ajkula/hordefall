@@ -45,24 +45,37 @@ type ArtLimb struct {
 // ===== Constants =====
 
 const (
-	artWidth           = 320
-	artHeight          = 180
-	artPixelScale      = screenWidth / artWidth
-	artShadeLevels     = 4
-	artSpecularDot     = 0.94
-	artRimDepth        = 0.6
-	artFloorTop        = 150
-	tachikomaArtStartX = 92
-	tachikomaArtStartY = 166
-	tachikomaArtEndX   = 88
-	tachikomaArtEndY   = 174
-	tachikomaArtStart  = 0.8
-	spiderArtX         = 238
-	spiderArtY         = 174
-	spiderArtSlide     = 16
-	spiderArtLean      = 0.1
-	artRimWidth        = 0.7
+	artWidth            = 128
+	artHeight           = 72
+	artDesignScale      = float32(artWidth) / 256
+	artModelScale       = float32(artWidth) / 320
+	artVanishX          = 128 * artDesignScale
+	artVanishY          = 116 * artDesignScale
+	artZoomStart        = 0.2
+	artPixelScale       = screenWidth / artWidth
+	artShadeLevels      = 4
+	artSpecularDot      = 0.94
+	artRimDepth         = 0.6
+	artFloorTop         = 116 * artDesignScale
+	artFloorBandHeight  = 9 * artDesignScale
+	tachikomaArtX       = 70 * artDesignScale
+	tachikomaArtY       = 139 * artDesignScale
+	spiderArtX          = 190 * artDesignScale
+	spiderArtY          = 139 * artDesignScale
+	spiderArtSlide      = 13 * artDesignScale
+	spiderArtLean       = 0.1
+	tachikomaEyeShrink  = 0.75
+	tachikomaGunTopX    = 0
+	tachikomaGunTopY    = -22
+	tachikomaEyeClosing = 1 / artModelScale
+	artRimWidth         = 0.7
 )
+
+var tachikomaArtEyes = [3][3]float32{
+	moveTowardGun(shrinkToward(-10, -40, 7, tachikomaGunTopX, tachikomaGunTopY, tachikomaEyeShrink)),
+	moveTowardGun(shrinkToward(10, -40, 7, tachikomaGunTopX, tachikomaGunTopY, tachikomaEyeShrink)),
+	moveTowardGun(shrinkToward(0, -27, 4, tachikomaGunTopX, tachikomaGunTopY, tachikomaEyeShrink)),
+}
 
 var (
 	artLight        = normalize3([3]float32{-0.55, -0.65, 0.55})
@@ -73,6 +86,7 @@ var (
 	artFloorBands   = [3][3]float32{{0.03, 0.03, 0.05}, {0.05, 0.045, 0.07}, {0.07, 0.06, 0.09}}
 
 	tachikomaShell = Material{Base: tachikomaBlue, Rim: redRim, RimSide: 1, IsShaded: true, IsHighlight: true}
+	tachikomaHead  = Material{Base: [3]float32{0.12, 0.3, 0.66}, Rim: redRim, RimSide: 1, IsShaded: true, IsHighlight: true}
 	tachikomaDark  = Material{Base: [3]float32{0.08, 0.14, 0.32}, Rim: redRim, RimSide: 1, IsShaded: true}
 	tachikomaLimb  = Material{Base: tachikomaWhite, Rim: redRim, RimSide: 1, IsShaded: true}
 	tachikomaFar   = Material{Base: [3]float32{0.62, 0.66, 0.74}, IsShaded: true}
@@ -80,6 +94,7 @@ var (
 	flatPupil      = Material{Base: tachikomaPupil}
 	flatWheel      = Material{Base: tachikomaWheel, Rim: redRim, RimSide: 1, IsShaded: true}
 	flatHub        = Material{Base: tachikomaLegShade}
+	flatBore       = Material{Base: artOutline}
 	spiderArmor    = Material{Base: [3]float32{0.46, 0.52, 0.44}, Rim: blueRim, RimSide: -1, IsShaded: true, IsHighlight: true}
 	spiderPlate    = Material{Base: [3]float32{0.6, 0.66, 0.56}, Rim: blueRim, RimSide: -1, IsShaded: true, IsHighlight: true}
 	spiderDark     = Material{Base: [3]float32{0.2, 0.23, 0.2}, Rim: blueRim, RimSide: -1, IsShaded: true}
@@ -89,12 +104,12 @@ var (
 	spiderEyeCore  = Material{Base: [3]float32{1, 0.85, 0.75}}
 
 	tachikomaRearLimbs = [2]ArtLimb{
-		{Hip: [2]float32{-6, -50}, Knee: [2]float32{-46, -72}, Foot: [2]float32{-58, -12}, UpperWidth: [2]float32{3.2, 2.5}, LowerWidth: [2]float32{2.5, 1.8}},
-		{Hip: [2]float32{6, -50}, Knee: [2]float32{46, -72}, Foot: [2]float32{56, -12}, UpperWidth: [2]float32{3.2, 2.5}, LowerWidth: [2]float32{2.5, 1.8}},
+		{Hip: [2]float32{-6, -22}, Knee: [2]float32{-16, -27.5}, Foot: [2]float32{-19, -12}, UpperWidth: [2]float32{3.2, 2.5}, LowerWidth: [2]float32{2.5, 1.8}},
+		{Hip: [2]float32{6, -22}, Knee: [2]float32{16, -27.5}, Foot: [2]float32{19, -12}, UpperWidth: [2]float32{3.2, 2.5}, LowerWidth: [2]float32{2.5, 1.8}},
 	}
 	tachikomaFrontLimbs = [2]ArtLimb{
-		{Hip: [2]float32{-17, -25}, Knee: [2]float32{-46, -36}, Foot: [2]float32{-40, -8}, UpperWidth: [2]float32{3.8, 3}, LowerWidth: [2]float32{3, 2.2}},
-		{Hip: [2]float32{17, -25}, Knee: [2]float32{46, -36}, Foot: [2]float32{40, -8}, UpperWidth: [2]float32{3.8, 3}, LowerWidth: [2]float32{3, 2.2}},
+		{Hip: [2]float32{-17, -25}, Knee: [2]float32{-46, -36}, Foot: [2]float32{-40, -11}, UpperWidth: [2]float32{3.8, 3}, LowerWidth: [2]float32{3, 2.2}},
+		{Hip: [2]float32{17, -25}, Knee: [2]float32{46, -36}, Foot: [2]float32{40, -11}, UpperWidth: [2]float32{3.8, 3}, LowerWidth: [2]float32{3, 2.2}},
 	}
 	spiderRearLimbs = [2]ArtLimb{
 		{Hip: [2]float32{18, -116}, Knee: [2]float32{46, -158}, Foot: [2]float32{70, -6}, UpperWidth: [2]float32{7, 5.5}, LowerWidth: [2]float32{5.5, 3.5}},
@@ -120,16 +135,16 @@ func NewArtCanvas() *ArtCanvas {
 func (c *ArtCanvas) Render(progress, seconds float32) *ebiten.Image {
 	c.paintFloor()
 	approach := smoothstep(clamp(progress, 0, 1))
-	spider := ArtPose{AnchorX: spiderArtX + spiderArtSlide*(1-approach), AnchorY: spiderArtY, Scale: 1, Lift: sine(seconds*3) * 3, Shear: spiderArtLean * approach}
-	c.paintShadow(spider.AnchorX, spider.AnchorY, 80, 6)
+	remaining := 1 - clamp(progress, 0, 1)
+	zoom := artZoomStart + (1-artZoomStart)*(1-remaining*remaining*remaining)
+	spider := zoomedPose(spiderArtX+spiderArtSlide*(1-approach), spiderArtY, zoom)
+	spider.Lift, spider.Shear = sine(seconds*3)*3, spiderArtLean*approach
+	c.paintShadow(spider.AnchorX, spider.AnchorY, 80*spider.Scale, 6*spider.Scale)
 	c.beginLayer()
 	c.paintSpider(spider, seconds)
 	c.commitLayer()
-	tachikoma := ArtPose{
-		AnchorX: lerp(tachikomaArtStartX, tachikomaArtEndX, approach), AnchorY: lerp(tachikomaArtStartY, tachikomaArtEndY, approach),
-		Scale: lerp(tachikomaArtStart, 1, approach), Lift: sine(seconds*9) * 0.6,
-	}
-	c.paintShadow(tachikoma.AnchorX, tachikoma.AnchorY, 56*tachikoma.Scale, 4)
+	tachikoma := zoomedPose(tachikomaArtX, tachikomaArtY, zoom)
+	c.paintShadow(tachikoma.AnchorX, tachikoma.AnchorY, 56*tachikoma.Scale, 4*tachikoma.Scale)
 	c.beginLayer()
 	c.paintTachikoma(tachikoma)
 	c.commitLayer()
@@ -139,10 +154,18 @@ func (c *ArtCanvas) Render(progress, seconds float32) *ebiten.Image {
 
 // ===== Internal =====
 
+func zoomedPose(finalX, finalY, zoom float32) ArtPose {
+	return ArtPose{
+		AnchorX: artVanishX + (finalX-artVanishX)*zoom,
+		AnchorY: artVanishY + (finalY-artVanishY)*zoom,
+		Scale:   artModelScale * zoom,
+	}
+}
+
 func (c *ArtCanvas) paintFloor() {
 	for y := range c.Height {
-		band := clampInt((y-artFloorTop)/10, 0, len(artFloorBands)-1)
-		tint := [2][3]float32{{0, 0, 0}, artFloorBands[band]}[boolToIndex(y >= artFloorTop)]
+		band := clampInt(int((float32(y)-artFloorTop)/artFloorBandHeight), 0, len(artFloorBands)-1)
+		tint := [2][3]float32{{0, 0, 0}, artFloorBands[band]}[boolToIndex(float32(y) >= artFloorTop)]
 		for x := range c.Width {
 			writeColor(c.Final[(y*c.Width+x)*4:], tint)
 		}
@@ -199,25 +222,25 @@ func (c *ArtCanvas) isInside(x, y int) bool {
 func (c *ArtCanvas) paintTachikoma(pose ArtPose) {
 	for _, limb := range tachikomaRearLimbs {
 		c.paintLimb(pose, limb, tachikomaFar, tachikomaFar)
-		c.paintWheel(pose, limb.Foot, 5)
+		c.paintWheel(pose, limb.Foot, 7.5)
 	}
-	c.paintEllipsoid(pose, 4, -72, 36, 26, tachikomaShell)
-	c.paintEllipsoid(pose, -21, -78, 5, 4, tachikomaDark)
-	c.paintEllipsoid(pose, 24, -84, 4, 3, tachikomaDark)
-	c.paintCapsule(pose, 2, -52, 0, -40, 8, 8, tachikomaDark)
-	c.paintEllipsoid(pose, 0, -36, 22, 15, tachikomaShell)
-	c.paintEye(pose, -10, -40, 7)
-	c.paintEye(pose, 10, -40, 7)
-	c.paintEye(pose, 0, -27, 4)
+	c.paintEllipsoid(pose, 4, -44, 36, 26, tachikomaShell)
+	c.paintEllipsoid(pose, -21, -50, 5, 4, tachikomaDark)
+	c.paintEllipsoid(pose, 24, -56, 4, 3, tachikomaDark)
+	c.paintCapsule(pose, 2, -30, 0, -36, 8, 8, tachikomaDark)
+	c.paintEllipsoid(pose, 0, -36, 22, 15, tachikomaHead)
+	for _, eye := range tachikomaArtEyes {
+		c.paintEye(pose, eye[0], eye[1], eye[2])
+	}
 	for _, side := range [2]float32{-1, 1} {
 		c.paintCapsule(pose, 14*side, -27, 20*side, -16, 1.8, 1.6, tachikomaLimb)
 		c.paintEllipsoid(pose, 21*side, -15, 2.5, 2.5, tachikomaDark)
 	}
-	c.paintCapsule(pose, 0, -22, 0, -18, 2.4, 2.4, tachikomaDark)
+	c.paintCapsule(pose, tachikomaGunTopX, tachikomaGunTopY, 0, -18, 2.4, 2.4, tachikomaDark)
 	c.paintFlatDisc(pose, 0, -17.5, 1.4, flatPupil)
 	for _, limb := range tachikomaFrontLimbs {
 		c.paintLimb(pose, limb, tachikomaLimb, tachikomaDark)
-		c.paintWheel(pose, limb.Foot, 7.5)
+		c.paintWheel(pose, limb.Foot, 11.25)
 	}
 }
 
@@ -251,8 +274,10 @@ func (c *ArtCanvas) paintSpider(pose ArtPose, seconds float32) {
 func (c *ArtCanvas) paintSpiderTurret(pose ArtPose, seconds float32) {
 	c.paintEllipsoid(pose, -38, -108, 21, 16, spiderArmor)
 	c.paintEllipsoid(pose, -34, -116, 11, 6, spiderPlate)
-	c.paintCapsule(pose, -50, -104, -98, -73, 4.5, 3.2, spiderJoint)
-	c.paintEllipsoid(pose, -98, -73, 4.5, 4.5, spiderDark)
+	c.paintEllipsoid(pose, -50, -102, 9, 9, spiderDark)
+	c.paintCapsule(pose, -50, -102, -78, -88, 5.5, 5.5, spiderJoint)
+	c.paintEllipsoid(pose, -75, -89.5, 7.5, 7.5, spiderDark)
+	c.paintFlatDisc(pose, -79, -87.5, 3.2, flatBore)
 	flicker := 0.85 + 0.15*sine(seconds*14)
 	c.paintFlatDisc(pose, -52, -111, 4.5*flicker, spiderEye)
 	c.paintFlatDisc(pose, -52.5, -111.5, 1.5, spiderEyeCore)
@@ -331,6 +356,19 @@ func scaleColor(color [3]float32, factor float32) [3]float32 {
 
 func writeColor(destination []byte, color [3]float32) {
 	destination[0], destination[1], destination[2], destination[3] = byte(color[0]*255), byte(color[1]*255), byte(color[2]*255), 255
+}
+
+func shrinkToward(x, y, radius, targetX, targetY, factor float32) [3]float32 {
+	directionX, directionY := normalize(targetX-x, targetY-y)
+	shift := radius * (1 - factor)
+	return [3]float32{x + directionX*shift, y + directionY*shift, radius * factor}
+}
+
+func moveTowardGun(eye [3]float32) [3]float32 {
+	offsetX, offsetY := tachikomaGunTopX-eye[0], tachikomaGunTopY-eye[1]
+	directionX, directionY := normalize(offsetX, offsetY)
+	shift := min(tachikomaEyeClosing, length(offsetX, offsetY)-eye[2])
+	return [3]float32{eye[0] + directionX*shift, eye[1] + directionY*shift, eye[2]}
 }
 
 func normalize3(vector [3]float32) [3]float32 {
