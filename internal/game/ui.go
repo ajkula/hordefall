@@ -78,6 +78,8 @@ const (
 	selectionMarkerNudge     = 3
 	selectionMarkerSpeed     = 5
 	selectionMarkerCenter    = 0.5
+	selectedCardBorder       = 4
+	selectedCardInset        = 3
 	smallTextSize            = 16
 	statsRefreshSeconds      = 0.5
 	benchmarkPanelHeight     = 6*24 + 16
@@ -85,6 +87,8 @@ const (
 )
 
 var textOutlineOffsets = [][2]float32{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+
+var selectedCardColor = [3]float32{1, 0.08, 0.06}
 
 var textStyles = [2]TextStyle{
 	{Shadows: textOutlineOffsets, Strokes: [][2]float32{{0, 0}}, ShadowAlpha: 1},
@@ -412,6 +416,16 @@ func (u *UI) drawSpiderBars(g *Game, screen *ebiten.Image) {
 	for slot, rig := range g.spiders {
 		u.drawSpiderBar(g, screen, &rig, float32(spiderBarTop+slot*(spiderBarHeight+spiderBarGap)))
 	}
+	u.drawWormBar(g, screen, float32(spiderBarTop+len(g.spiders)*(spiderBarHeight+spiderBarGap)))
+}
+
+func (u *UI) drawWormBar(g *Game, screen *ebiten.Image, y float32) {
+	worm := &g.worm
+	if !worm.IsActive {
+		return
+	}
+	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, worm.HealthFraction(), wormArmorColor)
+	u.drawText(screen, "SANDWORM", u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) drawSpiderBar(g *Game, screen *ebiten.Image, rig *SpiderRig, y float32) {
@@ -431,9 +445,9 @@ func (u *UI) drawPopups(g *Game, screen *ebiten.Image) {
 }
 
 func (u *UI) drawOfferCard(screen *ebiten.Image, offer UpgradeOffer, x, y float32, isSelected bool) {
-	borderWidth := 1 + 2*boolToFloat(isSelected)
 	fillRect(screen, x, y, cardWidth, cardHeight, toColor(panelColor, 0.92))
-	strokeRect(screen, x, y, cardWidth, cardHeight, borderWidth, toColor(offer.Color(), 0.4+0.6*boolToFloat(isSelected)))
+	strokeRect(screen, x, y, cardWidth, cardHeight, 1, toColor(offer.Color(), 0.4+0.6*boolToFloat(isSelected)))
+	strokeRect(screen, x-selectedCardInset, y-selectedCardInset, cardWidth+2*selectedCardInset, cardHeight+2*selectedCardInset, selectedCardBorder, toColor(selectedCardColor, boolToFloat(isSelected)))
 	u.drawText(screen, offer.Title(), u.bold, x+cardWidth/2, y+18, offer.Color(), 1, text.AlignCenter)
 	u.drawText(screen, offer.Subtitle(), u.small, x+cardWidth/2, y+52, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, u.wrapText(offer.Description(), u.regular, descriptionWrapWidth), u.regular, x+cardWidth/2, y+86, textColor, 1, text.AlignCenter)

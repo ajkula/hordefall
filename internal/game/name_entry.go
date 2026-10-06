@@ -26,7 +26,7 @@ const (
 // ===== Internal =====
 
 func (g *Game) openNameEntry() {
-	copy(g.nameEntryLetters[:], sanitizeInitials(g.settings.Initials))
+	copy(g.nameEntryLetters[:], defaultInitials)
 	g.nameEntryCursor = 0
 	g.newEntryRank = g.highScores.RankOf(g.CurrentScore())
 	g.switchState(StateNameEntry)
@@ -85,9 +85,11 @@ func (g *Game) drawNameEntry(screen *ebiten.Image) {
 
 func (u *UI) DrawNameEntry(g *Game, screen *ebiten.Image) {
 	dimScreen(screen, 0.75)
-	titles := [2]string{"GREAT SCORE!", "NEW HIGH SCORE!"}
-	u.drawText(screen, titles[boolToIndex(g.newEntryRank == 0)], u.title, screenWidth/2, menuTitleTop, accentColor, pulse(g.clockSeconds), text.AlignCenter)
-	summary := "SCORE " + formatThousands(g.CurrentScore()) + "      RANK " + rankOrdinals[max(0, g.newEntryRank)]
+	isRanked := g.newEntryRank != noRank
+	titles := [3]string{"GAME OVER", "GREAT SCORE!", "NEW HIGH SCORE!"}
+	u.drawText(screen, titles[boolToIndex(isRanked)+boolToIndex(g.newEntryRank == 0)], u.title, screenWidth/2, menuTitleTop, accentColor, pulse(g.clockSeconds), text.AlignCenter)
+	rankTexts := [2]string{"", "      RANK " + rankOrdinals[max(0, g.newEntryRank)]}
+	summary := "SCORE " + formatThousands(g.CurrentScore()) + rankTexts[boolToIndex(isRanked)]
 	u.drawText(screen, summary, u.bold, screenWidth/2, 180, highScoreColor, 1, text.AlignCenter)
 	u.drawText(screen, "ENTER YOUR INITIALS", u.bold, screenWidth/2, 230, textColor, 1, text.AlignCenter)
 	for index, letter := range g.nameEntryLetters {

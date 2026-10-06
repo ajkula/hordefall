@@ -49,6 +49,8 @@ const (
 	ChatterBlizzard
 	ChatterEvolution
 	ChatterIdle
+	ChatterWormInbound
+	ChatterWormDown
 	ChatterRivalTooClose
 	ChatterRivalStoleKill
 	ChatterRivalOvertaken
@@ -87,6 +89,8 @@ var chatterTopics = [chatterEventCount]ChatterTopic{
 	ChatterBlizzard:        {"blizzard", 2, 30},
 	ChatterEvolution:       {"evolution", 2, 20},
 	ChatterIdle:            {"idle", 6, 0},
+	ChatterWormInbound:     {"worm_inbound", 2, 20},
+	ChatterWormDown:        {"worm_down", 2, 20},
 	ChatterRivalTooClose:   {"rival_too_close", 2, 30},
 	ChatterRivalStoleKill:  {"rival_stole_kill", 2, 30},
 	ChatterRivalOvertaken:  {"rival_overtaken", 2, 45},

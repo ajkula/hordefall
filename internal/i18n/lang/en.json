@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "Can tanks be friends? No? Okay.",
   "tachikoma.storm.1": "If I rust, do I get older?",
   "tachikoma.storm.2": "Lightning! Free energy drink!",
+  "tachikoma.worm_down.1": "Back to the sand with you!",
+  "tachikoma.worm_down.2": "Was that a worm or a train?",
+  "tachikoma.worm_inbound.1": "The ground is purring. That's not normal!",
+  "tachikoma.worm_inbound.2": "Something big is swimming under the sand!",
   "title.audio": "AUDIO",
   "title.controls": "CONTROLS",
   "title.erase_scores": "ERASE HIGH SCORES?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "Fires charged bolts where you aim.",
   "weather.blizzard": "BLIZZARD",
   "weather.heatwave": "HEATWAVE",
-  "weather.storm": "STORM"
+  "weather.storm": "STORM",
+  "worm.destroyed": "SANDWORM DESTROYED",
+  "worm.inbound": "SANDWORM INBOUND"
  }
 }

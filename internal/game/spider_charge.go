@@ -43,7 +43,7 @@ var chargeColor = [3]float32{1, 1, 1}
 
 // ===== Internal =====
 
-func (g *Game) drawInChargeMotes(laser *SpiderLaser, deltaSeconds float32) {
+func (g *Game) drawInChargeMotes(laser *BossBeam, deltaSeconds float32) {
 	spawnCount := 1 + int(laser.PhaseProgress()*chargeMotesPerTickMax)
 	for range spawnCount {
 		angle := g.random.Angle()
@@ -57,13 +57,13 @@ func (g *Game) drawInChargeMotes(laser *SpiderLaser, deltaSeconds float32) {
 	ageChargeMotes(laser, deltaSeconds)
 }
 
-func ageChargeMotes(laser *SpiderLaser, deltaSeconds float32) {
+func ageChargeMotes(laser *BossBeam, deltaSeconds float32) {
 	for index := range laser.Motes {
 		laser.Motes[index].Age += deltaSeconds
 	}
 }
 
-func (g *Game) radiateDischarge(laser *SpiderLaser, deltaSeconds float32) {
+func (g *Game) radiateDischarge(laser *BossBeam, deltaSeconds float32) {
 	ageChargeMotes(laser, deltaSeconds)
 	isRadiating := laser.PhaseProgress() < dischargeWindow && g.random.Chance(dischargeBoltChance)
 	if !isRadiating {
@@ -83,14 +83,14 @@ func (g *Game) ricochetBolt(fromX, fromY, angle, reach float32) {
 	}
 }
 
-func (r *Renderer) drawChargeMotes(laser *SpiderLaser, sphereRadius float32) {
+func (r *Renderer) drawChargeMotes(laser *BossBeam, sphereRadius float32) {
 	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
 	for index := range laser.Motes {
-		r.drawChargeMote(&laser.Motes[index], originX, originY, sphereRadius)
+		r.drawChargeMote(&laser.Motes[index], originX, originY, sphereRadius, laser.Profile.CoreColor)
 	}
 }
 
-func (r *Renderer) drawChargeMote(mote *ChargeMote, originX, originY, sphereRadius float32) {
+func (r *Renderer) drawChargeMote(mote *ChargeMote, originX, originY, sphereRadius float32, tint [3]float32) {
 	progress := mote.Age / max(mote.Life, 0.001)
 	isAlive := progress < 1 && mote.Life > 0
 	if !isAlive {
@@ -104,11 +104,11 @@ func (r *Renderer) drawChargeMote(mote *ChargeMote, originX, originY, sphereRadi
 	radius := mote.Size * fusion
 	x, y := originX+directionX*distance, originY+directionY*distance
 	alpha := clamp(progress*3, 0, 1)
-	r.glow.AddEllipse(x, y, radius*stretch*2.4, radius*2.4/sqrt(stretch), directionX, directionY, chargeColor, 0.45*alpha)
-	r.solid.AddEllipse(x, y, radius*stretch, radius/sqrt(stretch), directionX, directionY, chargeColor, alpha)
+	r.glow.AddEllipse(x, y, radius*stretch*2.4, radius*2.4/sqrt(stretch), directionX, directionY, tint, 0.45*alpha)
+	r.solid.AddEllipse(x, y, radius*stretch, radius/sqrt(stretch), directionX, directionY, tint, alpha)
 }
 
-func chargeSphereSwell(laser *SpiderLaser) float32 {
+func chargeSphereSwell(laser *BossBeam) float32 {
 	merging := 0
 	for index := range laser.Motes {
 		mote := &laser.Motes[index]
@@ -118,9 +118,10 @@ func chargeSphereSwell(laser *SpiderLaser) float32 {
 	return min(chargeSwellMaximum, float32(merging)*chargeSwellPerMote)
 }
 
-func (r *Renderer) drawChargeSphere(laser *SpiderLaser, radius, brightness float32) {
+func (r *Renderer) drawChargeSphere(laser *BossBeam, radius, brightness float32) {
 	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
-	r.glow.AddCircle(originX, originY, radius*chargeHaloScale, chargeColor, 0.35*brightness)
-	r.glow.AddCircle(originX, originY, radius*1.4, chargeColor, 0.6*brightness)
-	r.solid.AddCircle(originX, originY, radius, chargeColor, brightness)
+	tint := laser.Profile.CoreColor
+	r.glow.AddCircle(originX, originY, radius*chargeHaloScale, tint, 0.35*brightness)
+	r.glow.AddCircle(originX, originY, radius*1.4, tint, 0.6*brightness)
+	r.solid.AddCircle(originX, originY, radius, tint, brightness)
 }

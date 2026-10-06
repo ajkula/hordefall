@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "탱크끼리 친구 될 수 있어? 아니야? 알았어.",
   "tachikoma.storm.1": "녹슬면 나도 늙는 걸까?",
   "tachikoma.storm.2": "번개다! 공짜 에너지 드링크!",
+  "tachikoma.worm_down.1": "모래 속으로 돌아가!",
+  "tachikoma.worm_down.2": "방금 그거 벌레야, 기차야?",
+  "tachikoma.worm_inbound.1": "땅이 그르렁거려. 이상해!",
+  "tachikoma.worm_inbound.2": "모래 밑에서 뭔가 거대한 게 헤엄쳐!",
   "title.audio": "오디오",
   "title.controls": "조작",
   "title.erase_scores": "기록을 지울까요?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "조준한 곳으로 충전된 화살을 쏩니다.",
   "weather.blizzard": "눈보라",
   "weather.heatwave": "폭염",
-  "weather.storm": "폭풍"
+  "weather.storm": "폭풍",
+  "worm.destroyed": "SANDWORM 격파",
+  "worm.inbound": "SANDWORM 접근 중"
  }
 }

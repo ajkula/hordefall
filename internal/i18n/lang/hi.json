@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "क्या टैंक दोस्त बन सकते हैं? नहीं? ठीक है।",
   "tachikoma.storm.1": "अगर मुझे जंग लगी, क्या मैं बूढ़ा हो जाऊँगा?",
   "tachikoma.storm.2": "बिजली! मुफ़्त एनर्जी ड्रिंक!",
+  "tachikoma.worm_down.1": "वापस अपनी रेत में जाओ!",
+  "tachikoma.worm_down.2": "वह कीड़ा था या रेलगाड़ी?",
+  "tachikoma.worm_inbound.1": "ज़मीन गुर्रा रही है। यह ठीक नहीं!",
+  "tachikoma.worm_inbound.2": "रेत के नीचे कुछ बड़ा तैर रहा है!",
   "title.audio": "ऑडियो",
   "title.controls": "नियंत्रण",
   "title.erase_scores": "स्कोर मिटाएँ?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "निशाने की ओर विद्युत तीर चलाता है।",
   "weather.blizzard": "बर्फ़ीला तूफ़ान",
   "weather.heatwave": "लू",
-  "weather.storm": "आँधी"
+  "weather.storm": "आँधी",
+  "worm.destroyed": "SANDWORM नष्ट",
+  "worm.inbound": "SANDWORM आ रहा है"
  }
 }

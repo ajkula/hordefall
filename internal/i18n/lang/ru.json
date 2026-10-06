@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "Танки могут дружить? Нет? Ладно.",
   "tachikoma.storm.1": "Если я заржавею, я постарею?",
   "tachikoma.storm.2": "Молнии! Бесплатный энергетик!",
+  "tachikoma.worm_down.1": "Возвращайся в свой песок!",
+  "tachikoma.worm_down.2": "Это был червь или поезд?",
+  "tachikoma.worm_inbound.1": "Земля мурлычет. Это ненормально!",
+  "tachikoma.worm_inbound.2": "Под песком плавает что-то огромное!",
   "title.audio": "ЗВУК",
   "title.controls": "УПРАВЛЕНИЕ",
   "title.erase_scores": "СТЕРЕТЬ РЕКОРДЫ?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "Стреляет заряженными стрелами в цель.",
   "weather.blizzard": "БУРАН",
   "weather.heatwave": "ЗНОЙ",
-  "weather.storm": "ГРОЗА"
+  "weather.storm": "ГРОЗА",
+  "worm.destroyed": "SANDWORM УНИЧТОЖЕН",
+  "worm.inbound": "SANDWORM ПРИБЛИЖАЕТСЯ"
  }
 }

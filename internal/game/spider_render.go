@@ -8,8 +8,8 @@ const (
 	spiderShadowOffsetY = 11
 )
 
-var laserDrawers = [laserPhaseCount]func(renderer *Renderer, laser *SpiderLaser, frame uint32){
-	LaserCooldown: func(*Renderer, *SpiderLaser, uint32) {},
+var laserDrawers = [laserPhaseCount]func(renderer *Renderer, laser *BossBeam, frame uint32){
+	LaserCooldown: func(*Renderer, *BossBeam, uint32) {},
 	LaserCharging: (*Renderer).drawTargetingBeam,
 	LaserLocked:   (*Renderer).drawLockedBeam,
 	LaserFiring:   (*Renderer).drawFiringBeam,
@@ -163,48 +163,55 @@ func (r *Renderer) addLocalSegment(rig *SpiderRig, fromForward, fromSide, toForw
 	r.solid.AddSegment(fromX, fromY, toX, toY, width, tint, 1)
 }
 
-func (r *Renderer) queueSpiderLasers(g *Game) {
+func (r *Renderer) queueSpiderBeams(g *Game) {
 	for index := range g.spiders {
-		laser := &g.spiders[index].Laser
-		laserDrawers[laser.Phase](r, laser, g.frame)
+		r.queueBossBeam(&g.spiders[index].Laser, g.frame)
 	}
 }
 
-func (r *Renderer) drawTargetingBeam(laser *SpiderLaser, frame uint32) {
-	progress := laser.PhaseProgress()
+func (r *Renderer) queueBossBeam(beam *BossBeam, frame uint32) {
+	laserDrawers[beam.Phase](r, beam, frame)
+}
+
+func (r *Renderer) drawTargetingBeam(beam *BossBeam, frame uint32) {
+	profile := beam.Profile
+	progress := beam.PhaseProgress()
 	flicker := 0.7 + 0.3*sine(float32(frame)*0.9)
-	r.queueBeam(laser, 8, laserTargetingColor, (0.12+0.25*progress)*flicker)
-	r.queueBeam(laser, 1.6, laserCoreColor, (0.5+0.5*progress)*flicker)
-	sphereRadius := chargeSphereMinimum + chargeSphereGrowth*progress + chargeSphereSwell(laser)
-	r.drawChargeMotes(laser, sphereRadius)
-	r.drawChargeSphere(laser, sphereRadius, 0.6+0.4*progress)
+	r.queueBeam(beam, 8, profile.TargetingColor, (0.12+0.25*progress)*flicker)
+	r.queueBeam(beam, 1.6, profile.CoreColor, (0.5+0.5*progress)*flicker)
+	sphereRadius := (chargeSphereMinimum + chargeSphereGrowth*progress + chargeSphereSwell(beam)) * profile.WidthScale
+	r.drawChargeMotes(beam, sphereRadius)
+	r.drawChargeSphere(beam, sphereRadius, 0.6+0.4*progress)
 }
 
-func (r *Renderer) drawLockedBeam(laser *SpiderLaser, frame uint32) {
+func (r *Renderer) drawLockedBeam(beam *BossBeam, frame uint32) {
+	profile := beam.Profile
 	blink := 0.45 + 0.55*float32((frame/3)%2)
-	r.queueBeam(laser, 14, laserTargetingColor, 0.4*blink)
-	r.queueBeam(laser, 3, laserCoreColor, blink)
-	sphereRadius := chargeSphereMinimum + chargeSphereGrowth + chargeSphereSwell(laser)
+	r.queueBeam(beam, 14, profile.TargetingColor, 0.4*blink)
+	r.queueBeam(beam, 3, profile.CoreColor, blink)
+	sphereRadius := (chargeSphereMinimum + chargeSphereGrowth + chargeSphereSwell(beam)) * profile.WidthScale
 	flicker := 1 - dischargeSphereFlicker*float32((frame/2)%2)
-	r.drawChargeMotes(laser, sphereRadius)
-	r.drawChargeSphere(laser, sphereRadius, flicker)
+	r.drawChargeMotes(beam, sphereRadius)
+	r.drawChargeSphere(beam, sphereRadius, flicker)
 }
 
-func (r *Renderer) drawFiringBeam(laser *SpiderLaser, frame uint32) {
-	fade := clamp(laser.Timer/laserFireSeconds, 0, 1)
-	pulse := 1 + 0.15*sine(float32(frame)*1.7)
-	r.queueBeam(laser, 96*pulse, laserBeamColor, 0.22*fade)
-	r.queueBeam(laser, 56*pulse, laserBeamColor, 0.4*fade)
-	r.queueBeam(laser, 28*pulse, [3]float32{1, 0.85, 0.4}, 0.75*fade)
-	r.queueBeam(laser, 10*pulse, laserCoreColor, fade)
-	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
-	r.glow.AddCircle(originX, originY, 80*pulse, laserCoreColor, 0.8*fade)
+func (r *Renderer) drawFiringBeam(beam *BossBeam, frame uint32) {
+	profile := beam.Profile
+	fade := clamp(beam.Timer/profile.Durations[LaserFiring], 0, 1)
+	pulse := (1 + 0.15*sine(float32(frame)*1.7)) * profile.WidthScale
+	r.queueBeam(beam, 96*pulse, profile.BeamColor, 0.22*fade)
+	r.queueBeam(beam, 56*pulse, profile.BeamColor, 0.4*fade)
+	r.queueBeam(beam, 28*pulse, profile.HotColor, 0.75*fade)
+	r.queueBeam(beam, 10*pulse, profile.CoreColor, fade)
+	originX, originY := r.ToScreen(beam.OriginX, beam.OriginY)
+	r.glow.AddCircle(originX, originY, 80*pulse, profile.CoreColor, 0.8*fade)
 }
 
-func (r *Renderer) queueBeam(laser *SpiderLaser, width float32, tint [3]float32, alpha float32) {
-	directionX, directionY := laser.Direction()
-	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
-	r.glow.AddSegment(originX, originY, originX+directionX*laserRange, originY+directionY*laserRange, width, tint, alpha)
+func (r *Renderer) queueBeam(beam *BossBeam, width float32, tint [3]float32, alpha float32) {
+	directionX, directionY := beam.Direction()
+	originX, originY := r.ToScreen(beam.OriginX, beam.OriginY)
+	reach := beam.Profile.Range
+	r.glow.AddSegment(originX, originY, originX+directionX*reach, originY+directionY*reach, width, tint, alpha)
 }
 
 func scaled(value float32) float32 {

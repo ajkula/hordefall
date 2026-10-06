@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "Les tanks peuvent être amis ? Non ? D'accord.",
   "tachikoma.storm.1": "Si je rouille, est-ce que je vieillis ?",
   "tachikoma.storm.2": "Des éclairs ! Boisson énergisante gratuite !",
+  "tachikoma.worm_down.1": "Retourne dans ton sable !",
+  "tachikoma.worm_down.2": "C'était un ver ou un train ?",
+  "tachikoma.worm_inbound.1": "Le sol ronronne. C'est pas normal !",
+  "tachikoma.worm_inbound.2": "Un truc énorme nage sous le sable !",
   "title.audio": "AUDIO",
   "title.controls": "COMMANDES",
   "title.erase_scores": "EFFACER LES SCORES ?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "Tire des traits chargés là où tu vises.",
   "weather.blizzard": "BLIZZARD",
   "weather.heatwave": "CANICULE",
-  "weather.storm": "ORAGE"
+  "weather.storm": "ORAGE",
+  "worm.destroyed": "SANDWORM DÉTRUIT",
+  "worm.inbound": "SANDWORM EN APPROCHE"
  }
 }

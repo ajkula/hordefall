@@ -37,7 +37,7 @@ type SpiderRig struct {
 	MaximumHealth float32
 	TurretServo   AngularServo
 	Power         float32
-	Laser         SpiderLaser
+	Laser         BossBeam
 	Legs          [spiderLegCount]LegRig
 }
 
@@ -127,8 +127,9 @@ func solveKneeCandidates(hipX, hipY, footX, footY float32) (float32, float32, fl
 	return baseX - alongY*height, baseY + alongX*height, baseX + alongY*height, baseY - alongX*height
 }
 
-func (g *Game) spawnSpiderIfDue() {
-	if g.bossProgressKills < g.bossKillsRequired || len(g.spiders) >= maximumSpidersAlive || g.hordeEvent.IsActive {
+func (g *Game) startBossEventIfDue() {
+	isSpiderCapped := g.nextBossEvent() == BossSpider && len(g.spiders) >= maximumSpidersAlive
+	if g.bossProgressKills < g.bossKillsRequired || isSpiderCapped || g.worm.IsActive {
 		return
 	}
 	g.bossProgressKills = 0
@@ -144,7 +145,7 @@ func (g *Game) spawnSpiderAt(angle, distance float32) {
 	x := clamp(g.player.X+cosine(angle)*distance, 80, arenaSize-80)
 	y := clamp(g.player.Y+sine(angle)*distance, 80, arenaSize-80)
 	id := g.spawnEnemyAt(EnemySpiderTank, x, y)
-	rig := SpiderRig{EnemyID: id, X: x, Y: y, Heading: angle + 3.14159265, Laser: newSpiderLaser()}
+	rig := SpiderRig{EnemyID: id, X: x, Y: y, Heading: angle + 3.14159265, Laser: newBossBeam(&spiderBeamProfile)}
 	rig.Power = 1 + g.elapsedSeconds/150
 	rig.MaximumHealth = enemyTable[EnemySpiderTank].Health * rig.Power
 	for leg := range spiderLegCount {
@@ -207,10 +208,20 @@ func (g *Game) updateSpider(rig *SpiderRig, enemyIndex int, deltaSeconds float32
 	rig.Heading = turnToward(rig.Heading, atan2(rig.VelocityY, rig.VelocityX), spiderTurnRate*deltaSeconds*boolToFloat(length(rig.VelocityX, rig.VelocityY) > 5))
 	turretTarget := clamp(angleDifference(rig.Heading, atan2(g.player.Y-rig.Y, g.player.X-rig.X)), -spiderTurretLimit, spiderTurretLimit)
 	rig.TurretServo.Drive(turretTarget, spiderTurretStiffness, spiderTurretDamping, deltaSeconds*boolToFloat(!rig.Laser.IsTurretFrozen()))
-	g.updateSpiderLaser(rig, deltaSeconds)
+	g.aimSpiderBeamIf(rig, !rig.Laser.IsTurretFrozen())
+	g.updateBossBeam(&rig.Laser, rig.Power, deltaSeconds)
 	for leg := range spiderLegCount {
 		g.updateLeg(rig, leg, deltaSeconds)
 	}
+}
+
+func (g *Game) aimSpiderBeamIf(rig *SpiderRig, shouldAim bool) {
+	if !shouldAim {
+		return
+	}
+	beam := &rig.Laser
+	beam.OriginX, beam.OriginY = rig.TurretToWorld(laserMuzzleForward, 0)
+	beam.BeamAngle = rig.TurretAngle()
 }
 
 func (g *Game) updateLeg(rig *SpiderRig, leg int, deltaSeconds float32) {

@@ -99,6 +99,8 @@ type Game struct {
 	isLanguageDrumFocused bool
 	intro                 Intro
 	chatter               Chatter
+	worm                  Sandworm
+	hordeWaveCount        int
 	optionsReturnState    GameState
 	remapDevice           InputDevice
 	remapListening        RemapAction
@@ -258,6 +260,7 @@ func (g *Game) resetRun() {
 	g.bossKillsRequired = bossKillsRequiredAt(0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
+	g.worm, g.hordeWaveCount = Sandworm{}, 0
 	g.resetWeather()
 	g.resetChatter()
 	g.isDemo, g.isScoreRecorded = false, false
@@ -309,8 +312,9 @@ func (g *Game) simulate() {
 	g.processBursts()
 	g.removeDeadEnemies()
 	g.updateSpiders(deltaSeconds)
+	g.updateWorm(deltaSeconds)
 	g.updateSpawning(deltaSeconds)
-	g.spawnSpiderIfDue()
+	g.startBossEventIfDue()
 	g.tickGroundIfDue()
 	g.updateWeather(deltaSeconds)
 	g.updateChatter(deltaSeconds)

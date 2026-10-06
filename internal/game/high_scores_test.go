@@ -47,6 +47,28 @@ func TestDeathWithRankedScoreAsksForInitials(t *testing.T) {
 	}
 }
 
+func TestEveryDeathAsksForInitialsStartingAtAAA(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	game := newHeadlessGame()
+	game.settings.Initials = "XYZ"
+	for range highScoreTableSize {
+		game.highScores.Insert(HighScoreEntry{Initials: "TOP", Score: 90000})
+	}
+	game.killScore = 100
+	game.finishRun()
+	if game.state != StateNameEntry || string(game.nameEntryLetters[:]) != defaultInitials || game.newEntryRank != noRank {
+		t.Fatalf("state %d, letters %q, rank %d", game.state, string(game.nameEntryLetters[:]), game.newEntryRank)
+	}
+	game.menuLockSeconds = 0
+	for range initialsLength {
+		game.controls = Controls{JustPressed: ActionConfirm}
+		game.updateNameEntry()
+	}
+	if game.state != StateGameOver || game.highScores.Best().Initials != "TOP" {
+		t.Fatalf("an unranked score reached the table: state %d, best %+v", game.state, game.highScores.Best())
+	}
+}
+
 func TestHoldingUpScrollsLettersAfterTheDelay(t *testing.T) {
 	game := newHeadlessGame()
 	game.killScore = 5000

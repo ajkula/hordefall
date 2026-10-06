@@ -21,6 +21,7 @@ type Renderer struct {
 	glow        *SpriteBatch
 	rings       *SpriteBatch
 	groundImage *ebiten.Image
+	wormSprites *WormSprites
 	CameraX     float32
 	CameraY     float32
 }
@@ -35,6 +36,7 @@ const (
 	auraRimWidth      = 1.2
 	auraFlickerBase   = 0.75
 	auraFlickerSpeed  = 0.55
+	smokeOpacity      = 0.5
 	crosshairRadius   = 11
 	mouseAimDeadzone  = 6
 )
@@ -46,6 +48,7 @@ var (
 	hurtColor      = [3]float32{1, 0.25, 0.25}
 	fireCellGlow   = [3]float32{1, 0.5, 0.15}
 	crosshairTicks = [4][2]float32{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+	smokeColor     = [3]float32{0.2, 0.2, 0.22}
 )
 
 // ===== Public API =====
@@ -56,6 +59,7 @@ func NewRenderer(groundColumns, groundRows int) *Renderer {
 		glow:        NewSpriteBatch(newRadialTexture(spriteTextureSize, glowFalloff), ebiten.BlendLighter),
 		rings:       NewSpriteBatch(newRadialTexture(ringTextureSize, ringFalloff), ebiten.BlendLighter),
 		groundImage: ebiten.NewImage(groundColumns, groundRows),
+		wormSprites: NewWormSprites(),
 	}
 }
 
@@ -144,17 +148,21 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.queueGems(g)
 	r.queueHealOrbs(g)
 	r.queueMines(g)
+	r.queueSandwormGround(g)
 	r.queueEnemies(g)
 	r.queuePlayer(g)
 	r.queueSpiders(g)
+	r.queueSandworm(g)
 	r.queueProjectiles(g)
+	r.queueSmokes(g)
 	r.queueParticles(g)
-	r.queueSpiderLasers(g)
+	r.queueSpiderBeams(g)
 	r.queueRings(g)
 	r.queueLightning(g)
 	r.queuePrecipitation(g)
 	r.queueMouseCrosshair(g)
 	r.solid.Flush(screen)
+	r.drawSandwormSprites(g, screen)
 	r.glow.Flush(screen)
 	r.rings.Flush(screen)
 	r.applyWeatherGrade(g, screen)
@@ -341,6 +349,15 @@ func (r *Renderer) queueAimReticle(player *Player, screenX, screenY float32) {
 	for dot := range 3 {
 		distance := float32(32 + dot*12)
 		r.solid.AddCircle(screenX+player.AimX*distance, screenY+player.AimY*distance, 2.6-float32(dot)*0.4, tint, alpha)
+	}
+}
+
+func (r *Renderer) queueSmokes(g *Game) {
+	for index := range g.effects.Smokes {
+		smoke := &g.effects.Smokes[index]
+		screenX, screenY := r.ToScreen(smoke.X, smoke.Y)
+		fade := smoke.Life / smoke.MaxLife
+		r.solid.AddCircle(screenX, screenY, smoke.Size*(2-fade), smokeColor, smokeOpacity*fade)
 	}
 }
 

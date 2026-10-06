@@ -16,13 +16,21 @@ type HordeEvent struct {
 	Remaining int
 }
 
+type BossEventKind uint8
+
 type bossEventStarter func(game *Game)
 
 // ===== Constants =====
 
 const (
+	BossSpider BossEventKind = iota
+	BossHorde
+	BossWorm
+	bossEventKindCount
+)
+
+const (
 	spidersBeforeHorde    = 3
-	bossEventsPerHorde    = spidersBeforeHorde + 1
 	hordeEventBaseSize    = 500
 	hordeShellPeriod      = 8
 	hordePowerBonus       = 2
@@ -42,16 +50,26 @@ var hordeLayerKinds = [2][]EnemyKind{hordeCoreKinds, hordeShellKinds}
 
 var hordeLayerDistances = [2][2]float32{{760, 1040}, {1090, 1180}}
 
-var bossEventStarters = [2]bossEventStarter{(*Game).spawnSpiderEvent, (*Game).startHordeEvent}
+var bossEventStarters = [bossEventKindCount]bossEventStarter{
+	BossSpider: (*Game).spawnSpiderEvent,
+	BossHorde:  (*Game).startHordeEvent,
+	BossWorm:   (*Game).spawnWormEvent,
+}
+
+var bossEventCycle = []BossEventKind{BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde}
 
 var hordeBarColor = [3]float32{0.75, 0.35, 0.95}
 
 // ===== Internal =====
 
 func (g *Game) startBossEvent() {
+	kind := g.nextBossEvent()
 	g.bossEventCount++
-	isHorde := g.bossEventCount%bossEventsPerHorde == 0
-	bossEventStarters[boolToIndex(isHorde)](g)
+	bossEventStarters[kind](g)
+}
+
+func (g *Game) nextBossEvent() BossEventKind {
+	return bossEventCycle[g.bossEventCount%len(bossEventCycle)]
 }
 
 func (g *Game) spawnSpiderEvent() {
@@ -59,12 +77,15 @@ func (g *Game) spawnSpiderEvent() {
 }
 
 func (g *Game) startHordeEvent() {
-	size := hordeEventBaseSize * (g.bossEventCount / bossEventsPerHorde)
+	g.hordeWaveCount++
+	size := hordeEventBaseSize * g.hordeWaveCount
 	spawnedCount := 0
 	for spawned := range size {
 		spawnedCount += boolToIndex(g.spawnHordeEnemy(spawned))
 	}
-	g.hordeEvent = HordeEvent{IsActive: spawnedCount > 0, Total: spawnedCount, Remaining: spawnedCount}
+	ongoing := [2]HordeEvent{{}, g.hordeEvent}[boolToIndex(g.hordeEvent.IsActive)]
+	g.hordeEvent = HordeEvent{Total: ongoing.Total + spawnedCount, Remaining: ongoing.Remaining + spawnedCount}
+	g.hordeEvent.IsActive = g.hordeEvent.Remaining > 0
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.F("horde.approaches", spawnedCount), hordeBarColor)
 	g.say(ChatterHordeIncoming)
 	g.effects.AddShake(8)
@@ -116,7 +137,7 @@ func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {
 	if !g.hordeEvent.IsActive {
 		return
 	}
-	y := float32(spiderBarTop + len(g.spiders)*(spiderBarHeight+spiderBarGap))
+	y := float32(spiderBarTop + (len(g.spiders)+boolToIndex(g.worm.IsActive))*(spiderBarHeight+spiderBarGap))
 	fraction := float32(g.hordeEvent.Remaining) / float32(max(1, g.hordeEvent.Total))
 	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, fraction, hordeBarColor)
 	label := i18n.F("horde.bar", g.hordeEvent.Remaining, g.hordeEvent.Total)

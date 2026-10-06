@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "坦克之间能做朋友吗？不能？好吧。",
   "tachikoma.storm.1": "我生锈的话，会变老吗？",
   "tachikoma.storm.2": "闪电！免费能量饮料！",
+  "tachikoma.worm_down.1": "回你的沙子里去吧！",
+  "tachikoma.worm_down.2": "刚才那是虫子还是火车？",
+  "tachikoma.worm_inbound.1": "地面在咕噜咕噜响。不对劲！",
+  "tachikoma.worm_inbound.2": "沙子下面有个大家伙在游！",
   "title.audio": "音频",
   "title.controls": "操作",
   "title.erase_scores": "清除最高分？",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "向瞄准方向发射带电之箭。",
   "weather.blizzard": "暴风雪",
   "weather.heatwave": "热浪",
-  "weather.storm": "风暴"
+  "weather.storm": "风暴",
+  "worm.destroyed": "SANDWORM 已摧毁",
+  "worm.inbound": "SANDWORM 正在接近"
  }
 }

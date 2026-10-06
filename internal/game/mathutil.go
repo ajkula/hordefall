@@ -48,6 +48,10 @@ func sine(angle float32) float32 {
 	return float32(math.Sin(float64(angle)))
 }
 
+func acos(value float32) float32 {
+	return float32(math.Acos(float64(value)))
+}
+
 func sqrt(value float32) float32 {
 	return float32(math.Sqrt(float64(value)))
 }

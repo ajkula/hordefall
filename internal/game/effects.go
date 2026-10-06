@@ -17,6 +17,16 @@ type LightningBolt struct {
 	Life   float32
 }
 
+type Smoke struct {
+	X         float32
+	Y         float32
+	VelocityX float32
+	VelocityY float32
+	Size      float32
+	Life      float32
+	MaxLife   float32
+}
+
 type Popup struct {
 	X     float32
 	Y     float32
@@ -38,6 +48,7 @@ type Effects struct {
 	Rings         []Ring
 	Bolts         []LightningBolt
 	Popups        []Popup
+	Smokes        []Smoke
 	ShakeTrauma   float32
 	ShakeX        float32
 	ShakeY        float32
@@ -52,6 +63,11 @@ type Effects struct {
 const (
 	maximumParticles     = 10000
 	maximumRings         = 96
+	maximumSmokes        = 600
+	smokeRiseSpeed       = 38
+	smokeDriftSpeed      = 14
+	smokeLifeSeconds     = 1.1
+	flameRiseSpeed       = 90
 	maximumBolts         = 64
 	maximumPopups        = 28
 	lightningSegments    = 7
@@ -101,6 +117,24 @@ func (e *Effects) SpawnTrail(x, y float32, color [3]float32) {
 	e.spawnParticle(x+e.random.Between(-4, 4), y+e.random.Between(-4, 4), 0, 0, 0.3, 5, color)
 }
 
+func (e *Effects) AddSmokeIf(x, y, size float32, shouldAdd bool) {
+	isThinnedOut := e.random.Float() >= e.Density
+	if !shouldAdd || isThinnedOut || len(e.Smokes) >= maximumSmokes {
+		return
+	}
+	life := smokeLifeSeconds * e.random.Between(0.7, 1.3)
+	e.Smokes = append(e.Smokes, Smoke{
+		X: x, Y: y, VelocityX: e.random.Between(-smokeDriftSpeed, smokeDriftSpeed), VelocityY: -smokeRiseSpeed * e.random.Between(0.7, 1.3),
+		Size: size * e.random.Between(0.8, 1.2), Life: life, MaxLife: life,
+	})
+}
+
+func (e *Effects) SpawnFlames(x, y float32, count int, color [3]float32) {
+	for range count {
+		e.spawnParticle(x+e.random.Between(-10, 10), y+e.random.Between(-6, 6), e.random.Between(-15, 15), -flameRiseSpeed*e.random.Between(0.6, 1.2), e.random.Between(0.2, 0.45), e.random.Between(3, 6), color)
+	}
+}
+
 func (e *Effects) AddRing(x, y, radius float32, color [3]float32) {
 	if radius <= 0 || len(e.Rings) >= maximumRings {
 		return
@@ -146,6 +180,12 @@ func (e *Effects) Update(deltaSeconds float32) {
 	e.Rings = filterAlive(e.Rings, deltaSeconds, func(ring *Ring) *float32 { return &ring.Life })
 	e.Bolts = filterAlive(e.Bolts, deltaSeconds, func(bolt *LightningBolt) *float32 { return &bolt.Life })
 	e.Popups = filterAlive(e.Popups, deltaSeconds, func(popup *Popup) *float32 { return &popup.Life })
+	e.Smokes = filterAlive(e.Smokes, deltaSeconds, func(smoke *Smoke) *float32 { return &smoke.Life })
+	for index := range e.Smokes {
+		smoke := &e.Smokes[index]
+		smoke.X += smoke.VelocityX * deltaSeconds
+		smoke.Y += smoke.VelocityY * deltaSeconds
+	}
 	for index := range e.Popups {
 		e.Popups[index].Y -= popupRiseSpeed * deltaSeconds
 	}
@@ -157,7 +197,7 @@ func (e *Effects) Update(deltaSeconds float32) {
 
 func (e *Effects) Clear() {
 	e.ParticleCount = 0
-	e.Rings, e.Bolts, e.Popups = e.Rings[:0], e.Bolts[:0], e.Popups[:0]
+	e.Rings, e.Bolts, e.Popups, e.Smokes = e.Rings[:0], e.Bolts[:0], e.Popups[:0], e.Smokes[:0]
 	e.ShakeTrauma, e.ShakeX, e.ShakeY = 0, 0, 0
 	e.Skids.Clear()
 }

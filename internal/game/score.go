@@ -145,9 +145,5 @@ func (g *Game) saveHighScores() {
 }
 
 func (g *Game) finishRun() {
-	if g.isScoreRanked() {
-		g.openNameEntry()
-		return
-	}
-	g.switchState(StateGameOver)
+	g.openNameEntry()
 }

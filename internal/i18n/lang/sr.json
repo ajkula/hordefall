@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "Могу ли тенкови бити пријатељи? Не? Добро.",
   "tachikoma.storm.1": "Ако зарђам, да ли старим?",
   "tachikoma.storm.2": "Муње! Бесплатно енергетско пиће!",
+  "tachikoma.worm_down.1": "Враћај се у свој песак!",
+  "tachikoma.worm_down.2": "Да ли је то био црв или воз?",
+  "tachikoma.worm_inbound.1": "Тло преде. То није нормално!",
+  "tachikoma.worm_inbound.2": "Нешто огромно плива испод песка!",
   "title.audio": "ЗВУК",
   "title.controls": "КОНТРОЛЕ",
   "title.erase_scores": "ОБРИСАТИ РЕКОРДЕ?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "Испаљује наелектрисане стреле где нишаниш.",
   "weather.blizzard": "МЕЋАВА",
   "weather.heatwave": "ТОПЛОТНИ ТАЛАС",
-  "weather.storm": "ОЛУЈА"
+  "weather.storm": "ОЛУЈА",
+  "worm.destroyed": "SANDWORM УНИШТЕН",
+  "worm.inbound": "SANDWORM СТИЖЕ"
  }
 }

@@ -20,6 +20,8 @@ const LaserChargeSoundSeconds = 2.6
 
 const BombWhistleSeconds = 2.5
 
+const FrostChargeSoundSeconds = 4.4
+
 const (
 	SoundNone SoundKind = iota
 	SoundPop
@@ -47,6 +49,11 @@ const (
 	SoundBigImpact
 	SoundGlassShatter
 	SoundChatter
+	SoundWormRumble
+	SoundWormRoar
+	SoundFrostCharge
+	SoundFrostFire
+	SoundWormRoll
 	soundKindCount
 )
 
@@ -161,6 +168,28 @@ var soundTable = [soundKindCount]SoundDefinition{
 		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 2093, Duty: 0.25, Volume: 0.06, Delay: 0.195, SlideOctaves: 0, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
 		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 988, Duty: 0.25, Volume: 0.06, Delay: 0.26, SlideOctaves: -3, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
 		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 2093, Duty: 0.25, Volume: 0.06, Delay: 0.325, SlideOctaves: 0, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
+	}},
+	SoundWormRumble: {MinimumInterval: 0.5, Layers: []SoundLayer{
+		{Settings: VoiceSettings{Waveform: WaveNoise, Frequency: 300, Volume: 0.5, Filter: 0.93, SubLevel: 0.5, Envelope: Envelope{Attack: 0.08, Decay: 1}}, PitchJitter: 0.1},
+		{Settings: VoiceSettings{Waveform: WaveSine, Frequency: 48, SlideOctaves: -0.5, Volume: 0.5, Drive: 1.5, Envelope: Envelope{Attack: 0.05, Decay: 1.1}}},
+	}},
+	SoundWormRoar: {MinimumInterval: 0.5, Layers: []SoundLayer{
+		{Settings: VoiceSettings{Waveform: WaveSaw, Frequency: 140, SlideOctaves: -1.6, Volume: 0.35, Filter: 0.6, Drive: 3, SubLevel: 0.6, Unison: 3, Detune: 0.3, Envelope: Envelope{Attack: 0.03, Decay: 0.9}}, PitchJitter: 0.12},
+		{Settings: VoiceSettings{Waveform: WaveNoise, Frequency: 700, Volume: 0.35, Filter: 0.8, Envelope: Envelope{Attack: 0.01, Decay: 0.6}}},
+	}},
+	SoundFrostCharge: {MinimumInterval: 0.5, Layers: []SoundLayer{
+		{Settings: VoiceSettings{Waveform: WaveTriangle, Frequency: 330, SlideOctaves: 0.45, Volume: 0.12, Unison: 5, Detune: 0.25, Duration: FrostChargeSoundSeconds, Envelope: Envelope{Attack: 1.2, Decay: 0.1, Sustain: 1, Release: 0.1}}},
+		{Settings: VoiceSettings{Waveform: WaveSine, Frequency: 1320, SlideOctaves: 0.45, Volume: 0.05, Duration: FrostChargeSoundSeconds, Envelope: Envelope{Attack: 1.5, Decay: 0.1, Sustain: 1, Release: 0.1}}},
+		{Settings: VoiceSettings{Waveform: WaveNoise, Frequency: 5000, Volume: 0.05, Filter: 0.2, Duration: FrostChargeSoundSeconds, Envelope: Envelope{Attack: 2, Decay: 0.1, Sustain: 1, Release: 0.1}}},
+	}},
+	SoundFrostFire: {MinimumInterval: 0.2, Layers: []SoundLayer{
+		{Settings: VoiceSettings{Waveform: WaveNoise, Frequency: 6000, Volume: 0.5, Filter: 0.15, Envelope: Envelope{Attack: 0.003, Decay: 0.7}}},
+		{Settings: VoiceSettings{Waveform: WaveSine, Frequency: 70, SlideOctaves: -1.5, Volume: 0.6, Drive: 1.5, Envelope: Envelope{Attack: 0.002, Decay: 0.5}}},
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 2600, SlideOctaves: -2, Duty: 0.2, Volume: 0.1, Crush: 0.4, Envelope: Envelope{Attack: 0.001, Decay: 0.4}}},
+	}},
+	SoundWormRoll: {MinimumInterval: 0.5, Layers: []SoundLayer{
+		{Settings: VoiceSettings{Waveform: WaveSaw, Frequency: 55, SlideOctaves: 0.8, Volume: 0.35, Filter: 0.7, Drive: 2, SubLevel: 0.5, Envelope: Envelope{Attack: 0.15, Decay: 0.9}}},
+		{Settings: VoiceSettings{Waveform: WaveNoise, Frequency: 400, Volume: 0.3, Filter: 0.88, Envelope: Envelope{Attack: 0.1, Decay: 0.9}}},
 	}},
 	SoundMenuSelect: {MinimumInterval: 0.05, Layers: []SoundLayer{
 		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 600, SlideOctaves: 3, Duty: 0.25, Volume: 0.14, Envelope: Envelope{Attack: 0.001, Decay: 0.1}}},

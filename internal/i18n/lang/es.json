@@ -157,6 +157,10 @@
   "tachikoma.spider_inbound.3": "¿Los tanques pueden ser amigos? ¿No? Vale.",
   "tachikoma.storm.1": "Si me oxido, ¿me hago viejo?",
   "tachikoma.storm.2": "¡Rayos! ¡Bebida energética gratis!",
+  "tachikoma.worm_down.1": "¡Vuelve a tu arena!",
+  "tachikoma.worm_down.2": "¿Era un gusano o un tren?",
+  "tachikoma.worm_inbound.1": "El suelo ronronea. ¡Eso no es normal!",
+  "tachikoma.worm_inbound.2": "¡Algo enorme nada bajo la arena!",
   "title.audio": "AUDIO",
   "title.controls": "CONTROLES",
   "title.erase_scores": "¿BORRAR PUNTUACIONES?",
@@ -204,6 +208,8 @@
   "weapon.volt_bolt.description": "Dispara saetas cargadas donde apuntas.",
   "weather.blizzard": "VENTISCA",
   "weather.heatwave": "OLA DE CALOR",
-  "weather.storm": "TORMENTA"
+  "weather.storm": "TORMENTA",
+  "worm.destroyed": "SANDWORM DESTRUIDO",
+  "worm.inbound": "SANDWORM EN CAMINO"
  }
 }
