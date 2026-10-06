@@ -91,6 +91,8 @@ type Game struct {
 	isInputDebugVisible   bool
 	remapStep             int
 	remapReturnState      GameState
+	languageReturnState   GameState
+	languageMenu          []MenuOption
 	optionsReturnState    GameState
 	remapDevice           InputDevice
 	remapListening        RemapAction
@@ -124,6 +126,7 @@ const (
 	StateHighScores
 	StateResetScores
 	StateNameEntry
+	StateLanguage
 	stateCount
 )
 
@@ -156,6 +159,7 @@ var stateHandlers = [stateCount]StateHandler{
 	StateHighScores:  {(*Game).updateHighScores, (*Game).drawHighScores},
 	StateResetScores: {(*Game).updateResetScores, (*Game).drawResetScores},
 	StateNameEntry:   {(*Game).updateNameEntry, (*Game).drawNameEntry},
+	StateLanguage:    {(*Game).updateLanguageMenu, (*Game).drawLanguageMenu},
 }
 
 // ===== Public API =====
@@ -169,6 +173,7 @@ func Run() error {
 }
 
 func NewGame() *Game {
+	loadLanguages()
 	game := &Game{
 		random:      rng.New(0xA11CE),
 		ui:          NewUI(),
@@ -188,6 +193,7 @@ func NewGame() *Game {
 	game.audio = audio.NewEngine()
 	game.loadSettings()
 	game.startDemo()
+	game.openLanguageMenuIfFirstRun()
 	return game
 }
 

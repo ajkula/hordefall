@@ -25,7 +25,7 @@ type Precipitation struct {
 }
 
 type WeatherDefinition struct {
-	Name                  string
+	Key                   string
 	LabelColor            [3]float32
 	Multiply              [3]float32
 	Lift                  [3]float32
@@ -78,7 +78,7 @@ const (
 var weatherTable = [weatherKindCount]WeatherDefinition{
 	WeatherClear: {Multiply: [3]float32{1, 1, 1}},
 	WeatherStorm: {
-		Name: "STORM", LabelColor: [3]float32{0.6, 0.75, 1},
+		Key: "storm", LabelColor: [3]float32{0.6, 0.75, 1},
 		Multiply: [3]float32{0.62, 0.68, 0.82}, Lift: [3]float32{0, 0.01, 0.03},
 		EnemyStatus: StatusWet, ClearedStatus: StatusBurning, StatusChancePerSecond: 0.35,
 		GroundStimulus: StimulusDouse, GroundCellsPerTick: 160,
@@ -89,7 +89,7 @@ var weatherTable = [weatherKindCount]WeatherDefinition{
 		},
 	},
 	WeatherHeatwave: {
-		Name: "HEATWAVE", LabelColor: [3]float32{1, 0.6, 0.2},
+		Key: "heatwave", LabelColor: [3]float32{1, 0.6, 0.2},
 		Multiply: [3]float32{1, 0.86, 0.66}, Lift: [3]float32{0.1, 0.04, 0},
 		GroundStimulus: StimulusHeat, GroundCellsPerTick: 30, GroundInnerCells: 5,
 		StartSound: audio.SoundHiss,
@@ -99,7 +99,7 @@ var weatherTable = [weatherKindCount]WeatherDefinition{
 		},
 	},
 	WeatherBlizzard: {
-		Name: "BLIZZARD", LabelColor: [3]float32{0.85, 0.95, 1},
+		Key: "blizzard", LabelColor: [3]float32{0.85, 0.95, 1},
 		Multiply: [3]float32{0.7, 0.84, 1}, Lift: [3]float32{0.12, 0.16, 0.22},
 		EnemyStatus: StatusChilled, StatusChancePerSecond: 0.4,
 		GroundStimulus: StimulusChill, GroundCellsPerTick: 30,

@@ -1,6 +1,10 @@
 package game
 
-import "strings"
+import (
+	"strings"
+
+	"hordefall/internal/i18n"
+)
 
 // ===== Types =====
 
@@ -81,13 +85,13 @@ var demoSequences = []DemoSequence{
 		ToughnessSeconds: 1500,
 	},
 	{
-		Name: "SIEGE: 3 SPIDER TANKS", Subtitle: "and a horde of 2000",
+		Name: "SIEGE: 3 SPIDER TANKS", Subtitle: "demo.siege",
 		Weapons: []WeaponKind{WeaponEmberBolt, WeaponArcLightning, WeaponFrostNova, WeaponOrbitBlades}, WeaponLevel: 6,
 		EnemyKinds: []EnemyKind{EnemySwarmer, EnemyRunner, EnemyBrute, EnemyFrostling}, EnemyCount: 2000, RingRadius: 700,
 		SpiderCount: 3, ToughnessSeconds: 900,
 	},
 	{
-		Name: "FULL ARSENAL", Subtitle: "6 weapons at max level, 2500 soaked foes",
+		Name: "FULL ARSENAL", Subtitle: "demo.arsenal",
 		Weapons: []WeaponKind{
 			WeaponEmberBolt, WeaponFrostNova, WeaponArcLightning,
 			WeaponOilFlask, WeaponDownpour, WeaponOrbitBlades,
@@ -106,7 +110,7 @@ func (g *Game) DemoSequenceName() string {
 }
 
 func (g *Game) DemoSequenceSubtitle() string {
-	return g.currentDemo.Subtitle
+	return i18n.TOr(g.currentDemo.Subtitle, g.currentDemo.Subtitle)
 }
 
 func (g *Game) DemoSequenceProgress() float32 {
@@ -155,7 +159,7 @@ func (g *Game) randomDemoSequence() DemoSequence {
 	names := make([]string, len(weaponPicks))
 	for index, pick := range weaponPicks {
 		weapons[index] = WeaponKind(pick)
-		names[index] = weaponTable[pick].Name
+		names[index] = weaponTable[pick].DisplayName()
 	}
 	enemyKinds := make([]EnemyKind, len(enemyPicks))
 	for index, pick := range enemyPicks {

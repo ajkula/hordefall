@@ -4,15 +4,19 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/gofont/goregular"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
+
+type WrapToken struct {
+	Text     string
+	IsSpaced bool
+}
 
 type UI struct {
 	small   *text.GoTextFace
@@ -22,9 +26,9 @@ type UI struct {
 	pixels  PixelBatch
 	art     *ArtCanvas
 
-	scaledFaces     map[*text.GoTextFace]text.Face
-	fallbackSources map[*text.GoTextFaceSource]*text.GoTextFaceSource
-	faceScale       float32
+	scaledFaces map[*text.GoTextFace]text.Face
+	fontChains  *FontChains
+	faceScale   float32
 
 	titleHeight   float32
 	menuPositions []float32
@@ -47,7 +51,7 @@ const (
 	cardWidth                = 300
 	cardHeight               = 180
 	cardSpacing              = 28
-	descriptionWrapLen       = 34
+	descriptionWrapWidth     = cardWidth - 40
 	spiderBarTop             = 50
 	mainMenuOptionsTop       = 505
 	menuTitleTop             = 70
@@ -87,20 +91,16 @@ var (
 func NewUI() *UI {
 	regularSource := mustLoadFace(rajdhaniMedium)
 	boldSource := mustLoadFace(rajdhaniBold)
-	fallbackSources := map[*text.GoTextFaceSource]*text.GoTextFaceSource{
-		regularSource: mustLoadFace(goregular.TTF),
-		boldSource:    mustLoadFace(gobold.TTF),
-	}
 	ui := &UI{
 		small:   &text.GoTextFace{Source: regularSource, Size: 16},
 		regular: &text.GoTextFace{Source: regularSource, Size: 20},
 		bold:    &text.GoTextFace{Source: boldSource, Size: 24},
 		title:   &text.GoTextFace{Source: boldSource, Size: 80},
 
-		scaledFaces:     map[*text.GoTextFace]text.Face{},
-		fallbackSources: fallbackSources,
-		faceScale:       1,
-		art:             NewArtCanvas(),
+		scaledFaces: map[*text.GoTextFace]text.Face{},
+		fontChains:  NewFontChains(FontFamily{regularSource, boldSource}),
+		faceScale:   1,
+		art:         NewArtCanvas(),
 	}
 	_, titleHeight := text.Measure("HORDEFALL", ui.title, 0)
 	ui.titleHeight = float32(titleHeight)
@@ -113,11 +113,11 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	drawBar(screen, 16, 20, 260, 16, player.Health/player.MaximumHealth, healthColor)
 	drawBar(screen, 16, 40, 260, 4, 1-player.DashCooldown/dashCooldownSeconds, [3]float32{0.5, 0.85, 1})
 	u.drawText(screen, fmt.Sprintf("%.0f / %.0f", max(0, player.Health), player.MaximumHealth), u.small, 22, 20, textColor, 1, text.AlignStart)
-	u.drawText(screen, fmt.Sprintf("Lv %d", player.Level), u.bold, 290, 16, accentColor, 1, text.AlignStart)
+	u.drawText(screen, i18n.F("hud.level", player.Level), u.bold, 290, 16, accentColor, 1, text.AlignStart)
 	u.drawText(screen, formatClock(g.elapsedSeconds), u.bold, screenWidth/2, 16, textColor, 1, text.AlignCenter)
 	u.refreshStatsIfDue(g)
 	fpsTexts := [2]string{"", u.fpsText}
-	status := fmt.Sprintf("Kills %d   Horde %d", g.kills, g.enemies.Count) + fpsTexts[boolToIndex(g.settings.IsFPSShown)]
+	status := i18n.F("hud.status", g.kills, g.enemies.Count) + fpsTexts[boolToIndex(g.settings.IsFPSShown)]
 	u.drawText(screen, status, u.regular, screenWidth-16, 18, textColor, 1, text.AlignEnd)
 	highScoreText := "HI " + formatThousands(max(g.highScores.Best().Score, g.CurrentScore()))
 	highScoreWidth, _ := text.Measure(highScoreText, u.bold, 0)
@@ -140,28 +140,28 @@ func (u *UI) DrawMainMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
 	u.drawMusicBanner(g, screen)
-	controls := "Move: stick / WASD    Fire: button 1 / J    Aim lock: button 2 / K    Dash: button 3 / Space    Pause: Start / Esc"
+	controls := i18n.T("main.controls")
 	u.drawText(screen, controls, u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
-	u.drawText(screen, g.bindingsMessage, u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T(g.bindingsMessage), u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawPauseMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, menuDim)
-	u.drawText(screen, "PAUSED", u.title, screenWidth/2, menuTitleTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.paused"), u.title, screenWidth/2, menuTitleTop, textColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc / Aim lock to resume", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.menu_resume"), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawOptionsMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, menuDim)
-	u.drawText(screen, "OPTIONS", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.options"), u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawDemoSequence(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to confirm, Start / Esc / Aim lock to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
-	u.drawText(screen, "Settings are saved automatically.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.menu_back"), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.settings_saved"), u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawLevelUp(g *Game, screen *ebiten.Image) {
@@ -172,26 +172,26 @@ func (u *UI) DrawLevelUp(g *Game, screen *ebiten.Image) {
 	for index, offer := range g.offers {
 		u.drawOfferCard(screen, offer, startX+float32(index)*(cardWidth+cardSpacing), 260, index == g.selectedOffer)
 	}
-	u.drawText(screen, "Left / Right to choose, Fire to confirm", u.regular, screenWidth/2, 500, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.level_up"), u.regular, screenWidth/2, 500, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) DrawGameOver(g *Game, screen *ebiten.Image) {
 	dimScreen(screen, 0.7)
-	u.drawText(screen, "YOU FELL", u.title, screenWidth/2, 70, healthColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.you_fell"), u.title, screenWidth/2, 70, healthColor, 1, text.AlignCenter)
 	u.drawText(screen, "SCORE "+formatThousands(g.CurrentScore()), u.title, screenWidth/2, 160, accentColor, 1, text.AlignCenter)
 	isRanked := g.newEntryRank != noRank
 	rankState := boolToIndex(isRanked) + boolToIndex(g.newEntryRank == 0)
-	highScoreLines := [3]string{describeHighScore(g.highScores.Best()), "RANKED " + rankOrdinals[max(0, g.newEntryRank)] + " IN THE HIGH SCORES!", "NEW HIGH SCORE!"}
+	highScoreLines := [3]string{describeHighScore(g.highScores.Best()), i18n.F("gameover.ranked", rankOrdinals[max(0, g.newEntryRank)]), "NEW HIGH SCORE!"}
 	highScoreColors := [3][3]float32{highScoreColor, accentColor, accentColor}
 	highScoreAlpha := pulse(g.clockSeconds)*boolToFloat(isRanked) + boolToFloat(!isRanked)
 	u.drawText(screen, highScoreLines[rankState], u.bold, screenWidth/2, 250, highScoreColors[rankState], highScoreAlpha, text.AlignCenter)
-	summary := fmt.Sprintf("Survived %s    Level %d    Kills %d", formatClock(g.elapsedSeconds), g.player.Level, g.kills)
+	summary := i18n.F("gameover.summary", formatClock(g.elapsedSeconds), g.player.Level, g.kills)
 	u.drawText(screen, summary, u.bold, screenWidth/2, 295, textColor, 1, text.AlignCenter)
 	reactionTexts := [2]string{describeReactionCounts(g.reactionCounts), ""}
 	u.drawText(screen, reactionTexts[boolToIndex(isRanked)], u.regular, screenWidth/2, 345, textColor, 1, text.AlignCenter)
 	u.drawRankedLine(g, screen, gameOverRankedTop)
 	u.drawText(screen, g.scoreMessage, u.small, screenWidth/2, 560, healthColor, 1, text.AlignCenter)
-	choices := g.input.ButtonLabel(ActionStart) + " to retry      " + g.input.ButtonLabel(ActionSelect) + " main menu"
+	choices := i18n.F("gameover.choices", g.input.ButtonLabel(ActionStart), g.input.ButtonLabel(ActionSelect))
 	u.drawText(screen, choices, u.bold, screenWidth/2, 600, accentColor, 1, text.AlignCenter)
 }
 
@@ -202,6 +202,21 @@ func (u *UI) DrawDebugOverlay(lines []string, screen *ebiten.Image) {
 }
 
 // ===== Internal =====
+
+func loadFaceSourceOrNil(fontData []byte) *text.GoTextFaceSource {
+	source, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
+	if err != nil {
+		return nil
+	}
+	return source
+}
+
+func (u *UI) ResetFaces() {
+	if u == nil {
+		return
+	}
+	clear(u.scaledFaces)
+}
 
 func mustLoadFace(fontData []byte) *text.GoTextFaceSource {
 	source, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
@@ -285,20 +300,20 @@ func (u *UI) refreshStatsIfDue(g *Game) {
 	u.nextStatsRefresh = g.clockSeconds + statsRefreshSeconds
 	u.fpsText = fmt.Sprintf("   FPS %.0f", ebiten.ActualFPS())
 	left := []string{
-		"LIVE BENCHMARK",
+		i18n.T("bench.title"),
 		fmt.Sprintf("FPS  %.0f", ebiten.ActualFPS()),
-		fmt.Sprintf("Simulation  %.2f ms / tick", g.simulationMillis),
-		fmt.Sprintf("Enemies  %d", g.enemies.Count),
-		fmt.Sprintf("Particles  %d", g.effects.ParticleCount),
-		fmt.Sprintf("Ground cells  %d", g.ground.Columns*g.ground.Rows),
+		i18n.F("bench.simulation", g.simulationMillis),
+		i18n.F("bench.enemies", g.enemies.Count),
+		i18n.F("bench.particles", g.effects.ParticleCount),
+		i18n.F("bench.ground", g.ground.Columns*g.ground.Rows),
 	}
 	right := []string{
 		"",
 		fmt.Sprintf("TPS  %.0f", ebiten.ActualTPS()),
 		"",
-		fmt.Sprintf("Spider tanks  %d", len(g.spiders)),
-		fmt.Sprintf("Projectiles  %d", g.projectiles.Count),
-		fmt.Sprintf("Reactions  %d", sumReactions(g.reactionCounts)),
+		i18n.F("bench.spiders", len(g.spiders)),
+		i18n.F("bench.projectiles", g.projectiles.Count),
+		i18n.F("bench.reactions", sumReactions(g.reactionCounts)),
 	}
 	u.benchmarkLeft, u.benchmarkRight = strings.Join(left, "\n"), strings.Join(right, "\n")
 }
@@ -328,7 +343,7 @@ func (u *UI) drawWeatherLabel(g *Game, screen *ebiten.Image) {
 		return
 	}
 	definition := &weatherTable[g.weather.Kind]
-	u.drawText(screen, definition.Name, u.bold, screenWidth/2, weatherLabelTop, definition.LabelColor, intensity, text.AlignCenter)
+	u.drawText(screen, i18n.T("weather."+definition.Key), u.bold, screenWidth/2, weatherLabelTop, definition.LabelColor, intensity, text.AlignCenter)
 }
 
 func (u *UI) drawMusicBanner(g *Game, screen *ebiten.Image) {
@@ -341,9 +356,9 @@ func (u *UI) drawMusicBanner(g *Game, screen *ebiten.Image) {
 
 func describeHighScore(highScore HighScoreEntry) string {
 	if highScore.Score == 0 {
-		return "No high score yet"
+		return i18n.T("main.no_high_score")
 	}
-	return fmt.Sprintf("HIGH SCORE %s  %s   (%s, %d kills, level %d)", formatThousands(highScore.Score), highScore.Initials, formatClock(highScore.SurvivedSeconds), highScore.Kills, highScore.Level)
+	return i18n.F("main.high_score", formatThousands(highScore.Score), highScore.Initials, formatClock(highScore.SurvivedSeconds), highScore.Kills, highScore.Level)
 }
 
 func sumReactions(counts [reactionKindCount]int) int {
@@ -359,7 +374,7 @@ func (u *UI) drawWeaponList(g *Game, screen *ebiten.Image) {
 		definition := &weaponTable[weapon.Kind]
 		y := float32(screenHeight - 30 - (len(g.player.Weapons)-1-slot)*24)
 		fillRect(screen, 16, y+4, 12, 12, toColor(definition.Color, 1))
-		u.drawText(screen, fmt.Sprintf("%s  %d", definition.Name, weapon.Level), u.small, 36, y, textColor, 1, text.AlignStart)
+		u.drawText(screen, fmt.Sprintf("%s  %d", definition.DisplayName(), weapon.Level), u.small, 36, y, textColor, 1, text.AlignStart)
 	}
 }
 
@@ -391,7 +406,7 @@ func (u *UI) drawOfferCard(screen *ebiten.Image, offer UpgradeOffer, x, y float3
 	strokeRect(screen, x, y, cardWidth, cardHeight, borderWidth, toColor(offer.Color(), 0.4+0.6*boolToFloat(isSelected)))
 	u.drawText(screen, offer.Title(), u.bold, x+cardWidth/2, y+18, offer.Color(), 1, text.AlignCenter)
 	u.drawText(screen, offer.Subtitle(), u.small, x+cardWidth/2, y+52, accentColor, 1, text.AlignCenter)
-	u.drawText(screen, wrapText(offer.Description(), descriptionWrapLen), u.regular, x+cardWidth/2, y+86, textColor, 1, text.AlignCenter)
+	u.drawText(screen, u.wrapText(offer.Description(), u.regular, descriptionWrapWidth), u.regular, x+cardWidth/2, y+86, textColor, 1, text.AlignCenter)
 }
 
 func drawBar(screen *ebiten.Image, x, y, width, height, fraction float32, tint [3]float32) {
@@ -407,16 +422,43 @@ func formatClock(seconds float32) string {
 	return fmt.Sprintf("%02d:%02d", int(seconds)/60, int(seconds)%60)
 }
 
-func wrapText(message string, maximumLineLength int) string {
+func (u *UI) wrapText(message string, face *text.GoTextFace, maximumWidth float32) string {
 	lines := make([]string, 0, 4)
 	current := ""
-	for _, word := range strings.Fields(message) {
-		candidate := strings.TrimSpace(current + " " + word)
-		isOverflowing := len(candidate) > maximumLineLength && current != ""
+	for _, token := range wrapTokens(message) {
+		separator := [2]string{"", " "}[boolToIndex(token.IsSpaced && current != "")]
+		isOverflowing := current != "" && u.textWidth(current+separator+token.Text, face) > maximumWidth
 		lines = appendIf(lines, current, isOverflowing)
-		current = [2]string{candidate, word}[boolToIndex(isOverflowing)]
+		separator = [2]string{separator, ""}[boolToIndex(isOverflowing)]
+		current = [2]string{current, ""}[boolToIndex(isOverflowing)] + separator + token.Text
 	}
 	return strings.Join(append(lines, current), "\n")
+}
+
+func (u *UI) textWidth(message string, face *text.GoTextFace) float32 {
+	return float32(text.Advance(message, u.scaledFace(face))) / renderScale
+}
+
+func wrapTokens(message string) []WrapToken {
+	tokens := make([]WrapToken, 0, len(message)/4)
+	for _, word := range strings.Fields(message) {
+		tokens = appendWordTokens(tokens, word)
+	}
+	return tokens
+}
+
+func appendWordTokens(tokens []WrapToken, word string) []WrapToken {
+	if !strings.ContainsFunc(word, isWideRune) {
+		return append(tokens, WrapToken{Text: word, IsSpaced: true})
+	}
+	for index, character := range []rune(word) {
+		tokens = append(tokens, WrapToken{Text: string(character), IsSpaced: index == 0})
+	}
+	return tokens
+}
+
+func isWideRune(character rune) bool {
+	return character >= 0x1100 && character <= 0x115F || character >= 0x2E80 && character <= 0xA4CF || character >= 0xAC00 && character <= 0xD7A3 || character >= 0xF900 && character <= 0xFAFF || character >= 0xFF00 && character <= 0xFF60
 }
 
 func describeReactionCounts(counts [reactionKindCount]int) string {

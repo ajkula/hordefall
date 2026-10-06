@@ -1,12 +1,11 @@
 package game
 
 import (
-	"fmt"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"hordefall/internal/audio"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -66,7 +65,7 @@ func (g *Game) startHordeEvent() {
 		spawnedCount += boolToIndex(g.spawnHordeEnemy(spawned))
 	}
 	g.hordeEvent = HordeEvent{IsActive: spawnedCount > 0, Total: spawnedCount, Remaining: spawnedCount}
-	g.effects.AddPopup(g.player.X, g.player.Y-80, fmt.Sprintf("THE HORDE APPROACHES  x%d", spawnedCount), hordeBarColor)
+	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.F("horde.approaches", spawnedCount), hordeBarColor)
 	g.effects.AddShake(8)
 	g.playSound(audio.SoundStomp)
 }
@@ -106,7 +105,7 @@ func (g *Game) recordHordeCasualtyIf(isHordeEnemy bool) {
 func (g *Game) finishHordeEvent() {
 	g.hordeEvent.IsActive = false
 	g.killScore += g.hordeEvent.Total * hordeClearBonusPerFoe
-	g.effects.AddPopup(g.player.X, g.player.Y-80, "HORDE VANQUISHED", accentColor)
+	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("horde.vanquished"), accentColor)
 	g.effects.AddShake(6)
 	g.playSound(audio.SoundLevelUp)
 }
@@ -118,6 +117,6 @@ func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {
 	y := float32(spiderBarTop + len(g.spiders)*(spiderBarHeight+spiderBarGap))
 	fraction := float32(g.hordeEvent.Remaining) / float32(max(1, g.hordeEvent.Total))
 	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, fraction, hordeBarColor)
-	label := fmt.Sprintf("HORDE  %d / %d", g.hordeEvent.Remaining, g.hordeEvent.Total)
+	label := i18n.F("horde.bar", g.hordeEvent.Remaining, g.hordeEvent.Total)
 	u.drawText(screen, label, u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }

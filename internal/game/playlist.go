@@ -3,6 +3,7 @@ package game
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"hordefall/internal/i18n"
 )
 
 // ===== Public API =====
@@ -31,7 +32,7 @@ func (g *Game) buildPlaylistMenu() {
 			Activate: func(game *Game) { game.toggleSong(index) },
 		})
 	}
-	g.playlistMenu = append(g.playlistMenu, MenuOption{fixedLabel("Back"), (*Game).closePlaylist, nil})
+	g.playlistMenu = append(g.playlistMenu, MenuOption{translatedLabel("menu.back"), (*Game).closePlaylist, nil})
 	g.audio.SetPlaylistEmpty(!g.HasEnabledSong())
 }
 
@@ -79,11 +80,11 @@ func (g *Game) drawPlaylist(screen *ebiten.Image) {
 
 func (u *UI) DrawPlaylistMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, menuDim)
-	u.drawText(screen, "PLAYLIST", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.playlist"), u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to switch a track on or off, Start / Esc / Aim lock to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
-	u.drawText(screen, "Only enabled tracks play, in game and on the main menu. All off means no music.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.playlist"), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.playlist_enabled"), u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }

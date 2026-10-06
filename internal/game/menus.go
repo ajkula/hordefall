@@ -4,6 +4,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"hordefall/internal/audio"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -23,27 +24,27 @@ type MenuSlider struct {
 // ===== Constants =====
 
 var mainMenuOptions = []MenuOption{
-	{fixedLabel("Play"), (*Game).startRun, nil},
-	{fixedLabel("Options"), (*Game).openOptions, nil},
-	{fixedLabel("Quit"), (*Game).requestQuit, nil},
+	{translatedLabel("menu.play"), (*Game).startRun, nil},
+	{translatedLabel("menu.options"), (*Game).openOptions, nil},
+	{translatedLabel("menu.quit"), (*Game).requestQuit, nil},
 }
 
 var optionsMenuOptions = []MenuOption{
-	{fixedLabel("Controls"), (*Game).openRemapFromOptions, nil},
-	{fixedLabel("Gameplay"), (*Game).openGameplay, nil},
-	{fixedLabel("Graphics"), (*Game).openGraphics, nil},
-	{fixedLabel("Audio"), (*Game).openAudioMenu, nil},
-	{fixedLabel("Back"), (*Game).closeOptions, nil},
+	{translatedLabel("menu.controls"), (*Game).openRemapFromOptions, nil},
+	{translatedLabel("menu.gameplay"), (*Game).openGameplay, nil},
+	{translatedLabel("menu.graphics"), (*Game).openGraphics, nil},
+	{translatedLabel("menu.audio"), (*Game).openAudioMenu, nil},
+	{translatedLabel("menu.back"), (*Game).closeOptions, nil},
 }
 
 var pauseMenuOptions = []MenuOption{
-	{fixedLabel("Resume"), (*Game).resumeRun, nil},
-	{fixedLabel("Options"), (*Game).openOptionsFromPause, nil},
+	{translatedLabel("menu.resume"), (*Game).resumeRun, nil},
+	{translatedLabel("menu.options"), (*Game).openOptionsFromPause, nil},
 	{(*Game).musicLabel, (*Game).toggleMusic, nil},
-	{fixedLabel("Back to main menu"), (*Game).abandonRun, nil},
+	{translatedLabel("menu.back_to_main"), (*Game).abandonRun, nil},
 }
 
-var musicLabels = [2]string{"Music: OFF", "Music: ON"}
+var musicLabelKeys = [2]string{"menu.music_off", "menu.music_on"}
 
 const (
 	mainMenuOptionSpacing = 48
@@ -112,12 +113,8 @@ func (g *Game) goHome() {
 	g.switchState(StateMainMenu)
 }
 
-func fixedLabel(label string) func(game *Game) string {
-	return func(*Game) string { return label }
-}
-
 func (g *Game) musicLabel() string {
-	return musicLabels[boolToIndex(g.settings.IsMusicOn)]
+	return i18n.T(musicLabelKeys[boolToIndex(g.settings.IsMusicOn)])
 }
 
 func (g *Game) openOptions() {

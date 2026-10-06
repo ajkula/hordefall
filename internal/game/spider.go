@@ -1,6 +1,10 @@
 package game
 
-import "hordefall/internal/audio"
+import (
+	"hordefall/internal/audio"
+
+	"hordefall/internal/i18n"
+)
 
 // ===== Types =====
 
@@ -147,7 +151,7 @@ func (g *Game) spawnSpiderAt(angle, distance float32) {
 		rig.Legs[leg].FootX, rig.Legs[leg].FootY = rig.LocalToWorld(spiderLegLayouts[leg].RestForward, spiderLegLayouts[leg].RestSide)
 	}
 	g.spiders = append(g.spiders, rig)
-	g.effects.AddPopup(g.player.X, g.player.Y-80, "SPIDER TANK INBOUND", warningColor)
+	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("spider.inbound"), warningColor)
 	g.effects.AddShake(6)
 }
 
@@ -191,7 +195,7 @@ func (g *Game) pushSpidersApart(first, second int) {
 
 func (g *Game) updateSpider(rig *SpiderRig, enemyIndex int, deltaSeconds float32) {
 	if enemyIndex < 0 {
-		g.effects.AddPopup(rig.X, rig.Y-60, "SPIDER TANK DESTROYED", accentColor)
+		g.effects.AddPopup(rig.X, rig.Y-60, i18n.T("spider.destroyed"), accentColor)
 		g.effects.AddShake(12)
 		return
 	}

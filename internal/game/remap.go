@@ -1,12 +1,12 @@
 package game
 
 import (
-	"fmt"
 	"math"
 	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"hordefall/internal/i18n"
 )
 
 // ===== Constants =====
@@ -20,7 +20,7 @@ const (
 	noInput            = -1
 )
 
-var remapInputVerbs = [inputDeviceCount]string{"key", "button"}
+var remapInputVerbKeys = [inputDeviceCount]string{"remap.verb_key", "remap.verb_button"}
 
 // ===== Internal =====
 
@@ -28,7 +28,7 @@ func (g *Game) loadBindings() {
 	bindings, err := LoadControlBindings()
 	g.controlBindings = bindings
 	g.input.UseBindings(bindings)
-	messages := [2]string{"Custom controls loaded. Options > Controls to configure.", "Default controls. Options > Controls to configure."}
+	messages := [2]string{"remap.custom_loaded", "remap.default_loaded"}
 	g.bindingsMessage = messages[boolToIndex(err != nil)]
 }
 
@@ -56,8 +56,8 @@ func (g *Game) buildRemapMenu() {
 		g.remapMenu = append(g.remapMenu, MenuOption{remapRowLabel(action), listenForRemap(action), nil})
 	}
 	g.remapMenu = append(g.remapMenu,
-		MenuOption{fixedLabel("Reset to defaults"), (*Game).resetRemapDevice, nil},
-		MenuOption{fixedLabel("Back"), (*Game).closeRemap, nil},
+		MenuOption{translatedLabel("remap.reset"), (*Game).resetRemapDevice, nil},
+		MenuOption{translatedLabel("menu.back"), (*Game).closeRemap, nil},
 	)
 }
 
@@ -65,8 +65,8 @@ func remapRowLabel(action RemapAction) func(game *Game) string {
 	return func(g *Game) string {
 		isListening := g.remapListenSeconds > 0 && g.remapListening == action
 		countdown := int(math.Ceil(float64(g.remapListenSeconds)))
-		values := [2]string{g.controlBindings.Label(g.remapDevice, action), fmt.Sprintf("press a %s... %d", remapInputVerbs[g.remapDevice], countdown)}
-		return remapTable[action].Name + "    " + values[boolToIndex(isListening)]
+		values := [2]string{g.controlBindings.Label(g.remapDevice, action), i18n.F("remap.listening", remapVerb(g.remapDevice), countdown)}
+		return actionName(action) + "    " + values[boolToIndex(isListening)]
 	}
 }
 
@@ -134,7 +134,7 @@ func (g *Game) tryAssignRemap(action RemapAction, input int) bool {
 		return false
 	}
 	g.controlBindings.Assign(g.remapDevice, action, input)
-	g.applyControlBindings("Controls saved.")
+	g.applyControlBindings(i18n.T("remap.saved"))
 	g.menuLockSeconds = menuLockDuration
 	return true
 }
@@ -155,7 +155,7 @@ func (g *Game) defaultButtonBlocker(action RemapAction) string {
 		isDefault := g.controlBindings.Buttons[other] == defaultBinding
 		isPressed := g.controls.Held&remapTable[other].Primary != 0
 		if other != action && isDefault && isPressed {
-			return "This button is used by " + remapTable[other].Name + "."
+			return i18n.F("remap.button_taken", actionName(other))
 		}
 	}
 	return ""
@@ -163,15 +163,15 @@ func (g *Game) defaultButtonBlocker(action RemapAction) string {
 
 func (g *Game) resetRemapDevice() {
 	g.controlBindings.ResetDevice(g.remapDevice)
-	g.applyControlBindings("Defaults restored.")
+	g.applyControlBindings(i18n.T("remap.defaults_restored"))
 }
 
 func (g *Game) applyControlBindings(message string) {
 	g.input.UseBindings(g.controlBindings)
 	g.remapMessage = message
-	g.bindingsMessage = "Custom controls loaded. Options > Controls to configure."
+	g.bindingsMessage = "remap.custom_loaded"
 	if err := SaveControlBindings(g.controlBindings); err != nil {
-		g.remapMessage = "Active for this session, save failed: " + err.Error()
+		g.remapMessage = i18n.F("remap.save_failed", err.Error())
 	}
 }
 
@@ -182,8 +182,8 @@ func (g *Game) drawRemap(screen *ebiten.Image) {
 
 func (u *UI) DrawRemap(g *Game, screen *ebiten.Image) {
 	dimScreen(screen, 0.75)
-	u.drawText(screen, "CONTROLS", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
-	u.drawText(screen, deviceNames[g.remapDevice], u.bold, screenWidth/2, remapSubtitleTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.controls"), u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T(deviceNameKeys[g.remapDevice]), u.bold, screenWidth/2, remapSubtitleTop, textColor, 1, text.AlignCenter)
 	u.drawText(screen, g.remapMessage, u.small, screenWidth/2, remapMessageTop, healthColor, 1, text.AlignCenter)
 	drawers := [2]func(u *UI, g *Game, screen *ebiten.Image){(*UI).drawRemapList, (*UI).drawEssentialSteps}
 	drawers[boolToIndex(g.remapStep < essentialRemapCount)](u, g, screen)
@@ -193,20 +193,20 @@ func (u *UI) DrawRemap(g *Game, screen *ebiten.Image) {
 func (u *UI) drawEssentialSteps(g *Game, screen *ebiten.Image) {
 	for step := range essentialRemapCount {
 		action := RemapAction(step)
-		name := remapTable[action].Name
-		labels := [3]string{name + ":  " + g.controlBindings.Label(g.remapDevice, action), fmt.Sprintf("Press the %s for %s", remapInputVerbs[g.remapDevice], name), name}
+		name := actionName(action)
+		labels := [3]string{name + ":  " + g.controlBindings.Label(g.remapDevice, action), i18n.F("remap.press_for", remapVerb(g.remapDevice), name), name}
 		state := boolToIndex(step == g.remapStep) + 2*boolToIndex(step > g.remapStep)
 		colors := [3][3]float32{textColor, accentColor, textColor}
 		u.drawText(screen, labels[state], u.bold, screenWidth/2, remapStepTop+float32(step)*remapStepSpacing, colors[state], 1, text.AlignCenter)
 	}
-	u.drawText(screen, "First the three essential buttons. "+g.input.ButtonLabel(ActionPause)+" to cancel", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.F("remap.essentials_hint", g.input.ButtonLabel(ActionPause)), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) drawRemapList(g *Game, screen *ebiten.Image) {
 	u.drawMenuOptions(g, screen, g.remapMenu, menuOptionSpacing)
 	hints := [2]string{
-		"Up / Down to choose, Fire to change, Start / Esc / Aim lock to go back. Opened from a gamepad, this screen sets the gamepad.",
-		"Press the new " + remapInputVerbs[g.remapDevice] + " now. Taken keys swap places.",
+		i18n.T("remap.list_hint"),
+		i18n.F("remap.listen_hint", remapVerb(g.remapDevice)),
 	}
 	u.drawText(screen, hints[boolToIndex(g.remapListenSeconds > 0)], u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 }

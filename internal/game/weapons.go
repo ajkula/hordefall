@@ -9,8 +9,7 @@ type WeaponKind uint8
 type WeaponFamily uint8
 
 type WeaponDefinition struct {
-	Name             string
-	Description      string
+	Key              string
 	Element          Element
 	IsAimed          bool
 	FireSound        audio.SoundKind
@@ -84,66 +83,66 @@ var hammerDustColor = [3]float32{0.75, 0.68, 0.55}
 
 var weaponTable = [weaponKindCount]WeaponDefinition{
 	WeaponEmberBolt: {
-		Name: "Ember Bolt", Description: "Fires burning bolts where you aim.",
+		Key:     "ember_bolt",
 		Element: ElementFire, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{1, 0.55, 0.15},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 11, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},
 	WeaponFrostNova: {
-		Name: "Frost Nova", Description: "Pulses cold around you.",
+		Key:     "frost_nova",
 		Element: ElementFrost, FireSound: audio.SoundNova, Color: [3]float32{0.6, 0.85, 1},
 		BaseCooldown: 2.6, CooldownPerLevel: 0.06, BaseDamage: 5, DamagePerLevel: 3,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 95, RadiusPerLevel: 14,
 	},
 	WeaponArcLightning: {
-		Name: "Arc Lightning", Description: "Strikes the enemy you aim at, then chains.",
+		Key:     "arc_lightning",
 		Element: ElementShock, IsAimed: true, FireSound: audio.SoundZap, Color: [3]float32{1, 1, 0.5},
 		BaseCooldown: 0.9, CooldownPerLevel: 0.06, BaseDamage: 12, DamagePerLevel: 4,
 		BaseCount: 3, LevelsPerCount: 1,
 	},
 	WeaponOilFlask: {
-		Name: "Oil Flask", Description: "Lobs oil where you aim.",
+		Key:     "oil_flask",
 		Element: ElementOil, IsAimed: true, Color: [3]float32{0.35, 0.25, 0.4},
 		BaseCooldown: 3.2, CooldownPerLevel: 0.07, BaseDamage: 2, DamagePerLevel: 1,
 		BaseCount: 1, LevelsPerCount: 3, BaseRadius: 55, RadiusPerLevel: 8,
 	},
 	WeaponDownpour: {
-		Name: "Downpour", Description: "Calls rain where you aim.",
+		Key:     "downpour",
 		Element: ElementWater, IsAimed: true, FireSound: audio.SoundRain, Color: [3]float32{0.35, 0.6, 1},
 		BaseCooldown: 3.6, CooldownPerLevel: 0.07, BaseDamage: 3, DamagePerLevel: 1.5,
 		BaseCount: 1, LevelsPerCount: 3, BaseRadius: 85, RadiusPerLevel: 12,
 	},
 	WeaponOrbitBlades: {
-		Name: "Orbit Blades", Description: "Spinning blades.",
+		Key:     "orbit_blades",
 		Element: ElementPhysical, Color: [3]float32{0.9, 0.9, 0.95},
 		BaseDamage: 9, DamagePerLevel: 4, BaseCount: 2, LevelsPerCount: 2, BaseRadius: 72, RadiusPerLevel: 6,
 	},
 	WeaponSeismicHammer: {
-		Name: "Seismic Hammer", Description: "Slams the ground.",
+		Key:     "seismic_hammer",
 		Element: ElementPhysical, FireSound: audio.SoundStomp, Color: [3]float32{0.85, 0.72, 0.5},
 		BaseCooldown: 2.4, CooldownPerLevel: 0.06, BaseDamage: 14, DamagePerLevel: 5,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 120, RadiusPerLevel: 12,
 	},
 	WeaponPulseShot: {
-		Name: "Pulse Shot", Description: "Fires plain energy bolts where you aim.",
+		Key:     "pulse_shot",
 		Element: ElementNone, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{0.85, 0.88, 1},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot, IsFamilyBase: true,
 	},
 	WeaponFrostShard: {
-		Name: "Frost Shard", Description: "Fires ice shards where you aim.",
+		Key:     "frost_shard",
 		Element: ElementFrost, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{0.6, 0.88, 1},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},
 	WeaponVoltBolt: {
-		Name: "Volt Bolt", Description: "Fires charged bolts where you aim.",
+		Key:     "volt_bolt",
 		Element: ElementShock, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{1, 0.95, 0.4},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},
 	WeaponStaticMines: {
-		Name: "Static Mines", Description: "Drops shock mines.",
+		Key:     "static_mines",
 		Element: ElementShock, Color: mineColor,
 		BaseCooldown: 1.8, CooldownPerLevel: 0.06, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, BaseRadius: 70, RadiusPerLevel: 8,

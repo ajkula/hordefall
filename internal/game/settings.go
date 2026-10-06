@@ -2,6 +2,7 @@ package game
 
 import (
 	"hordefall/internal/config"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -21,6 +22,7 @@ type Settings struct {
 	EffectsVolumeStep int              `json:"effectsVolume"`
 	Initials          string           `json:"initials"`
 	IsBenchmarkHidden bool             `json:"benchmarkHidden"`
+	Language          string           `json:"language"`
 }
 
 // ===== Constants =====
@@ -34,7 +36,7 @@ func DefaultSettings() Settings {
 		IsMusicOn: true, Tracks: map[string]bool{},
 		IsFullscreen: false, IsVsyncOn: false, Resolution: ResolutionNative, IsFPSShown: false,
 		ShakeLevel: defaultShakeLevel, EffectsLevel: defaultEffectsLevel, BloomLevel: defaultBloomLevel, IsCRTOn: true,
-		MusicVolumeStep: defaultMusicVolumeStep, EffectsVolumeStep: defaultEffectsVolumeStep, Initials: defaultInitials,
+		MusicVolumeStep: defaultMusicVolumeStep, EffectsVolumeStep: defaultEffectsVolumeStep, Initials: defaultInitials, Language: i18n.DefaultCode,
 	}
 }
 
@@ -71,6 +73,7 @@ func (g *Game) loadSettings() {
 	g.audio.SetMusicOn(g.settings.IsMusicOn)
 	g.applyMusicVolume()
 	g.applyGraphicsSettings()
+	g.applyLanguage()
 	g.buildPlaylistMenu()
 }
 
@@ -83,6 +86,6 @@ func (g *Game) toggleMusic() {
 func (g *Game) saveSettings() {
 	g.settingsMessage = ""
 	if err := SaveSettings(g.settings); err != nil {
-		g.settingsMessage = "Settings not saved: " + err.Error()
+		g.settingsMessage = i18n.F("settings.save_failed", err.Error())
 	}
 }

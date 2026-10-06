@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"hordefall/internal/config"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -131,7 +132,7 @@ func (g *Game) recordHighScoreAs(initials string) {
 func (g *Game) saveHighScores() {
 	g.scoreMessage = ""
 	if err := SaveHighScores(g.highScores); err != nil {
-		g.scoreMessage = "High scores not saved: " + err.Error()
+		g.scoreMessage = i18n.F("scores.save_failed", err.Error())
 	}
 }
 

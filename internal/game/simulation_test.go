@@ -476,7 +476,7 @@ func TestOnlyPassivesLeftRotateThroughRemainingOnes(t *testing.T) {
 			t.Fatalf("turn %d: the level up paused the game", turn)
 		}
 		if game.player.PassiveLevels[want] != before[want]+1 {
-			t.Fatalf("turn %d: expected %s, banner %q", turn, passiveTable[want].Name, game.levelUpBanner)
+			t.Fatalf("turn %d: expected %s, banner %q", turn, passiveTable[want].Key, game.levelUpBanner)
 		}
 	}
 }
@@ -672,7 +672,7 @@ func TestShotEvolvesIntoOneElementOnly(t *testing.T) {
 	for _, offer := range game.offerPool {
 		isOtherShot := weaponTable[offer.Weapon].Family == FamilyMainShot && offer.Weapon != WeaponFrostShard
 		if isOtherShot {
-			t.Fatalf("after choosing Frost Shard, %s is still offered", weaponTable[offer.Weapon].Name)
+			t.Fatalf("after choosing Frost Shard, %s is still offered", weaponTable[offer.Weapon].Key)
 		}
 	}
 }

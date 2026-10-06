@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"hordefall/internal/i18n"
 	"testing"
 
 	"hordefall/internal/rng"
@@ -193,7 +194,7 @@ func TestGraphicsSettingsDefaultsAndSanitizing(t *testing.T) {
 	expected := Settings{
 		IsMusicOn: true, Tracks: map[string]bool{}, Resolution: ResolutionNative,
 		ShakeLevel: 1, EffectsLevel: 2, BloomLevel: 1, IsCRTOn: true, MusicVolumeStep: 3, EffectsVolumeStep: 4,
-		Initials: defaultInitials,
+		Initials: defaultInitials, Language: i18n.DefaultCode,
 	}
 	if fmt.Sprintf("%+v", defaults) != fmt.Sprintf("%+v", expected) {
 		t.Fatalf("unexpected defaults: got %+v, want %+v", defaults, expected)

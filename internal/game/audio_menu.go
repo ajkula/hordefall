@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"hordefall/internal/audio"
+	"hordefall/internal/i18n"
 )
 
 // ===== Constants =====
@@ -42,21 +43,21 @@ var audioMenuOptions = []MenuOption{
 	{(*Game).musicLabel, (*Game).toggleMusic, nil},
 	{(*Game).musicVolumeLabel, (*Game).cycleMusicVolume, &musicVolumeSlider},
 	{(*Game).effectsVolumeLabel, (*Game).cycleEffectsVolume, &effectsVolumeSlider},
-	{fixedLabel("Playlist"), (*Game).openPlaylist, nil},
-	{fixedLabel("Back"), (*Game).closeAudioMenu, nil},
+	{translatedLabel("audio.playlist"), (*Game).openPlaylist, nil},
+	{translatedLabel("menu.back"), (*Game).closeAudioMenu, nil},
 }
 
 // ===== Public API =====
 
 func (u *UI) DrawAudioMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, menuDim)
-	u.drawText(screen, "AUDIO", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.audio"), u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Left / Right to set the volume, Fire to confirm, Start / Esc / Aim lock to go back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
-	u.drawText(screen, "Music OFF keeps the sound effects. Settings are saved.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.audio"), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.audio_music_off"), u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
 // ===== Internal =====
@@ -85,11 +86,11 @@ func (g *Game) drawAudioMenu(screen *ebiten.Image) {
 }
 
 func (g *Game) musicVolumeLabel() string {
-	return volumeLabel("Music volume", g.settings.MusicVolumeStep)
+	return volumeLabel(i18n.T("audio.music_volume"), g.settings.MusicVolumeStep)
 }
 
 func (g *Game) effectsVolumeLabel() string {
-	return volumeLabel("Effects volume", g.settings.EffectsVolumeStep)
+	return volumeLabel(i18n.T("audio.effects_volume"), g.settings.EffectsVolumeStep)
 }
 
 func volumeLabel(name string, step int) string {

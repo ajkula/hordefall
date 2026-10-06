@@ -16,7 +16,7 @@ import (
 type RemapAction uint8
 
 type RemapDefinition struct {
-	Name                string
+	Key                 string
 	Primary             Action
 	KeyboardActions     Action
 	GamepadActions      Action
@@ -59,30 +59,30 @@ const (
 
 var remapTable = [remapActionCount]RemapDefinition{
 	RemapFire: {
-		Name: "FIRE", Primary: ActionFire, KeyboardActions: actionFireConfirm, GamepadActions: actionFireConfirm,
+		Key: "fire", Primary: ActionFire, KeyboardActions: actionFireConfirm, GamepadActions: actionFireConfirm,
 		DefaultKeys: []ebiten.Key{ebiten.KeyJ, ebiten.KeyZ}, DefaultButtons: []ebiten.StandardGamepadButton{ebiten.StandardGamepadButtonRightBottom}, DefaultGamepadLabel: "A",
 	},
 	RemapAimLock: {
-		Name: "AIM LOCK", Primary: ActionAimLock, KeyboardActions: ActionAimLock, GamepadActions: ActionAimLock,
+		Key: "aim_lock", Primary: ActionAimLock, KeyboardActions: ActionAimLock, GamepadActions: ActionAimLock,
 		DefaultKeys: []ebiten.Key{ebiten.KeyK, ebiten.KeyX}, DefaultButtons: []ebiten.StandardGamepadButton{ebiten.StandardGamepadButtonRightRight}, DefaultGamepadLabel: "B",
 	},
 	RemapDash: {
-		Name: "DASH", Primary: ActionDash, KeyboardActions: ActionDash, GamepadActions: ActionDash,
+		Key: "dash", Primary: ActionDash, KeyboardActions: ActionDash, GamepadActions: ActionDash,
 		DefaultKeys:    []ebiten.Key{ebiten.KeySpace, ebiten.KeyL, ebiten.KeyC},
 		DefaultButtons: []ebiten.StandardGamepadButton{ebiten.StandardGamepadButtonRightLeft, ebiten.StandardGamepadButtonRightTop}, DefaultGamepadLabel: "X",
 	},
 	RemapPause: {
-		Name: "PAUSE", Primary: ActionPause, KeyboardActions: ActionPause, GamepadActions: ActionPause | ActionConfirm | ActionStart,
+		Key: "pause", Primary: ActionPause, KeyboardActions: ActionPause, GamepadActions: ActionPause | ActionConfirm | ActionStart,
 		DefaultKeys: []ebiten.Key{ebiten.KeyEscape, ebiten.KeyP}, DefaultButtons: []ebiten.StandardGamepadButton{ebiten.StandardGamepadButtonCenterRight}, DefaultGamepadLabel: "START",
 	},
 	RemapSelect: {
-		Name: "SELECT", Primary: ActionSelect, KeyboardActions: ActionSelect, GamepadActions: ActionSelect,
+		Key: "select", Primary: ActionSelect, KeyboardActions: ActionSelect, GamepadActions: ActionSelect,
 		DefaultKeys: []ebiten.Key{ebiten.KeyBackspace, ebiten.KeyF2}, DefaultButtons: []ebiten.StandardGamepadButton{ebiten.StandardGamepadButtonCenterLeft}, DefaultGamepadLabel: "SELECT",
 	},
-	RemapUp:    {Name: "UP", Primary: ActionUp, KeyboardActions: ActionUp, DefaultKeys: []ebiten.Key{ebiten.KeyW}},
-	RemapDown:  {Name: "DOWN", Primary: ActionDown, KeyboardActions: ActionDown, DefaultKeys: []ebiten.Key{ebiten.KeyS}},
-	RemapLeft:  {Name: "LEFT", Primary: ActionLeft, KeyboardActions: ActionLeft, DefaultKeys: []ebiten.Key{ebiten.KeyA}},
-	RemapRight: {Name: "RIGHT", Primary: ActionRight, KeyboardActions: ActionRight, DefaultKeys: []ebiten.Key{ebiten.KeyD}},
+	RemapUp:    {Key: "up", Primary: ActionUp, KeyboardActions: ActionUp, DefaultKeys: []ebiten.Key{ebiten.KeyW}},
+	RemapDown:  {Key: "down", Primary: ActionDown, KeyboardActions: ActionDown, DefaultKeys: []ebiten.Key{ebiten.KeyS}},
+	RemapLeft:  {Key: "left", Primary: ActionLeft, KeyboardActions: ActionLeft, DefaultKeys: []ebiten.Key{ebiten.KeyA}},
+	RemapRight: {Key: "right", Primary: ActionRight, KeyboardActions: ActionRight, DefaultKeys: []ebiten.Key{ebiten.KeyD}},
 }
 
 var remapActionsByDevice = [inputDeviceCount][]RemapAction{
@@ -90,7 +90,7 @@ var remapActionsByDevice = [inputDeviceCount][]RemapAction{
 	DeviceGamepad:  {RemapFire, RemapAimLock, RemapDash, RemapPause, RemapSelect},
 }
 
-var deviceNames = [inputDeviceCount]string{"KEYBOARD", "GAMEPAD"}
+var deviceNameKeys = [inputDeviceCount]string{"device.keyboard", "device.gamepad"}
 
 // ===== Public API =====
 

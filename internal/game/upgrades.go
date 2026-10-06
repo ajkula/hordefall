@@ -1,14 +1,15 @@
 package game
 
-import "fmt"
+import (
+	"hordefall/internal/i18n"
+)
 
 // ===== Types =====
 
 type PassiveKind uint8
 
 type PassiveDefinition struct {
-	Name         string
-	Description  string
+	Key          string
 	MaximumLevel int
 	Apply        func(player *Player)
 }
@@ -52,16 +53,16 @@ const (
 )
 
 var passiveTable = [passiveKindCount]PassiveDefinition{
-	PassiveVitality: {"Vitality", "+20 max health and heal 20.", 5, func(player *Player) {
+	PassiveVitality: {"vitality", 5, func(player *Player) {
 		player.MaximumHealth += 20
 		player.Health = min(player.MaximumHealth, player.Health+20)
 	}},
-	PassiveSwiftness: {"Swiftness", "+10% move speed.", 5, func(player *Player) { player.MoveSpeed *= 1.1 }},
-	PassiveMagnetism: {"Magnetism", "+40% pickup radius.", 5, func(player *Player) { player.MagnetRadius *= 1.4 }},
-	PassiveHaste:     {"Haste", "-8% weapon cooldowns.", 5, func(player *Player) { player.CooldownMultiplier *= 0.92 }},
-	PassiveMight:     {"Might", "+12% damage, reactions included.", 5, func(player *Player) { player.DamageMultiplier *= 1.12 }},
-	PassiveReach:     {"Reach", "+12% area for novas, rain, flasks, blades, slams, mines.", 5, func(player *Player) { player.AreaMultiplier *= 1.12 }},
-	PassiveLifesteal: {"Lifesteal", "Each kill restores 1% of max health. One time only.", 1, func(player *Player) {
+	PassiveSwiftness: {"swiftness", 5, func(player *Player) { player.MoveSpeed *= 1.1 }},
+	PassiveMagnetism: {"magnetism", 5, func(player *Player) { player.MagnetRadius *= 1.4 }},
+	PassiveHaste:     {"haste", 5, func(player *Player) { player.CooldownMultiplier *= 0.92 }},
+	PassiveMight:     {"might", 5, func(player *Player) { player.DamageMultiplier *= 1.12 }},
+	PassiveReach:     {"reach", 5, func(player *Player) { player.AreaMultiplier *= 1.12 }},
+	PassiveLifesteal: {"lifesteal", 1, func(player *Player) {
 		player.KillHealFraction = lifestealKillHealFraction
 	}},
 }
@@ -78,26 +79,26 @@ var upgradeAppliers = [upgradeKindCount]upgradeApplier{
 
 func (offer UpgradeOffer) Title() string {
 	titles := [upgradeKindCount]string{
-		UpgradeWeapon:  weaponTable[offer.Weapon].Name,
-		UpgradePassive: passiveTable[offer.Passive].Name,
-		UpgradeHeal:    "Second Wind",
+		UpgradeWeapon:  weaponTable[offer.Weapon].DisplayName(),
+		UpgradePassive: passiveTable[offer.Passive].DisplayName(),
+		UpgradeHeal:    i18n.T("upgrade.second_wind"),
 	}
 	return titles[offer.Kind]
 }
 
 func (offer UpgradeOffer) Subtitle() string {
 	isNew := offer.NextLevel == 1 && offer.Kind != UpgradeHeal && !offer.IsEvolution
-	levelLabels := [2]string{fmt.Sprintf("Level %d", offer.NextLevel), "NEW"}
-	weaponLabels := [2]string{levelLabels[boolToIndex(isNew)], "EVOLVE YOUR SHOT"}
-	kindLabels := [2]string{weaponLabels[boolToIndex(offer.IsEvolution)], fmt.Sprintf("+%d health", healUpgradeAmount)}
+	levelLabels := [2]string{i18n.F("upgrade.level", offer.NextLevel), i18n.T("upgrade.new")}
+	weaponLabels := [2]string{levelLabels[boolToIndex(isNew)], i18n.T("upgrade.evolve")}
+	kindLabels := [2]string{weaponLabels[boolToIndex(offer.IsEvolution)], i18n.F("upgrade.health", healUpgradeAmount)}
 	return kindLabels[boolToIndex(offer.Kind == UpgradeHeal)]
 }
 
 func (offer UpgradeOffer) Description() string {
 	descriptions := [upgradeKindCount]string{
-		UpgradeWeapon:  weaponTable[offer.Weapon].Description,
-		UpgradePassive: passiveTable[offer.Passive].Description,
-		UpgradeHeal:    fmt.Sprintf("Restore %d health.", healUpgradeAmount),
+		UpgradeWeapon:  weaponTable[offer.Weapon].DisplayDescription(),
+		UpgradePassive: passiveTable[offer.Passive].DisplayDescription(),
+		UpgradeHeal:    i18n.F("upgrade.restore", healUpgradeAmount),
 	}
 	return descriptions[offer.Kind]
 }

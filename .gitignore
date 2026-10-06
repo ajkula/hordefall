@@ -26,3 +26,4 @@ internal/audio/music/previews/
 
 # Release builds
 dist/
+tools/fonts/cache/

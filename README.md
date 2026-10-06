@@ -251,6 +251,7 @@ Go builds one package per folder and a type's methods must live in its own packa
 | `config` | `store.go` | JSON files in %AppData%\hordefall: path, load, save |
 | `spatial` | `grid.go` | Uniform grid with counting sort for neighbor queries |
 | `rng` | `random.go` | Xorshift random generator |
+| `i18n` | `i18n.go`, `locale*.go`, `lang/*.json` | Language files, English fallback, external `lang` folder, system language detection |
 
 Entities are stored as struct of arrays with swap-remove, the spatial grid is rebuilt every tick with a counting sort, and every entity type is drawn in a single batched draw call.
 
@@ -286,4 +287,15 @@ Ebitengine needs cgo and the system graphics libraries on Linux and FreeBSD, so 
 
 ## Fonts
 
-The interface uses Rajdhani (Medium for text, Bold for titles and menus), by the Indian Type Foundry, under the SIL Open Font License (`internal/game/fonts/OFL.txt`). Characters Rajdhani lacks, such as the music note, fall back to the Go fonts.
+The interface uses Rajdhani (Medium for text, Bold for titles and menus), by the Indian Type Foundry, under the SIL Open Font License (`internal/game/fonts/OFL.txt`). It covers Latin and Devanagari. Other scripts fall back, glyph by glyph, to Exo 2 for Cyrillic and to Noto Sans KR, JP and SC for Korean, Japanese and Chinese (both under the SIL Open Font License, `OFL-Exo2.txt` and `OFL-NotoSansCJK.txt`), then to the Go fonts (the music note). The order of the three CJK fonts follows the language, so Japanese and Chinese characters take their own shapes.
+
+The fallback fonts are subsets holding only the characters of the language files, about 1.1 MB in all. After editing a language file, rebuild them with `py -3 tools/fonts/subset.py` (Python with fontTools; the full fonts are downloaded once into `tools/fonts/cache`, which git ignores).
+
+## Languages
+
+English, French, Spanish, Russian, Serbian (Cyrillic), Korean, Japanese, Simplified Chinese and Hindi, in `internal/i18n/lang/<code>.json`: `{"code", "name", "script", "strings": {key: text}}`. Texts that arcade games keep in English stay in English: the title, RANKING and its columns, HI and SCORE, LEVEL UP, NEW HIGH SCORE!, the initials entry, reaction and demo clip names, FPS and TPS, button names.
+
+- On the first launch the game reads the system language (Windows, macOS, Linux), preselects it when it is available, or English otherwise, and waits for the player to confirm. The choice lives in `settings.json` as `language` (`default` until confirmed, which means English); it can be changed in Options > Gameplay, and moving through the list previews each language live.
+- A `lang` folder next to the game (or in the working directory) is read at launch: a new file adds a language to the list, a file with an existing code overrides its texts.
+- Nothing ever breaks on a missing piece: a missing key falls back to English, then to the key itself; a broken file is skipped; a missing glyph falls back to the next font.
+- Tests check that every key the code uses exists in English, that translations keep the same `%` placeholders, that every character of every language has a glyph, and that every translation fits its space (titles, menus, hints, two lines per upgrade card): when one overflows, reword it shorter.

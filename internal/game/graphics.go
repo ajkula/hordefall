@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -61,7 +62,7 @@ var graphicsMenuOptions = []MenuOption{
 	{(*Game).effectsLabel, (*Game).cycleEffects, nil},
 	{(*Game).bloomLabel, (*Game).cycleBloom, nil},
 	{(*Game).crtLabel, (*Game).toggleCRT, nil},
-	{fixedLabel("Back"), (*Game).closeGraphics, nil},
+	{translatedLabel("menu.back"), (*Game).closeGraphics, nil},
 }
 
 var renderScale float32 = 1
@@ -70,13 +71,13 @@ var renderScale float32 = 1
 
 func (u *UI) DrawGraphicsMenu(g *Game, screen *ebiten.Image, options []MenuOption) {
 	dimScreen(screen, menuDim)
-	u.drawText(screen, "GRAPHICS", u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("title.graphics"), u.title, screenWidth/2, menuTitleTop, accentColor, 1, text.AlignCenter)
 	u.drawText(screen, g.settingsMessage, u.small, screenWidth/2, menuTitleTop+110, healthColor, 1, text.AlignCenter)
 	u.drawMenuOptions(g, screen, options, menuOptionSpacing)
 	u.drawBenchmarkPanel(g, screen)
 	u.drawMusicBanner(g, screen)
-	u.drawText(screen, "Up / Down to choose, Fire to change, Start / Esc / Aim lock to go back. F11 toggles fullscreen anywhere.", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
-	u.drawText(screen, "Native renders at your screen resolution: sharper, heavier on the GPU.", u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.graphics"), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.graphics_native"), u.small, screenWidth/2, menuHintTop+24, textColor, 1, text.AlignCenter)
 }
 
 // ===== Internal =====
@@ -155,35 +156,35 @@ func (g *Game) postSettings() PostSettings {
 }
 
 func (g *Game) bloomLabel() string {
-	return "Bloom: " + bloomLevels[g.settings.BloomLevel].Label
+	return i18n.F("graphics.bloom", translateValue(bloomLevels[g.settings.BloomLevel].Label))
 }
 
 func (g *Game) crtLabel() string {
-	return "CRT filter: " + onOffLabels[boolToIndex(g.settings.IsCRTOn)]
+	return i18n.F("graphics.crt", translateValue(onOffLabels[boolToIndex(g.settings.IsCRTOn)]))
 }
 
 func (g *Game) fullscreenLabel() string {
-	return "Fullscreen: " + onOffLabels[boolToIndex(g.settings.IsFullscreen)]
+	return i18n.F("graphics.fullscreen", translateValue(onOffLabels[boolToIndex(g.settings.IsFullscreen)]))
 }
 
 func (g *Game) vsyncLabel() string {
-	return "VSync: " + onOffLabels[boolToIndex(g.settings.IsVsyncOn)]
+	return i18n.F("graphics.vsync", translateValue(onOffLabels[boolToIndex(g.settings.IsVsyncOn)]))
 }
 
 func (g *Game) resolutionLabel() string {
-	return "Resolution: " + resolutionChoices[g.settings.Resolution].Label
+	return i18n.F("graphics.resolution", translateValue(resolutionChoices[g.settings.Resolution].Label))
 }
 
 func (g *Game) fpsLabel() string {
-	return "Show FPS: " + onOffLabels[boolToIndex(g.settings.IsFPSShown)]
+	return i18n.F("graphics.show_fps", translateValue(onOffLabels[boolToIndex(g.settings.IsFPSShown)]))
 }
 
 func (g *Game) shakeLabel() string {
-	return "Screen shake: " + shakeLevels[g.settings.ShakeLevel].Label
+	return i18n.F("graphics.shake", translateValue(shakeLevels[g.settings.ShakeLevel].Label))
 }
 
 func (g *Game) effectsLabel() string {
-	return "Effects: " + effectsLevels[g.settings.EffectsLevel].Label
+	return i18n.F("graphics.effects", translateValue(effectsLevels[g.settings.EffectsLevel].Label))
 }
 
 func (g *Game) openGraphics() {
@@ -219,17 +220,15 @@ func (u *UI) scaledFace(face *text.GoTextFace) text.Face {
 		return scaled
 	}
 	size := face.Size * float64(renderScale)
-	primary := &text.GoTextFace{Source: face.Source, Size: size}
-	fallback := &text.GoTextFace{Source: u.fallbackSources[face.Source], Size: size}
-	scaled = mustCombineFaces(primary, fallback)
+	scaled = combineFaces(u.fontChains.Faces(face.Source, size))
 	u.scaledFaces[face] = scaled
 	return scaled
 }
 
-func mustCombineFaces(faces ...text.Face) text.Face {
+func combineFaces(faces []text.Face) text.Face {
 	combined, err := text.NewMultiFace(faces...)
 	if err != nil {
-		panic(err)
+		return faces[0]
 	}
 	return combined
 }

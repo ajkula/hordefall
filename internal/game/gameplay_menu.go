@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -45,14 +46,15 @@ const (
 )
 
 var gameplayMenuOptions = []MenuOption{
-	{fixedLabel("High scores"), (*Game).openHighScores, nil},
-	{fixedLabel("Reset high scores"), (*Game).openResetScores, nil},
-	{fixedLabel("Back"), (*Game).closeGameplay, nil},
+	{(*Game).languageLabel, (*Game).openLanguageFromGameplay, nil},
+	{translatedLabel("gameplay.high_scores"), (*Game).openHighScores, nil},
+	{translatedLabel("gameplay.reset_scores"), (*Game).openResetScores, nil},
+	{translatedLabel("menu.back"), (*Game).closeGameplay, nil},
 }
 
 var resetScoresMenuOptions = []MenuOption{
-	{fixedLabel("No, keep them"), (*Game).closeResetScores, nil},
-	{fixedLabel("Yes, erase all high scores"), (*Game).resetHighScores, nil},
+	{translatedLabel("gameplay.keep_scores"), (*Game).closeResetScores, nil},
+	{translatedLabel("gameplay.erase_scores"), (*Game).resetHighScores, nil},
 }
 
 var rankOrdinals = [highScoreTableSize]string{"1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH", "9TH", "10TH"}
@@ -97,7 +99,7 @@ func (g *Game) closeResetScores() {
 func (g *Game) resetHighScores() {
 	g.highScores = HighScoreTable{}
 	g.saveHighScores()
-	g.settingsMessage = "High scores erased."
+	g.settingsMessage = i18n.T("gameplay.scores_erased")
 	g.closeResetScores()
 }
 
@@ -130,18 +132,18 @@ func (g *Game) updateResetScores() {
 
 func (g *Game) drawGameplay(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawSubmenu(g, screen, "GAMEPLAY", gameplayMenuOptions, "Up / Down to choose, Fire to confirm, Start / Esc / Aim lock to go back")
+	g.ui.DrawSubmenu(g, screen, i18n.T("title.gameplay"), gameplayMenuOptions, i18n.T("hint.menu_back"))
 }
 
 func (g *Game) drawResetScores(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawSubmenu(g, screen, "ERASE HIGH SCORES?", resetScoresMenuOptions, "This cannot be undone. Start / Esc / Aim lock to cancel")
+	g.ui.DrawSubmenu(g, screen, i18n.T("title.erase_scores"), resetScoresMenuOptions, i18n.T("hint.erase_scores"))
 }
 
 func (g *Game) drawHighScores(screen *ebiten.Image) {
 	g.renderer.DrawWorld(g, screen)
 	elapsed := g.clockSeconds - g.boardOpenedSeconds
-	g.ui.DrawHighScoreBoard(g, screen, elapsed-highScoreBoardSeconds*float32(int(elapsed/highScoreBoardSeconds)), highScoreBoardDim, "Fire / Start / Esc / Aim lock to go back")
+	g.ui.DrawHighScoreBoard(g, screen, elapsed-highScoreBoardSeconds*float32(int(elapsed/highScoreBoardSeconds)), highScoreBoardDim, i18n.T("hint.scores_back"))
 }
 
 func (u *UI) DrawSubmenu(g *Game, screen *ebiten.Image, title string, options []MenuOption, hint string) {
@@ -212,7 +214,7 @@ func (u *UI) DrawRankingAttract(g *Game, screen *ebiten.Image, elapsedSeconds fl
 	if elapsedSeconds < rankingIntroSeconds {
 		return
 	}
-	u.DrawHighScoreBoard(g, screen, elapsedSeconds-rankingIntroSeconds, attractBoardDim, "Press any button")
+	u.DrawHighScoreBoard(g, screen, elapsedSeconds-rankingIntroSeconds, attractBoardDim, i18n.T("hint.press_any_button"))
 }
 
 func (u *UI) drawRankingArt(g *Game, screen *ebiten.Image, elapsedSeconds float32) {

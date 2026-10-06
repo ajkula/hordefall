@@ -5,6 +5,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"hordefall/internal/audio"
+	"hordefall/internal/i18n"
 )
 
 // ===== Constants =====
@@ -92,7 +93,7 @@ func (u *UI) DrawNameEntry(g *Game, screen *ebiten.Image) {
 	for index, letter := range g.nameEntryLetters {
 		u.drawInitial(g, screen, index, string(letter))
 	}
-	u.drawText(screen, "Up / Down: letter    Left / Right: move    Fire: confirm    Aim lock: back", u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
+	u.drawText(screen, i18n.T("hint.name_entry"), u.small, screenWidth/2, menuHintTop, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) drawInitial(g *Game, screen *ebiten.Image, index int, letter string) {
