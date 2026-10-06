@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"strings"
 
 	"hordefall/internal/audio"
@@ -19,7 +20,6 @@ const (
 	gameEffectsVolume       = 0.8
 	songRotationSeconds     = 300
 	noMusicSlot             = -1
-	menuShowcaseIntensity   = 0.7
 	musicBannerDuration     = 45
 )
 
@@ -89,7 +89,9 @@ func (g *Game) describeMusic() string {
 	for index := range g.audio.SongCount() {
 		titles = appendIf(titles, g.audio.SongTitle(index), g.IsSongEnabled(index))
 	}
-	return "Music playing: " + g.audio.PlayingDescription() + "   enabled: " + strings.Join(titles, ", ")
+	signals := g.musicSignals
+	levels := fmt.Sprintf("   layers %d/16  horde %.2f  boss %.0f  reactions %.2f  danger %.2f", g.audio.AudibleLayerCount(), signals[audio.SignalHorde], signals[audio.SignalBoss], signals[audio.SignalReactions], signals[audio.SignalDanger])
+	return "Music playing: " + g.audio.PlayingDescription() + levels + "   enabled: " + strings.Join(titles, ", ")
 }
 
 func (g *Game) nextEnabledSong(current int) int {
@@ -118,7 +120,7 @@ func (g *Game) computeMusicSignals() [audio.SignalCount]float32 {
 	var signals [audio.SignalCount]float32
 	signals[audio.SignalAlways] = 1
 	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1)
-	signals[audio.SignalHorde] = max(hordeSignal, menuShowcaseIntensity*boolToFloat(g.isDemo))
+	signals[audio.SignalHorde] = hordeSignal
 	signals[audio.SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive))
 	signals[audio.SignalReactions] = g.reactionSignal()
 	signals[audio.SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())

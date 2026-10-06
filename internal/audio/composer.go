@@ -115,7 +115,7 @@ var musicStyles = []MusicStyle{
 		LeadWaveform: WaveSaw, BassWaveform: WaveSquare, BellWaveform: WaveTriangle, MelodyOctave: 5,
 		Overrides: []InstrumentOverride{
 			{ID: instrumentBass, Settings: VoiceSettings{
-				Waveform: WaveSquare, Duty: 0.42, Volume: 0.5, Filter: 0.55, Drive: 1.6, SubLevel: 0.35,
+				Waveform: WaveSquare, Duty: 0.42, Volume: 0.5, Filter: 0.55, Drive: 1.6, SubLevel: 0.6,
 				Envelope: Envelope{Attack: 0.002, Decay: 0.12, Sustain: 0.6, Release: 0.04},
 			}},
 			{ID: instrumentChords, Settings: VoiceSettings{

@@ -46,6 +46,7 @@ const (
 	SoundBombWhistle
 	SoundBigImpact
 	SoundGlassShatter
+	SoundChatter
 	soundKindCount
 )
 
@@ -152,6 +153,14 @@ var soundTable = [soundKindCount]SoundDefinition{
 		{Settings: VoiceSettings{Waveform: WaveSine, Frequency: 3951, Volume: 0.085, Delay: 0.293, Envelope: Envelope{Attack: 0.001, Decay: 0.186}}, PitchJitter: 0.08},
 		{Settings: VoiceSettings{Waveform: WaveSine, Frequency: 6272, Volume: 0.066, Delay: 0.332, Envelope: Envelope{Attack: 0.001, Decay: 0.336}}, PitchJitter: 0.08},
 		{Settings: VoiceSettings{Waveform: WaveTriangle, Frequency: 3520, Volume: 0.084, Delay: 0.38, Envelope: Envelope{Attack: 0.001, Decay: 0.153}}, PitchJitter: 0.08},
+	}},
+	SoundChatter: {MinimumInterval: 1, Layers: []SoundLayer{
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 1319, Duty: 0.25, Volume: 0.06, Delay: 0.0, SlideOctaves: 0, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 2093, Duty: 0.25, Volume: 0.06, Delay: 0.065, SlideOctaves: 3, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 1319, Duty: 0.25, Volume: 0.06, Delay: 0.13, SlideOctaves: 0, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 2093, Duty: 0.25, Volume: 0.06, Delay: 0.195, SlideOctaves: 0, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 988, Duty: 0.25, Volume: 0.06, Delay: 0.26, SlideOctaves: -3, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
+		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 2093, Duty: 0.25, Volume: 0.06, Delay: 0.325, SlideOctaves: 0, Envelope: Envelope{Attack: 0.002, Decay: 0.045}}, PitchJitter: 0.15},
 	}},
 	SoundMenuSelect: {MinimumInterval: 0.05, Layers: []SoundLayer{
 		{Settings: VoiceSettings{Waveform: WaveSquare, Frequency: 600, SlideOctaves: 3, Duty: 0.25, Volume: 0.14, Envelope: Envelope{Attack: 0.001, Decay: 0.1}}},

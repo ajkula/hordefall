@@ -152,6 +152,7 @@ func (g *Game) spawnSpiderAt(angle, distance float32) {
 	}
 	g.spiders = append(g.spiders, rig)
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("spider.inbound"), warningColor)
+	g.say(ChatterSpiderInbound)
 	g.effects.AddShake(6)
 }
 
@@ -196,6 +197,7 @@ func (g *Game) pushSpidersApart(first, second int) {
 func (g *Game) updateSpider(rig *SpiderRig, enemyIndex int, deltaSeconds float32) {
 	if enemyIndex < 0 {
 		g.effects.AddPopup(rig.X, rig.Y-60, i18n.T("spider.destroyed"), accentColor)
+		g.say(ChatterSpiderDown)
 		g.effects.AddShake(12)
 		return
 	}

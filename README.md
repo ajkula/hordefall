@@ -141,6 +141,15 @@ The player is a small blue Tachikoma seen from above, animated procedurally from
 - Skid trails: sharp turns, braking and dashes leave a luminous white trail behind each wheel, as wide as the wheel, that drops quickly in intensity then lingers for about 1.6 s (`skids.go`). Purely visual, handling is unchanged.
 Tuning: constants and `tachikomaLegLayouts` in `tachikoma.go`, colors and shapes in `tachikoma_render.go`.
 
+## The talkative Tachikoma
+
+Like its namesakes in Stand Alone Complex, the Tachikoma chats: childlike, curious, a little philosophical (does a tank have a ghost?), fond of natural oil and of Batou-san. Its lines scroll on a teletext strip at the bottom of the HUD, white on a half-opaque panel in a fixed-width font: the first 15 columns show, then after 2 seconds the line scrolls one character at a time to its end, holds and fades, with a little robot chirp (`chatter.go`).
+
+- It speaks when a run starts, on level up, heal bubbles, spider tanks arriving or falling, hordes, big chain reactions, low health, weather, a shot evolution, or after 50 quiet seconds.
+- It never nags: at least 12 seconds between any two lines, a minute between level up or heal lines, 20 to 45 seconds for the other topics, and never twice the same line in a row.
+- Rival lines (another Tachikoma too close, a stolen kill, being overtaken in level) are written for a future multiplayer mode and not triggered yet.
+- All 46 lines are translated in the nine languages (`tachikoma.<topic>.<n>` keys); Japanese, Chinese and Korean characters count as two columns.
+
 ## Boss: Spider Tank
 
 Each boss event needs its own kills: the counter resets when a boss arrives, so kills never carry over to the next one. The requirement grows with the run: 300 kills at the start, 300 × (1 + minutes / 2) after that (1,050 at 5 minutes, 1,800 at 10, 3,300 at 20). A Ghost in the Shell style spider tank then walks in (at most 3 at once).
@@ -189,6 +198,7 @@ Go builds one package per folder and a type's methods must live in its own packa
 | `attract_art.go` | Lo-res artwork rasterized each frame: shaded ellipsoids and capsules, outlines, coloured rim lights |
 | `bindings.go` | Remappable actions, defaults, swaps and persistence |
 | `remap.go` | Controls screen: essential sequence, list, listening, reset |
+| `chatter.go` | Talkative Tachikoma: topics, cooldowns, teletext strip |
 | `combat.go` | Hits, reactions, area bursts, deaths |
 | `demo.go` | Attract-mode benchmark sequences |
 | `effects.go` | Particles, rings, lightning, popups, screen shake |
@@ -225,6 +235,8 @@ Go builds one package per folder and a type's methods must live in its own packa
 | `ui.go` | HUD, menus, overlays |
 | `upgrades.go` | Passives and level-up offers |
 | `weapons.go` | Weapon table and behaviors |
+| `intro.go`, `intro_logo.go`, `intro_glass.go` | Studio intro: voxel GREG's logo, tumbling fall, shattered glass |
+| `language.go` | Language row with its drum, first launch page, i18n loading |
 | `gameplay_menu.go` | Gameplay submenu, high score reset confirmation, scrolling RANKING board |
 | `name_entry.go` | Arcade initials entry after a ranked run |
 | `pixel_font.go` | Blocky 5x7 pixel font drawn as batched square pixels |

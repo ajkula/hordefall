@@ -71,6 +71,7 @@ func (g *Game) triggerReaction(reaction ReactionKind, x, y float32) {
 	}
 	definition := &reactionTable[reaction]
 	g.reactionCounts[reaction]++
+	g.noteChatterReaction()
 	g.playSound(definition.Sound)
 	g.effects.AddPopup(x, y, definition.Name, definition.Color)
 	g.effects.AddShake(definition.ShakeStrength)

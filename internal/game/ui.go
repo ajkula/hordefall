@@ -4,14 +4,22 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"image/color"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"golang.org/x/image/font/gofont/gomonobold"
 	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
+
+type TextStyle struct {
+	Shadows     [][2]float32
+	Strokes     [][2]float32
+	ShadowAlpha float32
+}
 
 type WrapToken struct {
 	Text     string
@@ -23,6 +31,7 @@ type UI struct {
 	regular *text.GoTextFace
 	bold    *text.GoTextFace
 	title   *text.GoTextFace
+	mono    *text.GoTextFace
 	pixels  PixelBatch
 	art     *ArtCanvas
 
@@ -69,12 +78,18 @@ const (
 	selectionMarkerNudge     = 3
 	selectionMarkerSpeed     = 5
 	selectionMarkerCenter    = 0.5
+	smallTextSize            = 16
 	statsRefreshSeconds      = 0.5
 	benchmarkPanelHeight     = 6*24 + 16
 	benchmarkRightColumn     = 196
 )
 
-var textOutlineOffsets = [8][2]float32{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+var textOutlineOffsets = [][2]float32{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+
+var textStyles = [2]TextStyle{
+	{Shadows: textOutlineOffsets, Strokes: [][2]float32{{0, 0}}, ShadowAlpha: 1},
+	{Shadows: [][2]float32{{1, 1.2}, {1.5, 1.7}, {2, 2.2}}, Strokes: [][2]float32{{0, 0}, {0.6, 0}}, ShadowAlpha: 0.9},
+}
 
 var (
 	panelColor     = [3]float32{0.04, 0.05, 0.08}
@@ -92,10 +107,11 @@ func NewUI() *UI {
 	regularSource := mustLoadFace(rajdhaniMedium)
 	boldSource := mustLoadFace(rajdhaniBold)
 	ui := &UI{
-		small:   &text.GoTextFace{Source: regularSource, Size: 16},
+		small:   &text.GoTextFace{Source: boldSource, Size: smallTextSize},
 		regular: &text.GoTextFace{Source: regularSource, Size: 20},
 		bold:    &text.GoTextFace{Source: boldSource, Size: 24},
 		title:   &text.GoTextFace{Source: boldSource, Size: 80},
+		mono:    &text.GoTextFace{Source: mustLoadFace(gomonobold.TTF), Size: chatterTextSize},
 
 		scaledFaces: map[*text.GoTextFace]text.Face{},
 		fontChains:  NewFontChains(FontFamily{regularSource, boldSource}),
@@ -127,6 +143,7 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawSpiderBars(g, screen)
 	u.drawHordeEventBar(g, screen)
 	u.drawWeatherLabel(g, screen)
+	u.drawChatter(g, screen)
 	u.drawLevelUpBanner(g, screen)
 	u.drawMusicBanner(g, screen)
 	u.drawPopups(g, screen)
@@ -177,7 +194,7 @@ func (u *UI) DrawLevelUp(g *Game, screen *ebiten.Image) {
 
 func (u *UI) DrawGameOver(g *Game, screen *ebiten.Image) {
 	dimScreen(screen, 0.7)
-	u.drawText(screen, i18n.T("title.you_fell"), u.title, screenWidth/2, 70, healthColor, 1, text.AlignCenter)
+	u.drawText(screen, "YOU FELL", u.title, screenWidth/2, 70, healthColor, 1, text.AlignCenter)
 	u.drawText(screen, "SCORE "+formatThousands(g.CurrentScore()), u.title, screenWidth/2, 160, accentColor, 1, text.AlignCenter)
 	isRanked := g.newEntryRank != noRank
 	rankState := boolToIndex(isRanked) + boolToIndex(g.newEntryRank == 0)
@@ -227,21 +244,25 @@ func mustLoadFace(fontData []byte) *text.GoTextFaceSource {
 }
 
 func (u *UI) drawText(screen *ebiten.Image, message string, face *text.GoTextFace, x, y float32, tint [3]float32, alpha float32, align text.Align) {
+	isSmall := face == u.small
+	style := textStyles[boolToIndex(isSmall)]
+	tints := [2][3]float32{tint, textColor}
 	scaledFace := u.scaledFace(face)
 	options := &text.DrawOptions{}
 	options.PrimaryAlign = align
 	options.LineSpacing = face.Size * float64(renderScale) * 1.45
-	options.ColorScale.ScaleWithColor(toColor(outlineColor, alpha))
-	for _, offset := range textOutlineOffsets {
+	drawTextPass(screen, message, scaledFace, options, x, y, style.Shadows, toColor(outlineColor, alpha*style.ShadowAlpha))
+	drawTextPass(screen, message, scaledFace, options, x, y, style.Strokes, toColor(tints[boolToIndex(isSmall)], alpha))
+}
+
+func drawTextPass(screen *ebiten.Image, message string, face text.Face, options *text.DrawOptions, x, y float32, offsets [][2]float32, tint color.Color) {
+	options.ColorScale.Reset()
+	options.ColorScale.ScaleWithColor(tint)
+	for _, offset := range offsets {
 		options.GeoM.Reset()
 		options.GeoM.Translate(float64((x+offset[0]*textOutlineWidth)*renderScale), float64((y+offset[1]*textOutlineWidth)*renderScale))
-		text.Draw(screen, message, scaledFace, options)
+		text.Draw(screen, message, face, options)
 	}
-	options.GeoM.Reset()
-	options.GeoM.Translate(float64(x*renderScale), float64(y*renderScale))
-	options.ColorScale.Reset()
-	options.ColorScale.ScaleWithColor(toColor(tint, alpha))
-	text.Draw(screen, message, scaledFace, options)
 }
 
 func (u *UI) drawMenuOptions(g *Game, screen *ebiten.Image, options []MenuOption, spacing float32) {

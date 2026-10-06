@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode"
@@ -40,6 +41,11 @@ func TestEveryKeyUsedByTheGameExistsInEnglish(t *testing.T) {
 	}
 	for _, action := range remapTable {
 		keys["action."+action.Key] = true
+	}
+	for _, topic := range chatterTopics {
+		for line := 1; line <= topic.LineCount; line++ {
+			keys["tachikoma."+topic.Key+"."+strconv.Itoa(line)] = true
+		}
 	}
 	for key := range keys {
 		isPrefix := strings.HasSuffix(key, ".")

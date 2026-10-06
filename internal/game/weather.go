@@ -156,6 +156,7 @@ func (g *Game) startWeatherIfDue() {
 	weather.Kind = WeatherKind(1 + g.random.Below(int(weatherKindCount)-1))
 	weather.ActiveSeconds = weatherActiveSeconds
 	g.playSound(weatherTable[weather.Kind].StartSound)
+	g.say(weatherChatter[weather.Kind])
 }
 
 func (g *Game) endWeatherIfOver() {

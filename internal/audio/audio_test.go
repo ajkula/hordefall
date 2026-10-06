@@ -427,3 +427,11 @@ C-3 01 ... | A-3 02 ...
 		t.Fatalf("the pad was not ducked after the kick: early %.3f late %.3f", early, late)
 	}
 }
+
+func TestSoundsPlayRightAfterStartup(t *testing.T) {
+	engine := NewSilentEngine(1)
+	engine.Play(SoundBombWhistle, 0.35)
+	if engine.pendingCount != 1 {
+		t.Fatalf("a sound played before its minimum interval since startup was dropped")
+	}
+}

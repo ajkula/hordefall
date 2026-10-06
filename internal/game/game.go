@@ -98,6 +98,7 @@ type Game struct {
 	languageArrowSeconds  float32
 	isLanguageDrumFocused bool
 	intro                 Intro
+	chatter               Chatter
 	optionsReturnState    GameState
 	remapDevice           InputDevice
 	remapListening        RemapAction
@@ -258,6 +259,7 @@ func (g *Game) resetRun() {
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
 	g.resetWeather()
+	g.resetChatter()
 	g.isDemo, g.isScoreRecorded = false, false
 	g.newEntryRank = noRank
 	g.levelUpBannerSeconds = 0
@@ -311,6 +313,7 @@ func (g *Game) simulate() {
 	g.spawnSpiderIfDue()
 	g.tickGroundIfDue()
 	g.updateWeather(deltaSeconds)
+	g.updateChatter(deltaSeconds)
 	g.effects.Update(deltaSeconds)
 	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
 	g.musicBannerSeconds = max(0, g.musicBannerSeconds-deltaSeconds)
@@ -334,6 +337,7 @@ func (g *Game) openLevelUpIfPending() {
 	}
 	g.buildUpgradeOffers()
 	g.playSound(audio.SoundLevelUp)
+	g.say(ChatterLevelUp)
 	if len(g.offers) == 1 {
 		g.applySoleOffer()
 		return

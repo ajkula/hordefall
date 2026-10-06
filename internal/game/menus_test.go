@@ -127,20 +127,18 @@ func TestPlaylistSkipsDisabledTracksAndPersists(t *testing.T) {
 	}
 }
 
-func TestMenusPlayTheFullSong(t *testing.T) {
+func TestDemoMusicFollowsTheActionLikeARun(t *testing.T) {
 	game := newHeadlessGame()
 	game.startDemo()
 	game.enemies.Count = 0
-	signals := game.computeMusicSignals()
-	theme, err := audio.ParseTheme()
-	if err != nil {
-		t.Fatal(err)
+	if quiet := game.computeMusicSignals()[audio.SignalHorde]; quiet != 0 {
+		t.Fatalf("an empty demo still plays the horde layers, horde signal %.2f", quiet)
 	}
-	for channel, layer := range theme.Layers {
-		isMelodic := layer.Signal == audio.SignalHorde
-		if isMelodic && signals[audio.SignalHorde] < layer.Threshold {
-			t.Fatalf("channel %d (horde layer %.2f) is muted on the menu, horde signal %.2f", channel+1, layer.Threshold, signals[audio.SignalHorde])
-		}
+	for range hordeSignalFullCount / 2 {
+		game.enemies.Spawn(EnemySwarmer, game.player.X, game.player.Y, 1)
+	}
+	if half := game.computeMusicSignals()[audio.SignalHorde]; half != 0.5 {
+		t.Fatalf("the demo horde signal does not follow nearby enemies: %.2f", half)
 	}
 	game.resetRun()
 	game.enemies.Count = 0

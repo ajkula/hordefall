@@ -71,6 +71,7 @@ func (g *Game) updateHealOrb(index int, deltaSeconds float32) {
 func (g *Game) collectHealOrb(index int) {
 	player := g.player
 	player.Health = min(player.MaximumHealth, player.Health+healOrbAmount)
+	g.say(ChatterHeal)
 	g.effects.AddPopup(player.X, player.Y-healOrbPopupRise, "+20 HP", healOrbColor)
 	g.playSound(audio.SoundGem)
 	g.healOrbs[index] = g.healOrbs[len(g.healOrbs)-1]

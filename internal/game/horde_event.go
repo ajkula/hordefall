@@ -66,6 +66,7 @@ func (g *Game) startHordeEvent() {
 	}
 	g.hordeEvent = HordeEvent{IsActive: spawnedCount > 0, Total: spawnedCount, Remaining: spawnedCount}
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.F("horde.approaches", spawnedCount), hordeBarColor)
+	g.say(ChatterHordeIncoming)
 	g.effects.AddShake(8)
 	g.playSound(audio.SoundStomp)
 }
@@ -106,6 +107,7 @@ func (g *Game) finishHordeEvent() {
 	g.hordeEvent.IsActive = false
 	g.killScore += g.hordeEvent.Total * hordeClearBonusPerFoe
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("horde.vanquished"), accentColor)
+	g.say(ChatterHordeCleared)
 	g.effects.AddShake(6)
 	g.playSound(audio.SoundLevelUp)
 }

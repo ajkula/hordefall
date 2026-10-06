@@ -47,6 +47,8 @@ const (
 	audioBufferDuration  = 60 * time.Millisecond
 	effectPanSpread      = 0.15
 	songCrossfadeSeconds = 3
+	neverPlayedSeconds   = -1e9
+	audibleLayerGain     = 0.5
 )
 
 //go:embed music/theme.trk
@@ -78,6 +80,9 @@ func ParseTheme() (*Song, error) {
 
 func NewSilentEngine(seed uint32) *Engine {
 	engine := &Engine{random: rng.New(0x50D)}
+	for kind := range engine.lastPlayed {
+		engine.lastPlayed[kind] = neverPlayedSeconds
+	}
 	song, err := ParseSong(themeSource)
 	engine.SongError = err
 	engine.attachSongs(song, seed)
@@ -117,6 +122,19 @@ func (e *Engine) CurrentSong() int {
 		return 0
 	}
 	return e.songIndex
+}
+
+func (e *Engine) AudibleLayerCount() int {
+	if e == nil || e.tracker == nil {
+		return 0
+	}
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	count := 0
+	for index := range e.tracker.channels {
+		count += boolToIndex(e.tracker.channels[index].Gain > audibleLayerGain)
+	}
+	return count
 }
 
 func (e *Engine) PlayingDescription() string {

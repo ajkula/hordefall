@@ -199,6 +199,7 @@ func (g *Game) applyWeaponUpgrade(offer UpgradeOffer) {
 		isEvolving := offer.IsEvolution && weaponTable[weapon.Kind].Family == weaponTable[offer.Weapon].Family
 		if weapon.Kind == offer.Weapon || isEvolving {
 			weapon.Kind, weapon.Level = offer.Weapon, offer.NextLevel
+			g.sayIf(ChatterEvolution, offer.IsEvolution)
 			return
 		}
 	}
