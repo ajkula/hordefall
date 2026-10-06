@@ -34,36 +34,38 @@ type WormPiece struct {
 // ===== Constants =====
 
 const (
-	wormMoundRadius       = 30
-	wormSegmentRadius     = 22
-	wormHeadRadius        = 32
-	wormPebbleCount       = 5
-	wormPebbleSpin        = 0.12
-	wormCrackCount        = 9
-	wormCrackWidth        = 3
-	wormWarningPulse      = 0.35
-	wormCraterRadius      = 46
-	wormCraterRockCount   = 10
-	wormShadowOffsetX     = 8
-	wormShadowOffsetY     = 11
-	wormShadowOpacity     = 0.34
-	wormShadowFadeHeight  = 400
-	wormOutlineWidth      = 4
-	wormSegmentHalfLength = 12
-	wormHeadHalfLength    = 22
-	wormJointWidthScale   = 1.15
-	wormRibSpacing        = 7
-	wormGaugeLength       = 30
-	wormGaugeHeight       = 5
-	wormGaugeLift         = 14
-	wormCharring          = 0.7
-	wormStatusTint        = 0.35
-	wormPerspectiveGain   = 0.0013
+	wormBurrowScale         = 0.35
+	wormBurrowFlickerFrames = 5
+	wormWarningRedness      = 0.7
+	wormSegmentRadius       = 22
+	wormHeadRadius          = 32
+	wormPebbleCount         = 5
+	wormPebbleSpin          = 0.12
+	wormCrackCount          = 9
+	wormCrackWidth          = 3
+	wormWarningPulse        = 0.35
+	wormCraterRadius        = 46
+	wormCraterRockCount     = 10
+	wormShadowOffsetX       = 8
+	wormShadowOffsetY       = 11
+	wormShadowOpacity       = 0.34
+	wormShadowFadeHeight    = 400
+	wormOutlineWidth        = 4
+	wormSegmentHalfLength   = 12
+	wormHeadHalfLength      = 22
+	wormJointWidthScale     = 1.15
+	wormRibSpacing          = 7
+	wormGaugeLength         = 30
+	wormGaugeHeight         = 5
+	wormGaugeLift           = 14
+	wormCharring            = 0.7
+	wormStatusTint          = 0.35
+	wormPerspectiveGain     = 0.0013
 )
 
 var wormGroundDrawers = [wormPhaseCount]wormPhaseDrawer{
-	WormBurrowing:   (*Renderer).queueWormMound,
-	WormWarning:     (*Renderer).queueWormWarning,
+	WormBurrowing:   func(*Renderer, *Game, *Sandworm) {},
+	WormWarning:     func(*Renderer, *Game, *Sandworm) {},
 	WormEmerging:    (*Renderer).queueWormBodyGround,
 	WormRearing:     (*Renderer).queueWormBodyGround,
 	WormAiming:      (*Renderer).queueWormBodyGround,
@@ -127,43 +129,48 @@ func (r *Renderer) queueSandwormLayer(g *Game, drawers *[wormPhaseCount]wormPhas
 
 // ===== Internal: underground =====
 
-func (r *Renderer) queueWormMound(g *Game, worm *Sandworm) {
-	screenX, screenY := r.ToScreen(worm.X, worm.Y)
-	r.solid.AddCircle(screenX, screenY, wormMoundRadius, mixColor(wormDirtColor, blackColor, 0.35), 0.9)
-	r.solid.AddCircle(screenX, screenY-4, wormMoundRadius*0.72, wormDirtColor, 0.95)
-	for pebble := range wormPebbleCount {
-		angle := float32(pebble)*6.2831853/wormPebbleCount + float32(g.frame)*wormPebbleSpin
-		r.solid.AddCircle(screenX+cosine(angle)*wormMoundRadius*0.9, screenY+sine(angle)*wormMoundRadius*0.6, 4, wormRockColor, 0.9)
+func (r *Renderer) drawWormGroundSprites(g *Game, screen *ebiten.Image) {
+	for index := range g.wormCraters {
+		crater := &g.wormCraters[index]
+		fade := clamp(crater.Life/wormCraterFadeSeconds, 0, 1)
+		r.drawWormDecal(screen, r.wormSprites.Craters[crater.Variant], crater.X, crater.Y, wormSpritePixel, [4]float32{fade, fade, fade, fade})
 	}
+	worm := &g.worm
+	isBurrowing := worm.IsActive && worm.Phase == WormBurrowing
+	isWarning := worm.IsActive && worm.Phase == WormWarning
+	r.drawWormBurrowIf(g, screen, worm, isBurrowing)
+	r.drawWormWarningIf(screen, worm, isWarning)
 }
 
-func (r *Renderer) queueWormWarning(g *Game, worm *Sandworm) {
+func (r *Renderer) drawWormBurrowIf(g *Game, screen *ebiten.Image, worm *Sandworm, shouldDraw bool) {
+	if !shouldDraw {
+		return
+	}
+	variant := int(g.frame/wormBurrowFlickerFrames) % wormCraterVariants
+	r.drawWormDecal(screen, r.wormSprites.Craters[variant], worm.X, worm.Y, wormSpritePixel*wormBurrowScale, [4]float32{1, 1, 1, 1})
+}
+
+func (r *Renderer) drawWormWarningIf(screen *ebiten.Image, worm *Sandworm, shouldDraw bool) {
+	if !shouldDraw {
+		return
+	}
 	progress := clamp(worm.PhaseSeconds/wormWarningSeconds, 0, 1)
-	screenX, screenY := r.ToScreen(worm.X, worm.Y)
 	pulse := 0.5 + 0.5*sine(worm.PhaseSeconds*24)
-	r.solid.AddCircle(screenX, screenY, wormEruptionRadius, warningColor, 0.1+wormWarningPulse*progress*pulse)
-	for crack := range wormCrackCount {
-		angle := float32(crack)*6.2831853/wormCrackCount + sine(float32(crack)*12.9898)*0.4
-		reach := wormEruptionRadius * progress * (0.7 + 0.3*abs(sine(float32(crack)*78.233)))
-		r.solid.AddSegment(screenX, screenY, screenX+cosine(angle)*reach, screenY+sine(angle)*reach, wormCrackWidth, wormHoleColor, 0.85)
-	}
-	r.queueWormMound(g, worm)
+	scale := wormSpritePixel * (wormBurrowScale + (1-wormBurrowScale)*progress)
+	glow := 1 - wormWarningRedness*pulse
+	r.drawWormDecal(screen, r.wormSprites.Craters[0], worm.X, worm.Y, scale, [4]float32{1, glow, glow, 1})
 }
 
-func (r *Renderer) queueWormCrater(x, y float32) {
+func (r *Renderer) drawWormDecal(screen *ebiten.Image, decal *ebiten.Image, x, y, scale float32, tint [4]float32) {
+	size := float32(decal.Bounds().Dx())
 	screenX, screenY := r.ToScreen(x, y)
-	r.solid.AddCircle(screenX, screenY, wormCraterRadius, mixColor(wormDirtColor, blackColor, 0.25), 0.9)
-	r.solid.AddCircle(screenX, screenY+3, wormCraterRadius*0.72, wormHoleColor, 1)
-	for rock := range wormCraterRockCount {
-		angle := float32(rock) * 6.2831853 / wormCraterRockCount
-		size := 6 + 3*abs(sine(float32(rock)*7.31))
-		rockX, rockY := screenX+cosine(angle)*wormCraterRadius*0.92, screenY+sine(angle)*wormCraterRadius*0.8
-		r.solid.AddCircle(rockX, rockY, size+1.5, wormOutlineColor, 0.9)
-		r.solid.AddCircle(rockX-1, rockY-1, size, wormRockColor, 1)
-	}
+	options := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest}
+	options.GeoM.Translate(float64(-size/2), float64(-size/2))
+	options.GeoM.Scale(float64(scale*renderScale), float64(scale*renderScale))
+	options.GeoM.Translate(float64(float32(int(screenX))*renderScale), float64(float32(int(screenY))*renderScale))
+	options.ColorScale.Scale(tint[0], tint[1], tint[2], tint[3])
+	screen.DrawImage(decal, options)
 }
-
-// ===== Internal: body =====
 
 func (r *Renderer) wormPieces(g *Game, worm *Sandworm) []WormPiece {
 	pieces := make([]WormPiece, 0, wormSegmentCount)
@@ -197,20 +204,11 @@ func (r *Renderer) wormHeadPiece(worm *Sandworm) WormPiece {
 }
 
 func (r *Renderer) queueWormBodyGround(g *Game, worm *Sandworm) {
-	r.queueWormCrater(worm.HoleX, worm.HoleY)
-	r.queueWormDiveCraterIf(worm, worm.Phase == WormDiving)
 	for _, piece := range r.wormPieces(g, worm) {
 		r.queueWormShadow(&piece, wormSegmentHalfLength, wormSegmentRadius)
 	}
 	head := r.wormHeadPiece(worm)
 	r.queueWormHeadShadowIf(&head, worm.IsHeadAboveGround())
-}
-
-func (r *Renderer) queueWormDiveCraterIf(worm *Sandworm, shouldDraw bool) {
-	if !shouldDraw {
-		return
-	}
-	r.queueWormCrater(worm.DiveControls[3].X, worm.DiveControls[3].Y)
 }
 
 func (r *Renderer) queueWormBody(g *Game, worm *Sandworm) {

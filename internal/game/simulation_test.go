@@ -135,8 +135,8 @@ func TestNoMoreThanThreeSpiderTanks(t *testing.T) {
 		game.bossEventCount = 0
 		game.startBossEventIfDue()
 	}
-	if len(game.spiders) != maximumSpidersAlive {
-		t.Fatalf("%d spider tanks alive, want %d", len(game.spiders), maximumSpidersAlive)
+	if len(game.spiders) != maximumBossesAlive {
+		t.Fatalf("%d spider tanks alive, want %d", len(game.spiders), maximumBossesAlive)
 	}
 }
 
@@ -326,19 +326,65 @@ func TestBossesKeepComingDuringAHorde(t *testing.T) {
 	}
 }
 
-func TestNoBossWhileTheWormIsAlive(t *testing.T) {
+func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
 	game := newHeadlessGame()
 	game.bossEventCount = spidersBeforeHorde + 1
 	game.startBossEvent()
-	game.bossProgressKills = game.bossKillsRequired * 10
+	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
-	if !game.worm.IsActive || game.hordeEvent.IsActive {
-		t.Fatalf("an event started while the sandworm was alive")
+	if !game.worm.IsActive || !game.hordeEvent.IsActive {
+		t.Fatalf("the horde did not follow the living sandworm")
+	}
+	for range len(bossEventCycle) - 1 {
+		game.bossProgressKills = game.bossKillsRequired
+		game.spiders = game.spiders[:0]
+		game.startBossEventIfDue()
+	}
+	if game.nextBossEvent() != BossWorm || !game.worm.IsActive {
+		t.Fatalf("the cycle did not stop in front of the next sandworm: next %d", game.nextBossEvent())
+	}
+}
+
+func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
+	game := newHeadlessGame()
+	game.bossEventCount = spidersBeforeHorde + 1
+	game.startBossEvent()
+	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossProgressKills = game.bossKillsRequired
+	game.startBossEventIfDue()
+	if game.bossEventCount != spidersBeforeHorde+1 {
+		t.Fatalf("a second sandworm event started while one was alive")
 	}
 	game.worm.IsActive = false
+	for range maximumBossesAlive - 1 {
+		game.spawnSpiderEvent()
+	}
 	game.startBossEventIfDue()
-	if !game.hordeEvent.IsActive {
-		t.Fatalf("the horde did not follow once the sandworm was gone")
+	if !game.worm.IsActive {
+		t.Fatalf("the sandworm was held back by the spider tanks")
+	}
+}
+
+func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
+	game := newHeadlessGame()
+	game.bossEventCount = spidersBeforeHorde + 1
+	game.startBossEvent()
+	for range maximumBossesAlive {
+		game.bossEventCount = 0
+		game.bossProgressKills = game.bossKillsRequired
+		game.startBossEventIfDue()
+	}
+	if game.livingBossCount() != maximumBossesAlive {
+		t.Fatalf("%d bosses alive with the sandworm, want %d", game.livingBossCount(), maximumBossesAlive)
+	}
+	game.spiders = game.spiders[:maximumBossesAlive-1]
+	game.worm.IsActive = false
+	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossProgressKills = game.bossKillsRequired
+	game.spawnSpiderEvent()
+	game.startBossEventIfDue()
+	if game.worm.IsActive {
+		t.Fatalf("the sandworm joined three spider tanks")
 	}
 }
 
@@ -803,5 +849,25 @@ func TestEverySandwormPhaseIsUpdatedAndDrawn(t *testing.T) {
 		if wormPhaseUpdaters[phase] == nil || wormGroundDrawers[phase] == nil || wormBodyDrawers[phase] == nil {
 			t.Fatalf("sandworm phase %d has no updater or drawer", phase)
 		}
+	}
+}
+
+func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
+	game := newHeadlessGame()
+	game.spawnWormEvent()
+	game.worm.HoleX, game.worm.HoleY = game.player.X+10, game.player.Y
+	startX := game.player.X
+	game.player.Health = 6
+	game.eruptWorm(&game.worm)
+	for range ticksPerSecond {
+		game.frame++
+		game.controls = Controls{}
+		game.simulate()
+	}
+	if game.player.Health < 1 || game.worm.BlastHits != 0 {
+		t.Fatalf("the eruption blast killed or never finished: health %.1f, hits left %d", game.player.Health, game.worm.BlastHits)
+	}
+	if startX-game.player.X < 60 || len(game.wormCraters) == 0 {
+		t.Fatalf("the player was not shoved away (moved %.0f px) or no crater was left", startX-game.player.X)
 	}
 }

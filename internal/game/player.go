@@ -11,6 +11,8 @@ type Player struct {
 	FacingY             float32
 	VelocityX           float32
 	VelocityY           float32
+	ShoveX              float32
+	ShoveY              float32
 	Rig                 TachikomaRig
 	AimX                float32
 	AimY                float32
@@ -48,6 +50,7 @@ const (
 	playerRadius               = 11
 	playerStartHealth          = 100
 	playerStartSpeed           = 175
+	playerShoveDamping         = 0.9
 	playerStartMagnet          = 85
 	dashDurationSeconds        = 0.18
 	dashCooldownSeconds        = 1.1
@@ -160,6 +163,9 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	previousX, previousY := player.X, player.Y
 	player.X = clamp(player.X+directionX*speed*deltaSeconds, playerRadius, arenaSize-playerRadius)
 	player.Y = clamp(player.Y+directionY*speed*deltaSeconds, playerRadius, arenaSize-playerRadius)
+	player.X = clamp(player.X+player.ShoveX*deltaSeconds, playerRadius, arenaSize-playerRadius)
+	player.Y = clamp(player.Y+player.ShoveY*deltaSeconds, playerRadius, arenaSize-playerRadius)
+	player.ShoveX, player.ShoveY = player.ShoveX*playerShoveDamping, player.ShoveY*playerShoveDamping
 	player.VelocityX, player.VelocityY = (player.X-previousX)/deltaSeconds, (player.Y-previousY)/deltaSeconds
 	player.Health -= groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing)
 	g.spawnDashTrail(isDashing)

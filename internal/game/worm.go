@@ -69,7 +69,16 @@ type Sandworm struct {
 	RollFromX            float32
 	RollFromY            float32
 	RollSpin             float32
+	BlastHits            int
+	BlastSeconds         float32
 	HasRollHit           bool
+}
+
+type WormCrater struct {
+	X       float32
+	Y       float32
+	Variant int
+	Life    float32
 }
 
 type wormPhaseUpdater func(game *Game, worm *Sandworm, deltaSeconds float32)
@@ -118,7 +127,16 @@ const (
 	wormEruptionRadius       = 110
 	wormEruptionDamage       = 60
 	wormEruptionPlayerHurt   = 30
-	wormDustInterval         = 0.08
+	wormDustInterval         = 0.07
+	wormCraterSeconds        = 8
+	wormCraterFadeSeconds    = 2
+	wormEruptionDust         = 34
+	wormBlastReach           = 1.3
+	wormBlastHits            = 5
+	wormBlastInterval        = 0.11
+	wormBlastDamage          = 5
+	wormBlastShove           = 950
+	wormWakeClods            = 2
 	wormArenaMargin          = 120
 	wormPowerGrowthSeconds   = 150
 	wormHeadAimSeconds       = 1.2
@@ -265,11 +283,13 @@ func (g *Game) spawnWormEvent() {
 }
 
 func (g *Game) updateWorm(deltaSeconds float32) {
+	g.ageWormCraters(deltaSeconds)
 	worm := &g.worm
 	if !worm.IsActive {
 		return
 	}
 	worm.PhaseSeconds += deltaSeconds
+	g.updateWormBlast(worm, deltaSeconds)
 	g.collectWormLosses(worm)
 	if !worm.IsActive {
 		return
@@ -310,8 +330,7 @@ func (g *Game) updateWormWarning(worm *Sandworm, deltaSeconds float32) {
 	worm.Angle = atan2(g.player.Y-worm.HoleY, g.player.X-worm.HoleX)
 	worm.Travel, worm.HasFired, worm.LingerSeconds = 0, false, 0
 	worm.Controls = wormColumnControls(worm, 0)
-	g.slamWorm(worm, worm.HoleX, worm.HoleY)
-	g.playSound(audio.SoundWormRoar)
+	g.eruptWorm(worm)
 	g.enterWormPhase(worm, WormEmerging)
 }
 
@@ -419,6 +438,8 @@ func (g *Game) updateWormDiving(worm *Sandworm, deltaSeconds float32) {
 		return
 	}
 	worm.X, worm.Y = clampToArena(diveEnd.X), clampToArena(diveEnd.Y)
+	g.addWormCrater(worm.X, worm.Y)
+	g.raiseWormDust(worm.X, worm.Y, wormEruptionDust/2)
 	g.enterWormPhase(worm, WormBurrowing)
 }
 
@@ -677,7 +698,64 @@ func (g *Game) kickUpWormDust(worm *Sandworm, x, y, deltaSeconds float32) {
 		return
 	}
 	worm.DustSeconds += wormDustInterval
-	g.effects.SpawnSparks(x, y, 2, wormDirtColor, 70)
+	g.effects.AddDust(x+g.random.Between(-18, 18), y+g.random.Between(-12, 12), g.random.Between(8, 14))
+	g.effects.SpawnSparks(x, y, wormWakeClods, wormDirtColor, 110)
+}
+
+func (g *Game) eruptWorm(worm *Sandworm) {
+	x, y := worm.HoleX, worm.HoleY
+	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical})
+	g.addWormCrater(x, y)
+	g.raiseWormDust(x, y, wormEruptionDust)
+	g.effects.SpawnSparks(x, y, 30, wormDirtColor, 320)
+	g.effects.AddRing(x, y, wormEruptionRadius, wormDirtColor)
+	g.effects.AddShake(10)
+	g.playSound(audio.SoundStomp)
+	g.playSound(audio.SoundWormRoar)
+	reach := float32(wormEruptionRadius * wormBlastReach)
+	isPlayerCaught := distanceSquared(x, y, g.player.X, g.player.Y) < reach*reach
+	g.blastPlayerIf(worm, x, y, isPlayerCaught)
+}
+
+func (g *Game) blastPlayerIf(worm *Sandworm, x, y float32, isCaught bool) {
+	if !isCaught {
+		return
+	}
+	awayX, awayY := normalize(g.player.X-x+boolToFloat(g.player.X == x), g.player.Y-y)
+	g.player.ShoveX, g.player.ShoveY = awayX*wormBlastShove, awayY*wormBlastShove
+	worm.BlastHits, worm.BlastSeconds = wormBlastHits, 0
+}
+
+func (g *Game) updateWormBlast(worm *Sandworm, deltaSeconds float32) {
+	worm.BlastSeconds -= deltaSeconds
+	if worm.BlastHits == 0 || worm.BlastSeconds > 0 {
+		return
+	}
+	worm.BlastSeconds += wormBlastInterval
+	worm.BlastHits--
+	player := g.player
+	player.Health = max(min(player.Health, 1), player.Health-wormBlastDamage*worm.Power)
+	player.DamageFlashSeconds = 0.2
+	g.effects.SpawnSparks(player.X, player.Y, 6, wormDirtColor, 180)
+	g.effects.AddDust(player.X, player.Y, 10)
+	g.effects.AddShake(3)
+	g.playSound(audio.SoundHurt)
+}
+
+func (g *Game) raiseWormDust(x, y float32, count int) {
+	for range count {
+		angle := g.random.Angle()
+		distance := g.random.Between(0, wormEruptionRadius)
+		g.effects.AddDust(x+cosine(angle)*distance, y+sine(angle)*distance*0.8, g.random.Between(12, 24))
+	}
+}
+
+func (g *Game) addWormCrater(x, y float32) {
+	g.wormCraters = append(g.wormCraters, WormCrater{X: x, Y: y, Variant: g.random.Below(wormCraterVariants), Life: wormCraterSeconds})
+}
+
+func (g *Game) ageWormCraters(deltaSeconds float32) {
+	g.wormCraters = filterAlive(g.wormCraters, deltaSeconds, func(crater *WormCrater) *float32 { return &crater.Life })
 }
 
 func (g *Game) setEnemyHealthIfPresent(id uint32, health float32) {

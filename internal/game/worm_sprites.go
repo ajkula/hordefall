@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"hordefall/internal/rng"
 )
 
 // ===== Types =====
@@ -11,9 +13,17 @@ import (
 type WormSprites struct {
 	Segments [wormSpriteAngles]*ebiten.Image
 	Heads    [wormSpriteAngles]*ebiten.Image
+	Craters  [wormCraterVariants]*ebiten.Image
 }
 
 type WormMaterial uint8
+
+type StarProfile struct {
+	Base    float32
+	Angles  []float32
+	Lengths []float32
+	Widths  []float32
+}
 
 type wormPixelShape func(along, across float32) (WormMaterial, float32)
 
@@ -56,6 +66,11 @@ const (
 	wormSensorOffset      = 9
 	wormSegmentRingInset  = 2.5
 	wormSegmentRivetInset = 4.5
+	wormCraterVariants    = 4
+	wormCraterCanvas      = 112
+	wormCraterArtRadius   = 52
+	wormCraterJitter      = 2.5
+	wormCraterSeed        = 0xC4A7
 )
 
 var wormMetalShades = [wormShadeLevels][4]uint8{
@@ -74,6 +89,14 @@ var wormShadeOffsets = [materialCount]int{MaterialPlate: -wormPlateShadeDrop, Ma
 
 var wormIsShaded = [materialCount]bool{MaterialMetal: true, MaterialPlate: true, MaterialBright: true}
 
+var wormCraterShades = [4][4]uint8{{70, 50, 32, 255}, {98, 74, 46, 255}, {124, 96, 62, 255}, {150, 120, 80, 255}}
+
+var (
+	wormCraterPit     = [4]uint8{14, 9, 6, 255}
+	wormCraterPitEdge = [4]uint8{44, 30, 18, 255}
+	wormCraterOutline = [4]uint8{40, 27, 16, 255}
+)
+
 var wormBayer = [4]float32{0, 0.5, 0.75, 0.25}
 
 var wormLight = [3]float32{-0.45 / wormLightLength, -0.55 / wormLightLength, 0.7 / wormLightLength}
@@ -86,6 +109,9 @@ func NewWormSprites() *WormSprites {
 		heading := float32(angle) * 2 * math.Pi / wormSpriteAngles
 		sprites.Segments[angle] = rasterizeWormSprite(wormSegmentCanvas, heading, wormSegmentShape)
 		sprites.Heads[angle] = rasterizeWormSprite(wormHeadCanvas, heading, wormHeadShape)
+	}
+	for variant := range wormCraterVariants {
+		sprites.Craters[variant] = rasterizeWormCrater(wormCraterSeed + uint32(variant)*7919)
 	}
 	return sprites
 }
@@ -190,4 +216,67 @@ func wormHeadShape(along, across float32) (WormMaterial, float32) {
 	material = [2]WormMaterial{material, MaterialCore}[boolToIndex(isCore)]
 	radius := [2]float32{wormHeadArtRadius, wormHeadSnoutRadius}[boolToIndex(isSnout || isMandible)]
 	return material, clamp(across/radius, -1, 1)
+}
+
+// ===== Internal: craters =====
+
+func newStarProfile(random *rng.Random, branches int, base, shortest, longest, narrowest, widest float32) StarProfile {
+	profile := StarProfile{Base: base}
+	for range branches {
+		profile.Angles = append(profile.Angles, random.Angle())
+		profile.Lengths = append(profile.Lengths, random.Between(shortest, longest))
+		profile.Widths = append(profile.Widths, random.Between(narrowest, widest))
+	}
+	return profile
+}
+
+func (p *StarProfile) Reach(angle float32) float32 {
+	reach := p.Base
+	for branch := range p.Angles {
+		closeness := max(0, 1-abs(angleDifference(angle, p.Angles[branch]))/p.Widths[branch])
+		reach = max(reach, p.Base+(p.Lengths[branch]-p.Base)*closeness*closeness)
+	}
+	return reach
+}
+
+func rasterizeWormCrater(seed uint32) *ebiten.Image {
+	random := rng.New(seed)
+	outer := newStarProfile(&random, 14+random.Below(7), 0.34, 0.55, 1, 0.07, 0.2)
+	inner := newStarProfile(&random, 7+random.Below(4), 0.13, 0.24, 0.42, 0.06, 0.15)
+	pixels := make([]byte, wormCraterCanvas*wormCraterCanvas*4)
+	center := float32(wormCraterCanvas) / 2
+	for index := range wormCraterCanvas * wormCraterCanvas {
+		x, y := index%wormCraterCanvas, index/wormCraterCanvas
+		offsetX, offsetY := float32(x)+0.5-center, float32(y)+0.5-center
+		jitter := (pixelNoise(x, y, seed) - 0.5) * wormCraterJitter
+		distance := length(offsetX, offsetY)
+		angle := atan2(offsetY, offsetX)
+		outerReach := outer.Reach(angle)*wormCraterArtRadius + jitter
+		innerReach := inner.Reach(angle)*wormCraterArtRadius + jitter*0.6
+		color := wormCraterColor(distance, outerReach, innerReach, x, y)
+		copy(pixels[index*4:], color[:])
+	}
+	image := ebiten.NewImage(wormCraterCanvas, wormCraterCanvas)
+	image.WritePixels(pixels)
+	return image
+}
+
+func wormCraterColor(distance, outerReach, innerReach float32, x, y int) [4]uint8 {
+	isOutside := distance > outerReach+1
+	isRim := distance > outerReach
+	isPit := distance <= innerReach-1
+	isPitEdge := distance <= innerReach
+	fraction := clamp((distance-innerReach)/max(outerReach-innerReach, 1), 0, 1)
+	dither := (wormBayer[(y%2)*2+x%2] - 0.5) * wormDitherAmplitude
+	shade := wormCraterShades[clampInt(int(fraction*float32(len(wormCraterShades)-1)+0.5+dither), 0, len(wormCraterShades)-1)]
+	shade = [2][4]uint8{shade, wormCraterPitEdge}[boolToIndex(isPitEdge)]
+	shade = [2][4]uint8{shade, wormCraterPit}[boolToIndex(isPit)]
+	shade = [2][4]uint8{shade, wormCraterOutline}[boolToIndex(isRim)]
+	return [2][4]uint8{shade, {}}[boolToIndex(isOutside)]
+}
+
+func pixelNoise(x, y int, seed uint32) float32 {
+	hash := uint32(x)*374761393 + uint32(y)*668265263 + seed*2246822519
+	hash = (hash ^ hash>>13) * 1274126177
+	return float32(hash^hash>>16) / float32(^uint32(0))
 }

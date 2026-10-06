@@ -19,7 +19,7 @@ const (
 	nameEntryArrowSize    = 18
 	nameEntryArrowGap     = 14
 	nameEntryUnderlineGap = 96
-	letterRepeatDelay     = 2
+	letterRepeatDelay     = 1
 	letterRepeatInterval  = 0.07
 )
 

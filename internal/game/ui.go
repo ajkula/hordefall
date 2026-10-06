@@ -7,10 +7,11 @@ import (
 	"image/color"
 	"strings"
 
+	"hordefall/internal/i18n"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/image/font/gofont/gomonobold"
-	"hordefall/internal/i18n"
 )
 
 // ===== Types =====
@@ -71,6 +72,7 @@ const (
 	spiderBarWidth           = 520
 	spiderBarHeight          = 18
 	spiderBarGap             = 3
+	bossBarCornerRadius      = 4
 	textOutlineWidth         = 1
 	selectionMarkerGap       = 14
 	selectionMarkerThickness = 3
@@ -424,7 +426,7 @@ func (u *UI) drawWormBar(g *Game, screen *ebiten.Image, y float32) {
 	if !worm.IsActive {
 		return
 	}
-	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, worm.HealthFraction(), wormArmorColor)
+	drawBossBar(screen, y, worm.HealthFraction(), wormArmorColor)
 	u.drawText(screen, "SANDWORM", u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }
 
@@ -433,7 +435,7 @@ func (u *UI) drawSpiderBar(g *Game, screen *ebiten.Image, rig *SpiderRig, y floa
 	if enemyIndex < 0 {
 		return
 	}
-	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, g.enemies.Health[enemyIndex]/rig.MaximumHealth, warningColor)
+	drawBossBar(screen, y, g.enemies.Health[enemyIndex]/rig.MaximumHealth, warningColor)
 	u.drawText(screen, "SPIDER TANK", u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }
 
@@ -456,6 +458,12 @@ func (u *UI) drawOfferCard(screen *ebiten.Image, offer UpgradeOffer, x, y float3
 func drawBar(screen *ebiten.Image, x, y, width, height, fraction float32, tint [3]float32) {
 	fillRect(screen, x, y, width, height, toColor(panelColor, 0.75))
 	fillRect(screen, x, y, width*clamp(fraction, 0, 1), height, toColor(tint, 1))
+}
+
+func drawBossBar(screen *ebiten.Image, y, fraction float32, tint [3]float32) {
+	x := float32(screenWidth/2 - spiderBarWidth/2)
+	fillRoundedRect(screen, x, y, spiderBarWidth, spiderBarHeight, bossBarCornerRadius, toColor(panelColor, 0.75))
+	fillRoundedRect(screen, x, y, spiderBarWidth*clamp(fraction, 0, 1), spiderBarHeight, bossBarCornerRadius, toColor(tint, 1))
 }
 
 func dimScreen(screen *ebiten.Image, alpha float32) {

@@ -62,7 +62,7 @@ const (
 	bossKillsBase          = 300
 	bossKillsGrowthSeconds = 120
 	spiderTurretPivot      = 8
-	maximumSpidersAlive    = 3
+	maximumBossesAlive     = 3
 	spiderTurretLimit      = 2.3
 	spiderTurretStiffness  = 34
 	spiderTurretDamping    = 8
@@ -128,13 +128,19 @@ func solveKneeCandidates(hipX, hipY, footX, footY float32) (float32, float32, fl
 }
 
 func (g *Game) startBossEventIfDue() {
-	isSpiderCapped := g.nextBossEvent() == BossSpider && len(g.spiders) >= maximumSpidersAlive
-	if g.bossProgressKills < g.bossKillsRequired || isSpiderCapped || g.worm.IsActive {
+	next := g.nextBossEvent()
+	isBossCapped := isBossCreature[next] && g.livingBossCount() >= maximumBossesAlive
+	isWormCapped := next == BossWorm && g.worm.IsActive
+	if g.bossProgressKills < g.bossKillsRequired || isBossCapped || isWormCapped {
 		return
 	}
 	g.bossProgressKills = 0
 	g.bossKillsRequired = bossKillsRequiredAt(g.elapsedSeconds)
 	g.startBossEvent()
+}
+
+func (g *Game) livingBossCount() int {
+	return len(g.spiders) + boolToIndex(g.worm.IsActive)
 }
 
 func bossKillsRequiredAt(seconds float32) int {

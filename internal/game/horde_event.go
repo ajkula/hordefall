@@ -58,6 +58,8 @@ var bossEventStarters = [bossEventKindCount]bossEventStarter{
 
 var bossEventCycle = []BossEventKind{BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde}
 
+var isBossCreature = [bossEventKindCount]bool{BossSpider: true, BossWorm: true}
+
 var hordeBarColor = [3]float32{0.75, 0.35, 0.95}
 
 // ===== Internal =====
@@ -139,7 +141,7 @@ func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {
 	}
 	y := float32(spiderBarTop + (len(g.spiders)+boolToIndex(g.worm.IsActive))*(spiderBarHeight+spiderBarGap))
 	fraction := float32(g.hordeEvent.Remaining) / float32(max(1, g.hordeEvent.Total))
-	drawBar(screen, screenWidth/2-spiderBarWidth/2, y, spiderBarWidth, spiderBarHeight, fraction, hordeBarColor)
+	drawBossBar(screen, y, fraction, hordeBarColor)
 	label := i18n.F("horde.bar", g.hordeEvent.Remaining, g.hordeEvent.Total)
 	u.drawText(screen, label, u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }

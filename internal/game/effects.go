@@ -25,6 +25,8 @@ type Smoke struct {
 	Size      float32
 	Life      float32
 	MaxLife   float32
+	Color     [3]float32
+	Opacity   float32
 }
 
 type Popup struct {
@@ -68,6 +70,11 @@ const (
 	smokeDriftSpeed      = 14
 	smokeLifeSeconds     = 1.1
 	flameRiseSpeed       = 90
+	smokeOpacity         = 0.5
+	dustLifeSeconds      = 1.8
+	dustSpreadSpeed      = 70
+	dustRiseSpeed        = 10
+	dustOpacity          = 0.55
 	maximumBolts         = 64
 	maximumPopups        = 28
 	lightningSegments    = 7
@@ -78,6 +85,11 @@ const (
 	popupRiseSpeed       = 46
 	particleDrag         = 0.9
 	shakeDecayPerSecond  = 2.2
+)
+
+var (
+	smokeColor    = [3]float32{0.2, 0.2, 0.22}
+	puffDustColor = [3]float32{0.56, 0.45, 0.32}
 )
 
 // ===== Public API =====
@@ -125,7 +137,21 @@ func (e *Effects) AddSmokeIf(x, y, size float32, shouldAdd bool) {
 	life := smokeLifeSeconds * e.random.Between(0.7, 1.3)
 	e.Smokes = append(e.Smokes, Smoke{
 		X: x, Y: y, VelocityX: e.random.Between(-smokeDriftSpeed, smokeDriftSpeed), VelocityY: -smokeRiseSpeed * e.random.Between(0.7, 1.3),
-		Size: size * e.random.Between(0.8, 1.2), Life: life, MaxLife: life,
+		Size: size * e.random.Between(0.8, 1.2), Life: life, MaxLife: life, Color: smokeColor, Opacity: smokeOpacity,
+	})
+}
+
+func (e *Effects) AddDust(x, y, size float32) {
+	isThinnedOut := e.random.Float() >= e.Density
+	if isThinnedOut || len(e.Smokes) >= maximumSmokes {
+		return
+	}
+	life := dustLifeSeconds * e.random.Between(0.7, 1.3)
+	angle := e.random.Angle()
+	speed := e.random.Between(0, dustSpreadSpeed)
+	e.Smokes = append(e.Smokes, Smoke{
+		X: x, Y: y, VelocityX: cosine(angle) * speed, VelocityY: sine(angle)*speed - dustRiseSpeed,
+		Size: size * e.random.Between(0.7, 1.3), Life: life, MaxLife: life, Color: puffDustColor, Opacity: dustOpacity,
 	})
 }
 
