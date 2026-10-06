@@ -248,24 +248,33 @@ func (u *UI) drawMenuOptions(g *Game, screen *ebiten.Image, options []MenuOption
 	u.menuPositions = menuOptionPositions(options, spacing, menuTitleTop+2*u.titleHeight, u.menuPositions)
 	for index, option := range options {
 		isSelected := index == g.menuSelection
-		label := option.Label(g)
-		colors := [2][3]float32{textColor, accentColor}
 		alpha := 1 - 0.3*boolToFloat(isSelected)*(1-pulse(g.clockSeconds))
-		y := u.menuPositions[index]
-		u.drawText(screen, label, u.bold, screenWidth/2, y, colors[boolToIndex(isSelected)], alpha, text.AlignCenter)
-		u.drawSelectionMarkersIf(g, screen, label, y, alpha, isSelected)
-		u.drawSliderIf(g, screen, option.Slider, y+menuSliderOffset)
+		drawers := [2]func(u *UI, g *Game, screen *ebiten.Image, option MenuOption, y, alpha float32, isSelected bool){(*UI).drawMenuLabel, (*UI).drawDrumRow}
+		drawers[boolToIndex(option.Slider != nil && option.Slider.IsDrum)](u, g, screen, option, u.menuPositions[index], alpha, isSelected)
 	}
 }
 
+func (u *UI) drawMenuLabel(g *Game, screen *ebiten.Image, option MenuOption, y, alpha float32, isSelected bool) {
+	label := option.Label(g)
+	colors := [2][3]float32{textColor, accentColor}
+	u.drawText(screen, label, u.bold, screenWidth/2, y, colors[boolToIndex(isSelected)], alpha, text.AlignCenter)
+	u.drawSelectionMarkersIf(g, screen, label, y, alpha, isSelected)
+	u.drawSliderIf(g, screen, option.Slider, y+menuSliderOffset)
+}
+
 func (u *UI) drawSelectionMarkersIf(g *Game, screen *ebiten.Image, label string, y, alpha float32, isSelected bool) {
+	labelWidth, _ := text.Measure(label, u.bold, 0)
+	u.drawSelectionMarkersAround(g, screen, float32(labelWidth), y, alpha, isSelected)
+}
+
+func (u *UI) drawSelectionMarkersAround(g *Game, screen *ebiten.Image, width, y, alpha float32, isSelected bool) {
 	if !isSelected {
 		return
 	}
-	labelWidth, labelHeight := text.Measure(label, u.bold, 0)
+	_, labelHeight := text.Measure("Hg", u.bold, 0)
 	centerY := y + float32(labelHeight)*selectionMarkerCenter
 	nudge := selectionMarkerNudge * sine(g.clockSeconds*selectionMarkerSpeed)
-	offset := float32(labelWidth)/2 + selectionMarkerGap + nudge
+	offset := width/2 + selectionMarkerGap + nudge
 	side := float32(labelHeight)
 	top := centerY - side/2
 	edgeColor := mixColor(accentColor, [3]float32{0, 0, 0}, selectionMarkerShade)

@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "Sí, borrar todas las puntuaciones",
   "gameplay.high_scores": "Mejores puntuaciones",
   "gameplay.keep_scores": "No, conservarlas",
-  "gameplay.language": "Idioma: %s",
+  "gameplay.language": "Idioma",
   "gameplay.reset_scores": "Borrar puntuaciones",
   "gameplay.scores_erased": "Puntuaciones borradas.",
   "graphics.bloom": "Bloom: %s",

@@ -2,8 +2,8 @@ package i18n
 
 import (
 	"embed"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"

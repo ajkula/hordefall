@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "はい、すべての記録を消去",
   "gameplay.high_scores": "ハイスコア",
   "gameplay.keep_scores": "いいえ、残す",
-  "gameplay.language": "言語: %s",
+  "gameplay.language": "言語",
   "gameplay.reset_scores": "記録をリセット",
   "gameplay.scores_erased": "記録を消去しました。",
   "graphics.bloom": "ブルーム: %s",

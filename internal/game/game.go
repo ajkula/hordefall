@@ -92,7 +92,12 @@ type Game struct {
 	remapStep             int
 	remapReturnState      GameState
 	languageReturnState   GameState
-	languageMenu          []MenuOption
+	languageTarget        int
+	languageScroll        float32
+	languageHoldSeconds   float32
+	languageArrowSeconds  float32
+	isLanguageDrumFocused bool
+	intro                 Intro
 	optionsReturnState    GameState
 	remapDevice           InputDevice
 	remapListening        RemapAction
@@ -127,6 +132,7 @@ const (
 	StateResetScores
 	StateNameEntry
 	StateLanguage
+	StateIntro
 	stateCount
 )
 
@@ -160,6 +166,7 @@ var stateHandlers = [stateCount]StateHandler{
 	StateResetScores: {(*Game).updateResetScores, (*Game).drawResetScores},
 	StateNameEntry:   {(*Game).updateNameEntry, (*Game).drawNameEntry},
 	StateLanguage:    {(*Game).updateLanguageMenu, (*Game).drawLanguageMenu},
+	StateIntro:       {(*Game).updateIntro, (*Game).drawIntro},
 }
 
 // ===== Public API =====
@@ -193,7 +200,7 @@ func NewGame() *Game {
 	game.audio = audio.NewEngine()
 	game.loadSettings()
 	game.startDemo()
-	game.openLanguageMenuIfFirstRun()
+	game.startIntro()
 	return game
 }
 
@@ -206,6 +213,7 @@ func (g *Game) Update() error {
 	isSelectTogglingDebug := g.controls.JustPressed&ActionSelect != 0 && (g.state == StatePlaying || g.state == StateLevelUp)
 	g.isInputDebugVisible = g.isInputDebugVisible != (g.controls.JustPressed&ActionDebug != 0 || isSelectTogglingDebug)
 	g.clockSeconds += deltaSeconds
+	g.intro.FadeInSeconds = max(0, g.intro.FadeInSeconds-deltaSeconds)
 	g.menuLockSeconds = max(0, g.menuLockSeconds-deltaSeconds)
 	stateHandlers[g.state].Update(g)
 	g.toggleFullscreenIfRequested()
@@ -216,7 +224,9 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	postSettings := g.postSettings()
-	stateHandlers[g.state].Draw(g, g.post.Begin(screen, postSettings))
+	scene := g.post.Begin(screen, postSettings)
+	stateHandlers[g.state].Draw(g, scene)
+	g.drawMenuFadeIn(scene)
 	g.post.Finish(screen, postSettings)
 	if !g.isInputDebugVisible {
 		return

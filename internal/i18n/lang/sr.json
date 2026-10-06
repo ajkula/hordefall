@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "Да, обриши све рекорде",
   "gameplay.high_scores": "Рекорди",
   "gameplay.keep_scores": "Не, задржи их",
-  "gameplay.language": "Језик: %s",
+  "gameplay.language": "Језик",
   "gameplay.reset_scores": "Обриши рекорде",
   "gameplay.scores_erased": "Рекорди обрисани.",
   "graphics.bloom": "Bloom: %s",

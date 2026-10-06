@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "是，清除所有记录",
   "gameplay.high_scores": "最高分",
   "gameplay.keep_scores": "否，保留",
-  "gameplay.language": "语言：%s",
+  "gameplay.language": "语言",
   "gameplay.reset_scores": "重置最高分",
   "gameplay.scores_erased": "记录已清除。",
   "graphics.bloom": "泛光：%s",

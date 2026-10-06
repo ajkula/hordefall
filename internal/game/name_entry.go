@@ -60,7 +60,7 @@ func (g *Game) letterRepeatDelta() int {
 }
 
 func letterRepeatCount(holdSeconds float32) int {
-	return int(max(0, holdSeconds-letterRepeatDelay+letterRepeatInterval) / letterRepeatInterval)
+	return repeatCount(holdSeconds, letterRepeatDelay, letterRepeatInterval)
 }
 
 func (g *Game) shiftNameEntryLetter(delta int) {

@@ -16,6 +16,7 @@ type MenuOption struct {
 }
 
 type MenuSlider struct {
+	IsDrum bool
 	Steps  int
 	Level  func(game *Game) int
 	Adjust func(game *Game, delta int)
@@ -80,7 +81,7 @@ func (g *Game) isGoingBack() bool {
 
 func (g *Game) adjustSelectedSlider(slider *MenuSlider) bool {
 	delta := boolToIndex(g.controls.JustPressed&ActionRight != 0) - boolToIndex(g.controls.JustPressed&ActionLeft != 0)
-	if slider == nil || delta == 0 {
+	if slider == nil || slider.IsDrum || delta == 0 {
 		return false
 	}
 	slider.Adjust(g, delta)
@@ -92,15 +93,19 @@ func menuOptionPositions(options []MenuOption, spacing, minimumTop float32, posi
 	positions = positions[:0]
 	span := float32(0)
 	for index := range len(options) - 1 {
-		span += spacing + menuSliderExtraHeight*boolToFloat(options[index].Slider != nil)
+		span += spacing + menuSliderExtraHeight*boolToFloat(hasSliderGauge(options[index]))
 	}
 	compression := min(1, (menuListBottom-minimumTop)/max(1, span))
 	y := menuListBottom - span*compression
 	for index := range options {
 		positions = append(positions, y)
-		y += (spacing + menuSliderExtraHeight*boolToFloat(options[index].Slider != nil)) * compression
+		y += (spacing + menuSliderExtraHeight*boolToFloat(hasSliderGauge(options[index]))) * compression
 	}
 	return positions
+}
+
+func hasSliderGauge(option MenuOption) bool {
+	return option.Slider != nil
 }
 
 func (g *Game) startRun() {

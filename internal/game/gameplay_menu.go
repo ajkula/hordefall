@@ -46,7 +46,7 @@ const (
 )
 
 var gameplayMenuOptions = []MenuOption{
-	{(*Game).languageLabel, (*Game).openLanguageFromGameplay, nil},
+	languageMenuOption,
 	{translatedLabel("gameplay.high_scores"), (*Game).openHighScores, nil},
 	{translatedLabel("gameplay.reset_scores"), (*Game).openResetScores, nil},
 	{translatedLabel("menu.back"), (*Game).closeGameplay, nil},
@@ -105,6 +105,10 @@ func (g *Game) resetHighScores() {
 
 func (g *Game) updateGameplay() {
 	g.updateBackdropDemo()
+	if g.isLanguageDrumFocused {
+		g.updateLanguageDrum()
+		return
+	}
 	if g.isGoingBack() {
 		g.closeGameplay()
 		return

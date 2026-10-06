@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "네, 모든 기록을 지웁니다",
   "gameplay.high_scores": "최고 기록",
   "gameplay.keep_scores": "아니요, 유지합니다",
-  "gameplay.language": "언어: %s",
+  "gameplay.language": "언어",
   "gameplay.reset_scores": "기록 초기화",
   "gameplay.scores_erased": "기록이 지워졌습니다.",
   "graphics.bloom": "블룸: %s",

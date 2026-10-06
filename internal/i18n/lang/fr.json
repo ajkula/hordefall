@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "Oui, effacer tous les scores",
   "gameplay.high_scores": "Meilleurs scores",
   "gameplay.keep_scores": "Non, les garder",
-  "gameplay.language": "Langue : %s",
+  "gameplay.language": "Langue",
   "gameplay.reset_scores": "Effacer les scores",
   "gameplay.scores_erased": "Scores effacés.",
   "graphics.bloom": "Bloom : %s",

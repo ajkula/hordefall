@@ -33,7 +33,7 @@
   "gameplay.erase_scores": "हाँ, सारे स्कोर मिटाएँ",
   "gameplay.high_scores": "सर्वश्रेष्ठ स्कोर",
   "gameplay.keep_scores": "नहीं, रहने दें",
-  "gameplay.language": "भाषा: %s",
+  "gameplay.language": "भाषा",
   "gameplay.reset_scores": "स्कोर रीसेट करें",
   "gameplay.scores_erased": "स्कोर मिटा दिए गए।",
   "graphics.bloom": "ब्लूम: %s",
