@@ -24,7 +24,6 @@ const (
 	rankingPauseSeconds   = 2.5
 	rankingScrollSeconds  = 5
 	highScoreBoardSeconds = 2*rankingPauseSeconds + rankingScrollSeconds
-	demoClipsPerBoard     = 4
 	rankingArtStart       = 0.3
 	rankingIntroSeconds   = 2.4
 	attractBoardSeconds   = rankingIntroSeconds + highScoreBoardSeconds
@@ -57,6 +56,8 @@ var resetScoresMenuOptions = []MenuOption{
 	{translatedLabel("gameplay.erase_scores"), (*Game).resetHighScores, nil},
 }
 
+var demoClipsPerBoard = 2 * len(demoSequences)
+
 var rankOrdinals = [highScoreTableSize]string{"1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH", "9TH", "10TH"}
 
 var rankingFlashStarts = [2]float32{0.06, 0.26}
@@ -64,10 +65,10 @@ var rankingFlashStarts = [2]float32{0.06, 0.26}
 var rankingColor = [3]float32{1, 0.44, 0.1}
 
 var highScoreColumns = []HighScoreColumn{
-	{"RANK", 171, text.AlignStart, func(rank int, entry HighScoreEntry) string { return rankOrdinals[rank] }},
-	{"SCORE", 675, text.AlignEnd, func(rank int, entry HighScoreEntry) string { return formatThousands(entry.Score) }},
-	{"TIME", 934, text.AlignEnd, func(rank int, entry HighScoreEntry) string { return formatClock(entry.SurvivedSeconds) }},
-	{"NAME", 990, text.AlignStart, func(rank int, entry HighScoreEntry) string { return entry.Initials }},
+	{"RANK", 248, text.AlignEnd, func(rank int, entry HighScoreEntry) string { return rankOrdinals[rank] }},
+	{"SCORE", 759, text.AlignEnd, func(rank int, entry HighScoreEntry) string { return formatThousands(entry.Score) }},
+	{"TIME", 1018, text.AlignEnd, func(rank int, entry HighScoreEntry) string { return formatClock(entry.SurvivedSeconds) }},
+	{"NAME", 1074, text.AlignStart, func(rank int, entry HighScoreEntry) string { return entry.Initials }},
 }
 
 // ===== Internal =====

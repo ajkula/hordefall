@@ -1,6 +1,13 @@
 package game
 
-import "testing"
+import (
+	"math"
+	"testing"
+
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+)
+
+const boardColumnMinimumGap = 48
 
 func TestHighScoreTableKeepsTheTopTenInOrder(t *testing.T) {
 	var table HighScoreTable
@@ -10,7 +17,7 @@ func TestHighScoreTableKeepsTheTopTenInOrder(t *testing.T) {
 	if len(table.Entries) != highScoreTableSize || table.Best().Score != 1500 || table.Entries[highScoreTableSize-1].Score != 600 {
 		t.Fatalf("unexpected table %+v", table.Entries)
 	}
-	if table.RankOf(550) != noRank || table.RankOf(1200) != 4 || table.RankOf(0) != noRank {
+	if table.RankOf(550) != noRank || table.RankOf(1200) != 3 || table.RankOf(0) != noRank {
 		t.Fatalf("ranks %d %d %d", table.RankOf(550), table.RankOf(1200), table.RankOf(0))
 	}
 }
@@ -136,5 +143,34 @@ func TestButtonLabelsFollowTheLastDevice(t *testing.T) {
 	}
 	if pickDevice(DeviceGamepad, false, false) != DeviceGamepad {
 		t.Fatal("idle input changed the device")
+	}
+}
+
+func TestBoardColumnsFitTheLongestRow(t *testing.T) {
+	longest := [4]string{rankOrdinals[highScoreTableSize-1], formatThousands(maximumScore), formatClock(99*60 + 59), "WWW"}
+	previousRight := float32(0)
+	for index, column := range highScoreColumns {
+		width := PixelTextWidth(longest[index], rankingRowPixel)
+		left := column.X - width*boolToFloat(column.Align == text.AlignEnd)
+		if left-previousRight < boardColumnMinimumGap {
+			t.Fatalf("column %s starts %.0f px after the previous one", column.Header, left-previousRight)
+		}
+		previousRight = left + width
+	}
+	if previousRight > screenWidth {
+		t.Fatalf("the board overflows the screen at %.0f px", previousRight)
+	}
+}
+
+func TestScoresStopAtTheCapAndTheNewestTieRanksFirst(t *testing.T) {
+	game := newHeadlessGame()
+	game.killScore = math.MaxInt32 * 4
+	if game.CurrentScore() != maximumScore {
+		t.Fatalf("score %d is not capped", game.CurrentScore())
+	}
+	var table HighScoreTable
+	table.Insert(HighScoreEntry{Initials: "OLD", Score: maximumScore})
+	if rank := table.Insert(HighScoreEntry{Initials: "NEW", Score: maximumScore}); rank != 0 || table.Best().Initials != "NEW" {
+		t.Fatalf("the newest capped score ranks %d, best is %s", rank, table.Best().Initials)
 	}
 }

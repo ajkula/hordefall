@@ -31,12 +31,13 @@ const (
 	legacyHighScoreFileName = "highscore.json"
 	legacyInitials          = "---"
 	noRank                  = -1
+	maximumScore            = 999999999
 )
 
 // ===== Public API =====
 
 func (g *Game) CurrentScore() int {
-	return g.killScore
+	return min(g.killScore, maximumScore)
 }
 
 func (t *HighScoreTable) Best() HighScoreEntry {
@@ -53,7 +54,7 @@ func (t *HighScoreTable) EntryAt(rank int) HighScoreEntry {
 func (t *HighScoreTable) RankOf(score int) int {
 	rank := len(t.Entries)
 	for index, entry := range t.Entries {
-		if score > entry.Score {
+		if score >= entry.Score {
 			rank = index
 			break
 		}
@@ -75,6 +76,7 @@ func (t *HighScoreTable) Insert(entry HighScoreEntry) int {
 func LoadHighScores() (HighScoreTable, error) {
 	var table HighScoreTable
 	if err := config.Load(highScoreTableFileName, &table); err == nil {
+		clampHighScores(&table)
 		return table, nil
 	}
 	var legacy HighScoreEntry
@@ -100,6 +102,12 @@ func formatThousands(value int) string {
 }
 
 // ===== Internal =====
+
+func clampHighScores(table *HighScoreTable) {
+	for index := range table.Entries {
+		table.Entries[index].Score = min(table.Entries[index].Score, maximumScore)
+	}
+}
 
 func (g *Game) awardKillScore(experience int) {
 	g.killScore += experience * pointsPerExperience
