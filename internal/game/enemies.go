@@ -61,8 +61,8 @@ const (
 	EnemyFrostling
 	EnemyEmberling
 	EnemySpiderTank
-	EnemySandworm
-	EnemySandwormSegment
+	EnemyDrillWorm
+	EnemyDrillWormSegment
 	enemyKindCount
 )
 
@@ -104,12 +104,12 @@ var enemyTable = [enemyKindCount]EnemyDefinition{
 		DeathElement: ElementFire, DeathRadius: 150, DeathDamage: 70, DeathStimulus: StimulusHeat, DeathGroundCells: 5,
 		IsHeavy: true, IsCustomDrawn: true, DeathSound: audio.SoundExplosion,
 	},
-	EnemySandworm: {
-		Name: "Sandworm", Color: [3]float32{0.55, 0.6, 0.68}, Radius: 36, Health: 1500, Experience: 250,
+	EnemyDrillWorm: {
+		Name: "DrillWorm", Color: [3]float32{0.55, 0.6, 0.68}, Radius: 36, Health: 1500, Experience: 250,
 		IsHeavy: true, IsCustomDrawn: true, DeathSound: audio.SoundExplosion,
 	},
-	EnemySandwormSegment: {
-		Name: "Sandworm Segment", Color: [3]float32{0.55, 0.6, 0.68}, Radius: 26, Health: 600, Experience: 40,
+	EnemyDrillWormSegment: {
+		Name: "DrillWorm Segment", Color: [3]float32{0.55, 0.6, 0.68}, Radius: 26, Health: 600, Experience: 40,
 		IsHeavy: true, IsCustomDrawn: true, DeathSound: audio.SoundExplosion,
 	},
 }

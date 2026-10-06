@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "坦克之间能做朋友吗？不能？好吧。",
   "tachikoma.storm.1": "我生锈的话，会变老吗？",
   "tachikoma.storm.2": "闪电！免费能量饮料！",
-  "tachikoma.worm_down.1": "回你的沙子里去吧！",
+  "tachikoma.worm_blast.1": "哇啊啊，我飞起来了！",
+  "tachikoma.worm_blast.2": "喂！哪有这样打招呼的！",
+  "tachikoma.worm_down.1": "回你的洞里去吧！",
   "tachikoma.worm_down.2": "刚才那是虫子还是火车？",
+  "tachikoma.worm_frost.1": "它的嘴在发蓝光……快躲开！",
+  "tachikoma.worm_frost.2": "嘶——它在瞄准我！",
+  "tachikoma.worm_head.1": "它的头掉下来了……还在冲过来！",
+  "tachikoma.worm_head.2": "只剩一个头了？它朝我滚过来了！",
   "tachikoma.worm_inbound.1": "地面在咕噜咕噜响。不对劲！",
-  "tachikoma.worm_inbound.2": "沙子下面有个大家伙在游！",
+  "tachikoma.worm_inbound.2": "地底下有个大家伙在钻洞！",
   "title.audio": "音频",
   "title.controls": "操作",
   "title.erase_scores": "清除最高分？",
@@ -209,7 +215,7 @@
   "weather.blizzard": "暴风雪",
   "weather.heatwave": "热浪",
   "weather.storm": "风暴",
-  "worm.destroyed": "SANDWORM 已摧毁",
-  "worm.inbound": "SANDWORM 正在接近"
+  "worm.destroyed": "DRILL-WORM 已摧毁",
+  "worm.inbound": "DRILL-WORM 正在接近"
  }
 }

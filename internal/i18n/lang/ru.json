@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "Танки могут дружить? Нет? Ладно.",
   "tachikoma.storm.1": "Если я заржавею, я постарею?",
   "tachikoma.storm.2": "Молнии! Бесплатный энергетик!",
-  "tachikoma.worm_down.1": "Возвращайся в свой песок!",
+  "tachikoma.worm_blast.1": "Ваааа, я лечу!",
+  "tachikoma.worm_blast.2": "Эй! Так не здороваются!",
+  "tachikoma.worm_down.1": "Возвращайся в свою нору!",
   "tachikoma.worm_down.2": "Это был червь или поезд?",
+  "tachikoma.worm_frost.1": "Его пасть светится синим… уворачиваемся!",
+  "tachikoma.worm_frost.2": "Брр, он целится в меня!",
+  "tachikoma.worm_head.1": "У него отвалилась голова… и она всё равно несётся!",
+  "tachikoma.worm_head.2": "Осталась одна голова? Она катится на меня!",
   "tachikoma.worm_inbound.1": "Земля мурлычет. Это ненормально!",
-  "tachikoma.worm_inbound.2": "Под песком плавает что-то огромное!",
+  "tachikoma.worm_inbound.2": "Под землёй что-то огромное сверлит!",
   "title.audio": "ЗВУК",
   "title.controls": "УПРАВЛЕНИЕ",
   "title.erase_scores": "СТЕРЕТЬ РЕКОРДЫ?",
@@ -209,7 +215,7 @@
   "weather.blizzard": "БУРАН",
   "weather.heatwave": "ЗНОЙ",
   "weather.storm": "ГРОЗА",
-  "worm.destroyed": "SANDWORM УНИЧТОЖЕН",
-  "worm.inbound": "SANDWORM ПРИБЛИЖАЕТСЯ"
+  "worm.destroyed": "DRILL-WORM УНИЧТОЖЕН",
+  "worm.inbound": "DRILL-WORM ПРИБЛИЖАЕТСЯ"
  }
 }

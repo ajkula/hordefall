@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "戦車同士でも友達になれる？だめ？そっか。",
   "tachikoma.storm.1": "サビたら、ボクも年をとるの？",
   "tachikoma.storm.2": "雷だ！タダのエナジードリンク！",
-  "tachikoma.worm_down.1": "砂に帰りなよ！",
+  "tachikoma.worm_blast.1": "うわぁぁ、飛んでるー！",
+  "tachikoma.worm_blast.2": "ちょっと！そんな挨拶ある？",
+  "tachikoma.worm_down.1": "穴に帰りなよ！",
   "tachikoma.worm_down.2": "今のってミミズ？それとも電車？",
+  "tachikoma.worm_frost.1": "口が青く光ってる…避けなきゃ！",
+  "tachikoma.worm_frost.2": "ブルル、こっちを狙ってる！",
+  "tachikoma.worm_head.1": "頭が外れた…それでも来るよ！",
+  "tachikoma.worm_head.2": "頭だけ？転がってこっちに来る！",
   "tachikoma.worm_inbound.1": "地面がゴロゴロ言ってる。変だよ！",
-  "tachikoma.worm_inbound.2": "砂の下で何か大きいのが泳いでる！",
+  "tachikoma.worm_inbound.2": "地面の下で何か大きいのが掘り進んでる！",
   "title.audio": "オーディオ",
   "title.controls": "操作設定",
   "title.erase_scores": "記録を消去しますか？",
@@ -209,7 +215,7 @@
   "weather.blizzard": "猛吹雪",
   "weather.heatwave": "猛暑",
   "weather.storm": "嵐",
-  "worm.destroyed": "SANDWORM 撃破",
-  "worm.inbound": "SANDWORM 接近中"
+  "worm.destroyed": "DRILL-WORM 撃破",
+  "worm.inbound": "DRILL-WORM 接近中"
  }
 }

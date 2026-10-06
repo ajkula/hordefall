@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "Can tanks be friends? No? Okay.",
   "tachikoma.storm.1": "If I rust, do I get older?",
   "tachikoma.storm.2": "Lightning! Free energy drink!",
-  "tachikoma.worm_down.1": "Back to the sand with you!",
+  "tachikoma.worm_blast.1": "Waaah, I'm flying!",
+  "tachikoma.worm_blast.2": "Hey! That's no way to say hello!",
+  "tachikoma.worm_down.1": "Back into your hole!",
   "tachikoma.worm_down.2": "Was that a worm or a train?",
+  "tachikoma.worm_frost.1": "Its mouth is glowing blue... dodge!",
+  "tachikoma.worm_frost.2": "Brrr, it's aiming at me!",
+  "tachikoma.worm_head.1": "Its head came off... and it's still coming!",
+  "tachikoma.worm_head.2": "Just a head left? It's rolling at me!",
   "tachikoma.worm_inbound.1": "The ground is purring. That's not normal!",
-  "tachikoma.worm_inbound.2": "Something big is swimming under the sand!",
+  "tachikoma.worm_inbound.2": "Something big is drilling under the ground!",
   "title.audio": "AUDIO",
   "title.controls": "CONTROLS",
   "title.erase_scores": "ERASE HIGH SCORES?",
@@ -209,7 +215,7 @@
   "weather.blizzard": "BLIZZARD",
   "weather.heatwave": "HEATWAVE",
   "weather.storm": "STORM",
-  "worm.destroyed": "SANDWORM DESTROYED",
-  "worm.inbound": "SANDWORM INBOUND"
+  "worm.destroyed": "DRILL-WORM DESTROYED",
+  "worm.inbound": "DRILL-WORM INBOUND"
  }
 }

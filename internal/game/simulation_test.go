@@ -279,7 +279,7 @@ func TestBossCycleIsThreeSpidersHordeWormHorde(t *testing.T) {
 	expectedHordeSizes := []int{500, 1000, 1500, 2000}
 	hordesSeen := 0
 	for event, kind := range expected {
-		game.spiders, game.enemies.Count, game.hordeEvent, game.worm = game.spiders[:0], 0, HordeEvent{}, Sandworm{}
+		game.spiders, game.enemies.Count, game.hordeEvent, game.worm = game.spiders[:0], 0, HordeEvent{}, DrillWorm{}
 		game.startBossEvent()
 		seen := [bossEventKindCount]bool{BossSpider: len(game.spiders) == 1, BossHorde: game.hordeEvent.IsActive, BossWorm: game.worm.IsActive}
 		if seen != [bossEventKindCount]bool{kind == BossSpider, kind == BossHorde, kind == BossWorm} {
@@ -310,7 +310,7 @@ func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
 	if !game.worm.IsActive {
-		t.Fatalf("no sandworm after the horde was cleared")
+		t.Fatalf("no drill-worm after the horde was cleared")
 	}
 }
 
@@ -333,7 +333,7 @@ func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
 	if !game.worm.IsActive || !game.hordeEvent.IsActive {
-		t.Fatalf("the horde did not follow the living sandworm")
+		t.Fatalf("the horde did not follow the living drill-worm")
 	}
 	for range len(bossEventCycle) - 1 {
 		game.bossProgressKills = game.bossKillsRequired
@@ -341,7 +341,7 @@ func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
 		game.startBossEventIfDue()
 	}
 	if game.nextBossEvent() != BossWorm || !game.worm.IsActive {
-		t.Fatalf("the cycle did not stop in front of the next sandworm: next %d", game.nextBossEvent())
+		t.Fatalf("the cycle did not stop in front of the next drill-worm: next %d", game.nextBossEvent())
 	}
 }
 
@@ -353,7 +353,7 @@ func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
 	if game.bossEventCount != spidersBeforeHorde+1 {
-		t.Fatalf("a second sandworm event started while one was alive")
+		t.Fatalf("a second drill-worm event started while one was alive")
 	}
 	game.worm.IsActive = false
 	for range maximumBossesAlive - 1 {
@@ -361,7 +361,7 @@ func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
 	}
 	game.startBossEventIfDue()
 	if !game.worm.IsActive {
-		t.Fatalf("the sandworm was held back by the spider tanks")
+		t.Fatalf("the drill-worm was held back by the spider tanks")
 	}
 }
 
@@ -375,7 +375,7 @@ func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
 		game.startBossEventIfDue()
 	}
 	if game.livingBossCount() != maximumBossesAlive {
-		t.Fatalf("%d bosses alive with the sandworm, want %d", game.livingBossCount(), maximumBossesAlive)
+		t.Fatalf("%d bosses alive with the drill-worm, want %d", game.livingBossCount(), maximumBossesAlive)
 	}
 	game.spiders = game.spiders[:maximumBossesAlive-1]
 	game.worm.IsActive = false
@@ -384,7 +384,7 @@ func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
 	game.spawnSpiderEvent()
 	game.startBossEventIfDue()
 	if game.worm.IsActive {
-		t.Fatalf("the sandworm joined three spider tanks")
+		t.Fatalf("the drill-worm joined three spider tanks")
 	}
 }
 
@@ -400,7 +400,7 @@ func TestOverlappingHordesMerge(t *testing.T) {
 	}
 }
 
-func TestSandwormEmergesFiresAFrostBeamThenDives(t *testing.T) {
+func TestDrillWormEmergesFiresAFrostBeamThenDives(t *testing.T) {
 	game := newHeadlessGame()
 	game.spawnWormEvent()
 	phasesSeen := [wormPhaseCount]bool{}
@@ -417,7 +417,7 @@ func TestSandwormEmergesFiresAFrostBeamThenDives(t *testing.T) {
 	}
 	for _, phase := range []WormPhase{WormBurrowing, WormWarning, WormEmerging, WormAiming, WormDiving} {
 		if !phasesSeen[phase] {
-			t.Fatalf("the sandworm never reached phase %d", phase)
+			t.Fatalf("the drill-worm never reached phase %d", phase)
 		}
 	}
 	if !hasFired || hasHittableSegmentUnderground || game.worm.AliveSegmentCount() != wormSegmentCount {
@@ -425,7 +425,7 @@ func TestSandwormEmergesFiresAFrostBeamThenDives(t *testing.T) {
 	}
 }
 
-func TestSandwormLosesItsBodyThenRollsItsHead(t *testing.T) {
+func TestDrillWormLosesItsBodyThenRollsItsHead(t *testing.T) {
 	game := newHeadlessGame()
 	game.spawnWormEvent()
 	for game.worm.Phase != WormAiming {
@@ -451,7 +451,7 @@ func TestSandwormLosesItsBodyThenRollsItsHead(t *testing.T) {
 	game.enemies.Health[game.enemies.IndexOfID(game.worm.HeadEnemyID)] = 0
 	stepHeadlessIdle(game)
 	if game.worm.IsActive {
-		t.Fatalf("the sandworm survived losing its head")
+		t.Fatalf("the drill-worm survived losing its head")
 	}
 }
 
@@ -844,10 +844,10 @@ func TestMouseAimsTheCannonAndClicksFireAndDash(t *testing.T) {
 	}
 }
 
-func TestEverySandwormPhaseIsUpdatedAndDrawn(t *testing.T) {
+func TestEveryDrillWormPhaseIsUpdatedAndDrawn(t *testing.T) {
 	for phase := range wormPhaseCount {
 		if wormPhaseUpdaters[phase] == nil || wormGroundDrawers[phase] == nil || wormBodyDrawers[phase] == nil {
-			t.Fatalf("sandworm phase %d has no updater or drawer", phase)
+			t.Fatalf("drill-worm phase %d has no updater or drawer", phase)
 		}
 	}
 }

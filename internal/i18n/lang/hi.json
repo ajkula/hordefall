@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "क्या टैंक दोस्त बन सकते हैं? नहीं? ठीक है।",
   "tachikoma.storm.1": "अगर मुझे जंग लगी, क्या मैं बूढ़ा हो जाऊँगा?",
   "tachikoma.storm.2": "बिजली! मुफ़्त एनर्जी ड्रिंक!",
-  "tachikoma.worm_down.1": "वापस अपनी रेत में जाओ!",
+  "tachikoma.worm_blast.1": "वाााह, मैं उड़ रहा हूँ!",
+  "tachikoma.worm_blast.2": "अरे! यह नमस्ते कहने का तरीका नहीं है!",
+  "tachikoma.worm_down.1": "वापस अपने बिल में जाओ!",
   "tachikoma.worm_down.2": "वह कीड़ा था या रेलगाड़ी?",
+  "tachikoma.worm_frost.1": "उसका मुँह नीला चमक रहा है... बचो!",
+  "tachikoma.worm_frost.2": "ब्र्र्र, वह मुझ पर निशाना लगा रहा है!",
+  "tachikoma.worm_head.1": "उसका सिर अलग हो गया... और फिर भी आ रहा है!",
+  "tachikoma.worm_head.2": "बस सिर बचा है? वह लुढ़कता हुआ मेरी ओर आ रहा है!",
   "tachikoma.worm_inbound.1": "ज़मीन गुर्रा रही है। यह ठीक नहीं!",
-  "tachikoma.worm_inbound.2": "रेत के नीचे कुछ बड़ा तैर रहा है!",
+  "tachikoma.worm_inbound.2": "ज़मीन के नीचे कुछ बड़ा खुदाई कर रहा है!",
   "title.audio": "ऑडियो",
   "title.controls": "नियंत्रण",
   "title.erase_scores": "स्कोर मिटाएँ?",
@@ -209,7 +215,7 @@
   "weather.blizzard": "बर्फ़ीला तूफ़ान",
   "weather.heatwave": "लू",
   "weather.storm": "आँधी",
-  "worm.destroyed": "SANDWORM नष्ट",
-  "worm.inbound": "SANDWORM आ रहा है"
+  "worm.destroyed": "DRILL-WORM नष्ट",
+  "worm.inbound": "DRILL-WORM आ रहा है"
  }
 }

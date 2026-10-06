@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "Les tanks peuvent être amis ? Non ? D'accord.",
   "tachikoma.storm.1": "Si je rouille, est-ce que je vieillis ?",
   "tachikoma.storm.2": "Des éclairs ! Boisson énergisante gratuite !",
-  "tachikoma.worm_down.1": "Retourne dans ton sable !",
+  "tachikoma.worm_blast.1": "Waaah, je vole !",
+  "tachikoma.worm_blast.2": "Hé ! C'est pas une façon de dire bonjour !",
+  "tachikoma.worm_down.1": "Retourne dans ton trou !",
   "tachikoma.worm_down.2": "C'était un ver ou un train ?",
+  "tachikoma.worm_frost.1": "Sa bouche brille en bleu... on esquive !",
+  "tachikoma.worm_frost.2": "Brrr, il me vise !",
+  "tachikoma.worm_head.1": "Sa tête s'est détachée... et elle fonce !",
+  "tachikoma.worm_head.2": "Il ne reste que la tête ? Elle me charge !",
   "tachikoma.worm_inbound.1": "Le sol ronronne. C'est pas normal !",
-  "tachikoma.worm_inbound.2": "Un truc énorme nage sous le sable !",
+  "tachikoma.worm_inbound.2": "Un truc énorme perce sous le sol !",
   "title.audio": "AUDIO",
   "title.controls": "COMMANDES",
   "title.erase_scores": "EFFACER LES SCORES ?",
@@ -209,7 +215,7 @@
   "weather.blizzard": "BLIZZARD",
   "weather.heatwave": "CANICULE",
   "weather.storm": "ORAGE",
-  "worm.destroyed": "SANDWORM DÉTRUIT",
-  "worm.inbound": "SANDWORM EN APPROCHE"
+  "worm.destroyed": "DRILL-WORM DÉTRUIT",
+  "worm.inbound": "DRILL-WORM EN APPROCHE"
  }
 }

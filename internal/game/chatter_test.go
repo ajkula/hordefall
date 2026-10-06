@@ -57,3 +57,20 @@ func TestChatterIsDebounced(t *testing.T) {
 		t.Fatal("the demo talked")
 	}
 }
+
+func TestBossLinesCutTheGlobalGapShort(t *testing.T) {
+	if err := i18n.Load(); err != nil {
+		t.Fatal(err)
+	}
+	i18n.Use(i18n.FallbackCode)
+	game := newHeadlessGame()
+	game.chatter.QuietSeconds = chatterUrgentGap
+	game.say(ChatterHeal)
+	if len(game.chatter.Runes) != 0 {
+		t.Fatal("an ordinary line skipped the global gap")
+	}
+	game.say(ChatterWormBlast)
+	if len(game.chatter.Runes) == 0 {
+		t.Fatal("the drill-worm blast line waited for the global gap")
+	}
+}

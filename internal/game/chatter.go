@@ -51,6 +51,9 @@ const (
 	ChatterIdle
 	ChatterWormInbound
 	ChatterWormDown
+	ChatterWormBlast
+	ChatterWormFrost
+	ChatterWormHead
 	ChatterRivalTooClose
 	ChatterRivalStoleKill
 	ChatterRivalOvertaken
@@ -63,6 +66,7 @@ const (
 	chatterLift            = 60
 	chatterTextRise        = 3
 	chatterGlobalGap       = 12
+	chatterUrgentGap       = 3
 	chatterGreetingDelay   = 2.5
 	chatterIdleSeconds     = 50
 	chatterBigReactionRate = 12
@@ -91,11 +95,21 @@ var chatterTopics = [chatterEventCount]ChatterTopic{
 	ChatterIdle:            {"idle", 6, 0},
 	ChatterWormInbound:     {"worm_inbound", 2, 20},
 	ChatterWormDown:        {"worm_down", 2, 20},
+	ChatterWormBlast:       {"worm_blast", 2, 20},
+	ChatterWormFrost:       {"worm_frost", 2, 30},
+	ChatterWormHead:        {"worm_head", 2, 20},
 	ChatterRivalTooClose:   {"rival_too_close", 2, 30},
 	ChatterRivalStoleKill:  {"rival_stole_kill", 2, 30},
 	ChatterRivalOvertaken:  {"rival_overtaken", 2, 45},
 	ChatterRivalLeftBehind: {"rival_left_behind", 2, 45},
 }
+
+var isUrgentChatter = [chatterEventCount]bool{
+	ChatterSpiderInbound: true, ChatterSpiderDown: true, ChatterHordeIncoming: true, ChatterHordeCleared: true,
+	ChatterWormInbound: true, ChatterWormDown: true, ChatterWormBlast: true, ChatterWormFrost: true, ChatterWormHead: true,
+}
+
+var chatterGaps = [2]float32{chatterGlobalGap, chatterUrgentGap}
 
 var weatherChatter = [weatherKindCount]ChatterEvent{WeatherStorm: ChatterStorm, WeatherHeatwave: ChatterHeatwave, WeatherBlizzard: ChatterBlizzard}
 
@@ -137,7 +151,7 @@ func (g *Game) sayIf(event ChatterEvent, shouldSay bool) {
 
 func (g *Game) say(event ChatterEvent) {
 	chatter := &g.chatter
-	isBusy := g.isDemo || chatter.QuietSeconds < chatterGlobalGap || chatter.Cooldowns[event] > 0
+	isBusy := g.isDemo || chatter.QuietSeconds < chatterGaps[boolToIndex(isUrgentChatter[event])] || chatter.Cooldowns[event] > 0
 	if isBusy {
 		return
 	}

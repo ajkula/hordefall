@@ -9,7 +9,7 @@ import (
 
 // ===== Types =====
 
-type wormPhaseDrawer func(renderer *Renderer, game *Game, worm *Sandworm)
+type wormPhaseDrawer func(renderer *Renderer, game *Game, worm *DrillWorm)
 
 type WormPalette struct {
 	Dark     [3]float32
@@ -64,8 +64,8 @@ const (
 )
 
 var wormGroundDrawers = [wormPhaseCount]wormPhaseDrawer{
-	WormBurrowing:   func(*Renderer, *Game, *Sandworm) {},
-	WormWarning:     func(*Renderer, *Game, *Sandworm) {},
+	WormBurrowing:   func(*Renderer, *Game, *DrillWorm) {},
+	WormWarning:     func(*Renderer, *Game, *DrillWorm) {},
 	WormEmerging:    (*Renderer).queueWormBodyGround,
 	WormRearing:     (*Renderer).queueWormBodyGround,
 	WormAiming:      (*Renderer).queueWormBodyGround,
@@ -76,8 +76,8 @@ var wormGroundDrawers = [wormPhaseCount]wormPhaseDrawer{
 }
 
 var wormBodyDrawers = [wormPhaseCount]wormPhaseDrawer{
-	WormBurrowing:   func(*Renderer, *Game, *Sandworm) {},
-	WormWarning:     func(*Renderer, *Game, *Sandworm) {},
+	WormBurrowing:   func(*Renderer, *Game, *DrillWorm) {},
+	WormWarning:     func(*Renderer, *Game, *DrillWorm) {},
 	WormEmerging:    (*Renderer).queueWormBody,
 	WormRearing:     (*Renderer).queueWormBody,
 	WormAiming:      (*Renderer).queueWormBody,
@@ -111,15 +111,15 @@ var (
 
 // ===== Internal =====
 
-func (r *Renderer) queueSandwormGround(g *Game) {
-	r.queueSandwormLayer(g, &wormGroundDrawers)
+func (r *Renderer) queueDrillWormGround(g *Game) {
+	r.queueDrillWormLayer(g, &wormGroundDrawers)
 }
 
-func (r *Renderer) queueSandworm(g *Game) {
-	r.queueSandwormLayer(g, &wormBodyDrawers)
+func (r *Renderer) queueDrillWorm(g *Game) {
+	r.queueDrillWormLayer(g, &wormBodyDrawers)
 }
 
-func (r *Renderer) queueSandwormLayer(g *Game, drawers *[wormPhaseCount]wormPhaseDrawer) {
+func (r *Renderer) queueDrillWormLayer(g *Game, drawers *[wormPhaseCount]wormPhaseDrawer) {
 	worm := &g.worm
 	if !worm.IsActive {
 		return
@@ -142,7 +142,7 @@ func (r *Renderer) drawWormGroundSprites(g *Game, screen *ebiten.Image) {
 	r.drawWormWarningIf(screen, worm, isWarning)
 }
 
-func (r *Renderer) drawWormBurrowIf(g *Game, screen *ebiten.Image, worm *Sandworm, shouldDraw bool) {
+func (r *Renderer) drawWormBurrowIf(g *Game, screen *ebiten.Image, worm *DrillWorm, shouldDraw bool) {
 	if !shouldDraw {
 		return
 	}
@@ -150,7 +150,7 @@ func (r *Renderer) drawWormBurrowIf(g *Game, screen *ebiten.Image, worm *Sandwor
 	r.drawWormDecal(screen, r.wormSprites.Craters[variant], worm.X, worm.Y, wormSpritePixel*wormBurrowScale, [4]float32{1, 1, 1, 1})
 }
 
-func (r *Renderer) drawWormWarningIf(screen *ebiten.Image, worm *Sandworm, shouldDraw bool) {
+func (r *Renderer) drawWormWarningIf(screen *ebiten.Image, worm *DrillWorm, shouldDraw bool) {
 	if !shouldDraw {
 		return
 	}
@@ -172,7 +172,7 @@ func (r *Renderer) drawWormDecal(screen *ebiten.Image, decal *ebiten.Image, x, y
 	screen.DrawImage(decal, options)
 }
 
-func (r *Renderer) wormPieces(g *Game, worm *Sandworm) []WormPiece {
+func (r *Renderer) wormPieces(g *Game, worm *DrillWorm) []WormPiece {
 	pieces := make([]WormPiece, 0, wormSegmentCount)
 	slot := 0
 	for index := range worm.Segments {
@@ -198,12 +198,12 @@ func newWormPiece(x, y, z float32, tangent Point3, health float32, enemyID uint3
 	}
 }
 
-func (r *Renderer) wormHeadPiece(worm *Sandworm) WormPiece {
+func (r *Renderer) wormHeadPiece(worm *DrillWorm) WormPiece {
 	_, tangent := worm.Path.At(worm.HeadAlong())
 	return newWormPiece(worm.HeadX, worm.HeadY, worm.HeadZ, tangent, worm.HeadHealth, worm.HeadEnemyID)
 }
 
-func (r *Renderer) queueWormBodyGround(g *Game, worm *Sandworm) {
+func (r *Renderer) queueWormBodyGround(g *Game, worm *DrillWorm) {
 	for _, piece := range r.wormPieces(g, worm) {
 		r.queueWormShadow(&piece, wormSegmentHalfLength, wormSegmentRadius)
 	}
@@ -211,7 +211,7 @@ func (r *Renderer) queueWormBodyGround(g *Game, worm *Sandworm) {
 	r.queueWormHeadShadowIf(&head, worm.IsHeadAboveGround())
 }
 
-func (r *Renderer) queueWormBody(g *Game, worm *Sandworm) {
+func (r *Renderer) queueWormBody(g *Game, worm *DrillWorm) {
 	pieces := r.wormPieces(g, worm)
 	joint := r.wormHeadPiece(worm)
 	for index := range pieces {
@@ -221,7 +221,7 @@ func (r *Renderer) queueWormBody(g *Game, worm *Sandworm) {
 	r.queueBossBeam(&worm.Beam, g.frame)
 }
 
-func (r *Renderer) drawSandwormSprites(g *Game, screen *ebiten.Image) {
+func (r *Renderer) drawDrillWormSprites(g *Game, screen *ebiten.Image) {
 	worm := &g.worm
 	isShown := worm.IsBodyOut() || worm.IsHeadAlone()
 	if !isShown {
@@ -243,7 +243,7 @@ func (r *Renderer) drawSandwormSprites(g *Game, screen *ebiten.Image) {
 	}
 }
 
-func (r *Renderer) wormSpriteHead(worm *Sandworm) WormPiece {
+func (r *Renderer) wormSpriteHead(worm *DrillWorm) WormPiece {
 	pieces := [2]WormPiece{r.wormHeadPiece(worm), r.wormLoneHeadPiece(worm)}
 	return pieces[boolToIndex(worm.IsHeadAlone())]
 }
@@ -326,22 +326,22 @@ func (r *Renderer) queueWormHeadShadowIf(head *WormPiece, shouldDraw bool) {
 	r.queueWormShadow(head, wormHeadHalfLength+14, wormHeadRadius)
 }
 
-func (r *Renderer) queueWormHeadShadow(g *Game, worm *Sandworm) {
+func (r *Renderer) queueWormHeadShadow(g *Game, worm *DrillWorm) {
 	head := r.wormLoneHeadPiece(worm)
 	r.queueWormHeadShadowIf(&head, true)
 }
 
-func (r *Renderer) wormLoneHeadPiece(worm *Sandworm) WormPiece {
+func (r *Renderer) wormLoneHeadPiece(worm *DrillWorm) WormPiece {
 	directionX, directionY := worm.Direction()
 	return newWormPiece(worm.HeadX, worm.HeadY, 0, Point3{directionX, directionY, 0}, worm.HeadHealth, worm.HeadEnemyID)
 }
 
-func (r *Renderer) queueWormLoneHead(g *Game, worm *Sandworm) {
+func (r *Renderer) queueWormLoneHead(g *Game, worm *DrillWorm) {
 	directionX, directionY := worm.Direction()
 	r.queueWormAimLaserIf(worm, directionX, directionY, worm.Phase == WormHeadAiming)
 }
 
-func (r *Renderer) queueWormAimLaserIf(worm *Sandworm, directionX, directionY float32, shouldDraw bool) {
+func (r *Renderer) queueWormAimLaserIf(worm *DrillWorm, directionX, directionY float32, shouldDraw bool) {
 	if !shouldDraw {
 		return
 	}

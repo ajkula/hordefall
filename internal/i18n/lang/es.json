@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "¿Los tanques pueden ser amigos? ¿No? Vale.",
   "tachikoma.storm.1": "Si me oxido, ¿me hago viejo?",
   "tachikoma.storm.2": "¡Rayos! ¡Bebida energética gratis!",
-  "tachikoma.worm_down.1": "¡Vuelve a tu arena!",
+  "tachikoma.worm_blast.1": "¡Waaah, estoy volando!",
+  "tachikoma.worm_blast.2": "¡Oye! ¡Esa no es forma de saludar!",
+  "tachikoma.worm_down.1": "¡Vuelve a tu agujero!",
   "tachikoma.worm_down.2": "¿Era un gusano o un tren?",
+  "tachikoma.worm_frost.1": "Su boca brilla en azul... ¡a esquivar!",
+  "tachikoma.worm_frost.2": "¡Brrr, me está apuntando!",
+  "tachikoma.worm_head.1": "Se le soltó la cabeza... ¡y sigue viniendo!",
+  "tachikoma.worm_head.2": "¿Solo queda la cabeza? ¡Viene rodando hacia mí!",
   "tachikoma.worm_inbound.1": "El suelo ronronea. ¡Eso no es normal!",
-  "tachikoma.worm_inbound.2": "¡Algo enorme nada bajo la arena!",
+  "tachikoma.worm_inbound.2": "¡Algo enorme está perforando bajo el suelo!",
   "title.audio": "AUDIO",
   "title.controls": "CONTROLES",
   "title.erase_scores": "¿BORRAR PUNTUACIONES?",
@@ -209,7 +215,7 @@
   "weather.blizzard": "VENTISCA",
   "weather.heatwave": "OLA DE CALOR",
   "weather.storm": "TORMENTA",
-  "worm.destroyed": "SANDWORM DESTRUIDO",
-  "worm.inbound": "SANDWORM EN CAMINO"
+  "worm.destroyed": "DRILL-WORM DESTRUIDO",
+  "worm.inbound": "DRILL-WORM EN CAMINO"
  }
 }

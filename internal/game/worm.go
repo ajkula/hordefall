@@ -34,7 +34,7 @@ type WormPath struct {
 	Arch    float32
 }
 
-type Sandworm struct {
+type DrillWorm struct {
 	IsActive             bool
 	Phase                WormPhase
 	PhaseSeconds         float32
@@ -81,7 +81,7 @@ type WormCrater struct {
 	Life    float32
 }
 
-type wormPhaseUpdater func(game *Game, worm *Sandworm, deltaSeconds float32)
+type wormPhaseUpdater func(game *Game, worm *DrillWorm, deltaSeconds float32)
 
 // ===== Constants =====
 
@@ -171,16 +171,16 @@ var wormBodyPhases = [wormPhaseCount]bool{WormEmerging: true, WormRearing: true,
 
 var wormHeadPhases = [wormPhaseCount]bool{WormHeadAiming: true, WormHeadRolling: true, WormHeadResting: true}
 
-var wormPathBuilders = [wormPhaseCount]func(worm *Sandworm){
-	WormBurrowing:   func(*Sandworm) {},
-	WormWarning:     func(*Sandworm) {},
+var wormPathBuilders = [wormPhaseCount]func(worm *DrillWorm){
+	WormBurrowing:   func(*DrillWorm) {},
+	WormWarning:     func(*DrillWorm) {},
 	WormEmerging:    appendColumnPath,
 	WormRearing:     appendChainPath,
 	WormAiming:      appendChainPath,
 	WormDiving:      appendChainPath,
-	WormHeadAiming:  func(*Sandworm) {},
-	WormHeadRolling: func(*Sandworm) {},
-	WormHeadResting: func(*Sandworm) {},
+	WormHeadAiming:  func(*DrillWorm) {},
+	WormHeadRolling: func(*DrillWorm) {},
+	WormHeadResting: func(*DrillWorm) {},
 }
 
 var (
@@ -191,19 +191,19 @@ var (
 
 // ===== Public API =====
 
-func (w *Sandworm) Direction() (float32, float32) {
+func (w *DrillWorm) Direction() (float32, float32) {
 	return cosine(w.Angle), sine(w.Angle)
 }
 
-func (w *Sandworm) IsBodyOut() bool {
+func (w *DrillWorm) IsBodyOut() bool {
 	return w.IsActive && wormBodyPhases[w.Phase]
 }
 
-func (w *Sandworm) IsHeadAlone() bool {
+func (w *DrillWorm) IsHeadAlone() bool {
 	return w.IsActive && wormHeadPhases[w.Phase]
 }
 
-func (w *Sandworm) AliveSegmentCount() int {
+func (w *DrillWorm) AliveSegmentCount() int {
 	count := 0
 	for index := range w.Segments {
 		count += boolToIndex(w.Segments[index].IsAlive)
@@ -211,27 +211,27 @@ func (w *Sandworm) AliveSegmentCount() int {
 	return count
 }
 
-func (w *Sandworm) HeadAlong() float32 {
+func (w *DrillWorm) HeadAlong() float32 {
 	return w.Path.Arch + w.Travel*boolToFloat(w.Phase == WormDiving)
 }
 
-func (w *Sandworm) SlotAlong(slot int) float32 {
+func (w *DrillWorm) SlotAlong(slot int) float32 {
 	return w.HeadAlong() - wormHeadLength - float32(slot)*wormSegmentSpacing
 }
 
-func (w *Sandworm) IsAlongAboveGround(along float32) bool {
+func (w *DrillWorm) IsAlongAboveGround(along float32) bool {
 	return w.IsBodyOut() && along >= 0 && along <= w.Path.Total()
 }
 
-func (w *Sandworm) IsHeadAboveGround() bool {
+func (w *DrillWorm) IsHeadAboveGround() bool {
 	return w.IsHeadAlone() || w.IsAlongAboveGround(w.HeadAlong()-wormHeadLength/2)
 }
 
-func (w *Sandworm) BodyLength() float32 {
+func (w *DrillWorm) BodyLength() float32 {
 	return wormHeadLength + float32(w.AliveSegmentCount())*wormSegmentSpacing
 }
 
-func (w *Sandworm) HealthFraction() float32 {
+func (w *DrillWorm) HealthFraction() float32 {
 	total := w.HeadHealth
 	for index := range w.Segments {
 		total += w.Segments[index].Health * boolToFloat(w.Segments[index].IsAlive)
@@ -264,12 +264,12 @@ func (p *WormPath) At(along float32) (Point3, Point3) {
 func (g *Game) spawnWormEvent() {
 	angle := g.random.Angle()
 	power := 1 + g.elapsedSeconds/wormPowerGrowthSeconds
-	g.worm = Sandworm{
+	g.worm = DrillWorm{
 		IsActive: true, Phase: WormBurrowing, Power: power,
 		X:                    clampToArena(g.player.X + cosine(angle)*wormSpawnDistance),
 		Y:                    clampToArena(g.player.Y + sine(angle)*wormSpawnDistance),
-		SegmentMaximumHealth: enemyTable[EnemySandwormSegment].Health * power,
-		HeadMaximumHealth:    enemyTable[EnemySandworm].Health * power,
+		SegmentMaximumHealth: enemyTable[EnemyDrillWormSegment].Health * power,
+		HeadMaximumHealth:    enemyTable[EnemyDrillWorm].Health * power,
 	}
 	worm := &g.worm
 	worm.HeadHealth = worm.HeadMaximumHealth
@@ -299,14 +299,14 @@ func (g *Game) updateWorm(deltaSeconds float32) {
 	g.updateWormSegments(worm, deltaSeconds)
 }
 
-func (g *Game) enterWormPhase(worm *Sandworm, phase WormPhase) {
+func (g *Game) enterWormPhase(worm *DrillWorm, phase WormPhase) {
 	worm.Phase = phase
 	worm.PhaseSeconds = 0
 }
 
 // ===== Internal: underground =====
 
-func (g *Game) updateWormBurrowing(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormBurrowing(worm *DrillWorm, deltaSeconds float32) {
 	directionX, directionY := normalize(g.player.X-worm.X, g.player.Y-worm.Y)
 	worm.X = clampToArena(worm.X + directionX*wormBurrowSpeed*deltaSeconds)
 	worm.Y = clampToArena(worm.Y + directionY*wormBurrowSpeed*deltaSeconds)
@@ -321,7 +321,7 @@ func (g *Game) updateWormBurrowing(worm *Sandworm, deltaSeconds float32) {
 	g.playSound(audio.SoundWormRumble)
 }
 
-func (g *Game) updateWormWarning(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormWarning(worm *DrillWorm, deltaSeconds float32) {
 	g.kickUpWormDust(worm, worm.X, worm.Y, deltaSeconds)
 	if worm.PhaseSeconds < wormWarningSeconds {
 		return
@@ -336,7 +336,7 @@ func (g *Game) updateWormWarning(worm *Sandworm, deltaSeconds float32) {
 
 // ===== Internal: body out =====
 
-func (g *Game) updateWormEmerging(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormEmerging(worm *DrillWorm, deltaSeconds float32) {
 	riseHeight := worm.BodyLength()
 	worm.Travel = min(worm.Travel+wormEmergeSpeed*deltaSeconds, riseHeight)
 	worm.Controls = wormColumnControls(worm, worm.Travel)
@@ -349,7 +349,7 @@ func (g *Game) updateWormEmerging(worm *Sandworm, deltaSeconds float32) {
 	g.enterWormPhase(worm, WormRearing)
 }
 
-func (g *Game) raiseWormChain(worm *Sandworm) {
+func (g *Game) raiseWormChain(worm *DrillWorm) {
 	worm.Aim, worm.Bend = Point3{0, 0, 1}, 0
 	for index := range worm.AimHistory {
 		worm.AimHistory[index] = worm.Aim
@@ -357,16 +357,17 @@ func (g *Game) raiseWormChain(worm *Sandworm) {
 	buildWormChain(worm)
 }
 
-func (g *Game) updateWormRearing(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormRearing(worm *DrillWorm, deltaSeconds float32) {
 	g.steerWorm(worm, deltaSeconds, true)
 	if worm.PhaseSeconds < wormRearSeconds {
 		return
 	}
 	worm.Beam = newBossBeam(&frostBeamProfile)
+	g.say(ChatterWormFrost)
 	g.enterWormPhase(worm, WormAiming)
 }
 
-func (g *Game) updateWormAiming(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormAiming(worm *DrillWorm, deltaSeconds float32) {
 	isTracking := !worm.Beam.IsTurretFrozen() && !worm.HasFired
 	g.steerWorm(worm, deltaSeconds, isTracking)
 	g.rebuildWormPathIf(worm, true)
@@ -384,7 +385,7 @@ func (g *Game) updateWormAiming(worm *Sandworm, deltaSeconds float32) {
 	g.enterWormPhase(worm, WormDiving)
 }
 
-func (g *Game) steerWorm(worm *Sandworm, deltaSeconds float32, isTracking bool) {
+func (g *Game) steerWorm(worm *DrillWorm, deltaSeconds float32, isTracking bool) {
 	tracking := boolToFloat(isTracking)
 	aimRate := [2]float32{wormAimTurnRate, wormRearAimTurnRate}[boolToIndex(worm.Phase == WormRearing)]
 	worm.Aim = turnVectorToward(worm.Aim, wormAimAt(worm.HeadPoint(), g.player.X, g.player.Y), aimRate*deltaSeconds*tracking)
@@ -400,12 +401,12 @@ func wormAimAt(head Point3, targetX, targetY float32) Point3 {
 	return Point3{along * screenX, along*screenY - wormAimPitch, -wormAimPitch}
 }
 
-func (w *Sandworm) HeadPoint() Point3 {
+func (w *DrillWorm) HeadPoint() Point3 {
 	neck := w.Joints[max(0, w.JointCount-1)]
 	return Point3{neck.X + w.Aim.X*wormHeadLength, neck.Y + w.Aim.Y*wormHeadLength, max(0, neck.Z+w.Aim.Z*wormHeadLength)}
 }
 
-func buildWormChain(worm *Sandworm) {
+func buildWormChain(worm *DrillWorm) {
 	links := worm.AliveSegmentCount()
 	worm.JointCount = links + 1
 	worm.Joints[0] = Point3{worm.HoleX, worm.HoleY, 0}
@@ -418,7 +419,7 @@ func buildWormChain(worm *Sandworm) {
 	}
 }
 
-func (g *Game) aimWormBeamIf(worm *Sandworm, shouldAim bool) {
+func (g *Game) aimWormBeamIf(worm *DrillWorm, shouldAim bool) {
 	if !shouldAim {
 		return
 	}
@@ -429,7 +430,7 @@ func (g *Game) aimWormBeamIf(worm *Sandworm, shouldAim bool) {
 	worm.Beam.BeamAngle = atan2(aimY, aimX)
 }
 
-func (g *Game) updateWormDiving(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormDiving(worm *DrillWorm, deltaSeconds float32) {
 	worm.Travel += wormDiveSpeed * deltaSeconds
 	diveEnd := worm.DiveControls[3]
 	isHeadDown := worm.HeadAlong() >= worm.Path.Total()
@@ -443,12 +444,12 @@ func (g *Game) updateWormDiving(worm *Sandworm, deltaSeconds float32) {
 	g.enterWormPhase(worm, WormBurrowing)
 }
 
-func wormColumnControls(worm *Sandworm, height float32) [4]Point3 {
+func wormColumnControls(worm *DrillWorm, height float32) [4]Point3 {
 	base := Point3{worm.HoleX, worm.HoleY, 0}
 	return [4]Point3{base, {base.X, base.Y, height / 3}, {base.X, base.Y, height * 2 / 3}, {base.X, base.Y, height}}
 }
 
-func wormDiveControls(worm *Sandworm) [4]Point3 {
+func wormDiveControls(worm *DrillWorm) [4]Point3 {
 	head := worm.HeadPoint()
 	directionX, directionY := normalize(worm.Aim.X+0.0001, worm.Aim.Y)
 	reach := max(head.Z*wormDiveReach, wormHeadLength)
@@ -457,7 +458,7 @@ func wormDiveControls(worm *Sandworm) [4]Point3 {
 	return [4]Point3{head, {head.X + worm.Aim.X*lift, head.Y + worm.Aim.Y*lift, head.Z + max(worm.Aim.Z, 0)*lift + lift/2}, {end.X, end.Y, lift}, end}
 }
 
-func (g *Game) rebuildWormPathIf(worm *Sandworm, shouldRebuild bool) {
+func (g *Game) rebuildWormPathIf(worm *DrillWorm, shouldRebuild bool) {
 	if !shouldRebuild {
 		return
 	}
@@ -470,18 +471,18 @@ func (g *Game) rebuildWormPathIf(worm *Sandworm, shouldRebuild bool) {
 	worm.HeadX, worm.HeadY, worm.HeadZ = head.X, head.Y, head.Z
 }
 
-func appendColumnPath(worm *Sandworm) {
+func appendColumnPath(worm *DrillWorm) {
 	appendBezierSamples(&worm.Path, worm.Controls)
 }
 
-func appendChainPath(worm *Sandworm) {
+func appendChainPath(worm *DrillWorm) {
 	for joint := 1; joint < worm.JointCount; joint++ {
 		appendPathPoint(&worm.Path, worm.Joints[joint])
 	}
 	appendPathPoint(&worm.Path, worm.HeadPoint())
 }
 
-func appendDivePathIf(worm *Sandworm, shouldAppend bool) {
+func appendDivePathIf(worm *DrillWorm, shouldAppend bool) {
 	if !shouldAppend {
 		return
 	}
@@ -501,7 +502,7 @@ func appendPathPoint(path *WormPath, point Point3) {
 	path.Count++
 }
 
-func (g *Game) updateWormSegments(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormSegments(worm *DrillWorm, deltaSeconds float32) {
 	slot := 0
 	for index := range worm.Segments {
 		segment := &worm.Segments[index]
@@ -510,7 +511,7 @@ func (g *Game) updateWormSegments(worm *Sandworm, deltaSeconds float32) {
 	}
 }
 
-func (g *Game) updateWormSegment(worm *Sandworm, segment *WormSegment, slot int, deltaSeconds float32) {
+func (g *Game) updateWormSegment(worm *DrillWorm, segment *WormSegment, slot int, deltaSeconds float32) {
 	if !segment.IsAlive {
 		return
 	}
@@ -524,11 +525,11 @@ func (g *Game) updateWormSegment(worm *Sandworm, segment *WormSegment, slot int,
 	g.smoulderWormSegment(worm, segment, deltaSeconds)
 }
 
-func (g *Game) surfaceWormSegmentIf(worm *Sandworm, segment *WormSegment, shouldSurface bool) {
+func (g *Game) surfaceWormSegmentIf(worm *DrillWorm, segment *WormSegment, shouldSurface bool) {
 	if !shouldSurface {
 		return
 	}
-	segment.EnemyID = g.enemies.Spawn(EnemySandwormSegment, segment.X, segment.Y-segment.Z, worm.Power)
+	segment.EnemyID = g.enemies.Spawn(EnemyDrillWormSegment, segment.X, segment.Y-segment.Z, worm.Power)
 	g.setEnemyHealthIfPresent(segment.EnemyID, segment.Health)
 }
 
@@ -555,7 +556,7 @@ func (g *Game) placeWormSegmentEnemy(segment *WormSegment) {
 	segment.Health = g.enemies.Health[index]
 }
 
-func (g *Game) smoulderWormSegment(worm *Sandworm, segment *WormSegment, deltaSeconds float32) {
+func (g *Game) smoulderWormSegment(worm *DrillWorm, segment *WormSegment, deltaSeconds float32) {
 	segment.DamageSeconds -= deltaSeconds
 	if segment.EnemyID == 0 || segment.DamageSeconds > 0 {
 		return
@@ -570,7 +571,7 @@ func (g *Game) smoulderWormSegment(worm *Sandworm, segment *WormSegment, deltaSe
 
 // ===== Internal: losses =====
 
-func (g *Game) collectWormLosses(worm *Sandworm) {
+func (g *Game) collectWormLosses(worm *DrillWorm) {
 	for index := range worm.Segments {
 		g.collectWormSegmentLoss(worm, &worm.Segments[index])
 	}
@@ -579,7 +580,7 @@ func (g *Game) collectWormLosses(worm *Sandworm) {
 	g.detachWormHeadIf(worm, worm.IsActive && worm.IsBodyOut() && worm.AliveSegmentCount() == 0)
 }
 
-func (g *Game) collectWormSegmentLoss(worm *Sandworm, segment *WormSegment) {
+func (g *Game) collectWormSegmentLoss(worm *DrillWorm, segment *WormSegment) {
 	isLost := segment.IsAlive && segment.EnemyID != 0 && g.enemies.IndexOfID(segment.EnemyID) < 0
 	if !isLost {
 		return
@@ -595,22 +596,23 @@ func (g *Game) collectWormSegmentLoss(worm *Sandworm, segment *WormSegment) {
 	g.effects.AddShake(5)
 }
 
-func (g *Game) detachWormHeadIf(worm *Sandworm, shouldDetach bool) {
+func (g *Game) detachWormHeadIf(worm *DrillWorm, shouldDetach bool) {
 	if !shouldDetach {
 		return
 	}
 	worm.Beam.Phase = LaserCooldown
 	worm.HeadX, worm.HeadY, worm.HeadZ = clampToArena(worm.HeadX), clampToArena(worm.HeadY), 0
 	worm.Angle = atan2(worm.Aim.Y, worm.Aim.X)
-	worm.HeadEnemyID = g.enemies.Spawn(EnemySandworm, worm.HeadX, worm.HeadY, worm.Power)
+	worm.HeadEnemyID = g.enemies.Spawn(EnemyDrillWorm, worm.HeadX, worm.HeadY, worm.Power)
 	g.setEnemyHealthIfPresent(worm.HeadEnemyID, worm.HeadHealth)
 	g.slamWorm(worm, worm.HeadX, worm.HeadY)
 	g.playSound(audio.SoundWormRoar)
+	g.say(ChatterWormHead)
 	g.enterWormPhase(worm, WormHeadResting)
 	worm.PhaseSeconds = wormHeadCycleSeconds - wormHeadAimSeconds - wormHeadRollSeconds - 1
 }
 
-func (g *Game) destroyWormIf(worm *Sandworm, shouldDestroy bool) {
+func (g *Game) destroyWormIf(worm *DrillWorm, shouldDestroy bool) {
 	if !shouldDestroy {
 		return
 	}
@@ -623,7 +625,7 @@ func (g *Game) destroyWormIf(worm *Sandworm, shouldDestroy bool) {
 
 // ===== Internal: lone head =====
 
-func (g *Game) updateWormHeadAiming(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormHeadAiming(worm *DrillWorm, deltaSeconds float32) {
 	g.followWormHead(worm)
 	target := atan2(g.player.Y-worm.HeadY, g.player.X-worm.HeadX)
 	isLocked := worm.PhaseSeconds >= wormHeadAimSeconds-wormHeadLockSeconds
@@ -637,7 +639,7 @@ func (g *Game) updateWormHeadAiming(worm *Sandworm, deltaSeconds float32) {
 	g.enterWormPhase(worm, WormHeadRolling)
 }
 
-func (g *Game) updateWormHeadRolling(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormHeadRolling(worm *DrillWorm, deltaSeconds float32) {
 	progress := clamp(worm.PhaseSeconds/wormHeadRollSeconds, 0, 1)
 	eased := progress * progress * (3 - 2*progress)
 	directionX, directionY := worm.Direction()
@@ -653,7 +655,7 @@ func (g *Game) updateWormHeadRolling(worm *Sandworm, deltaSeconds float32) {
 	g.enterWormPhase(worm, WormHeadResting)
 }
 
-func (g *Game) updateWormHeadResting(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormHeadResting(worm *DrillWorm, deltaSeconds float32) {
 	g.followWormHead(worm)
 	if worm.PhaseSeconds < wormHeadCycleSeconds-wormHeadAimSeconds-wormHeadRollSeconds {
 		return
@@ -661,7 +663,7 @@ func (g *Game) updateWormHeadResting(worm *Sandworm, deltaSeconds float32) {
 	g.enterWormPhase(worm, WormHeadAiming)
 }
 
-func (g *Game) followWormHead(worm *Sandworm) {
+func (g *Game) followWormHead(worm *DrillWorm) {
 	index := g.enemies.IndexOfID(worm.HeadEnemyID)
 	if index < 0 {
 		return
@@ -671,7 +673,7 @@ func (g *Game) followWormHead(worm *Sandworm) {
 	worm.HeadHealth = g.enemies.Health[index]
 }
 
-func (g *Game) crushUnderWormHead(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) crushUnderWormHead(worm *DrillWorm, deltaSeconds float32) {
 	g.ApplyBurst(Burst{X: worm.HeadX, Y: worm.HeadY, Radius: wormRollRadius, Damage: wormRollEnemyDamage * worm.Power * deltaSeconds, Element: ElementPhysical})
 	reach := float32(wormRollRadius + playerRadius)
 	isPlayerHit := !worm.HasRollHit && distanceSquared(worm.HeadX, worm.HeadY, g.player.X, g.player.Y) < reach*reach
@@ -682,7 +684,7 @@ func (g *Game) crushUnderWormHead(worm *Sandworm, deltaSeconds float32) {
 
 // ===== Internal: shared =====
 
-func (g *Game) slamWorm(worm *Sandworm, x, y float32) {
+func (g *Game) slamWorm(worm *DrillWorm, x, y float32) {
 	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical})
 	isPlayerHit := distanceSquared(x, y, g.player.X, g.player.Y) < wormEruptionRadius*wormEruptionRadius
 	g.DamagePlayer(wormEruptionPlayerHurt * worm.Power * boolToFloat(isPlayerHit))
@@ -692,7 +694,7 @@ func (g *Game) slamWorm(worm *Sandworm, x, y float32) {
 	g.playSound(audio.SoundStomp)
 }
 
-func (g *Game) kickUpWormDust(worm *Sandworm, x, y, deltaSeconds float32) {
+func (g *Game) kickUpWormDust(worm *DrillWorm, x, y, deltaSeconds float32) {
 	worm.DustSeconds -= deltaSeconds
 	if worm.DustSeconds > 0 {
 		return
@@ -702,7 +704,7 @@ func (g *Game) kickUpWormDust(worm *Sandworm, x, y, deltaSeconds float32) {
 	g.effects.SpawnSparks(x, y, wormWakeClods, wormDirtColor, 110)
 }
 
-func (g *Game) eruptWorm(worm *Sandworm) {
+func (g *Game) eruptWorm(worm *DrillWorm) {
 	x, y := worm.HoleX, worm.HoleY
 	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical})
 	g.addWormCrater(x, y)
@@ -717,16 +719,17 @@ func (g *Game) eruptWorm(worm *Sandworm) {
 	g.blastPlayerIf(worm, x, y, isPlayerCaught)
 }
 
-func (g *Game) blastPlayerIf(worm *Sandworm, x, y float32, isCaught bool) {
+func (g *Game) blastPlayerIf(worm *DrillWorm, x, y float32, isCaught bool) {
 	if !isCaught {
 		return
 	}
 	awayX, awayY := normalize(g.player.X-x+boolToFloat(g.player.X == x), g.player.Y-y)
 	g.player.ShoveX, g.player.ShoveY = awayX*wormBlastShove, awayY*wormBlastShove
 	worm.BlastHits, worm.BlastSeconds = wormBlastHits, 0
+	g.say(ChatterWormBlast)
 }
 
-func (g *Game) updateWormBlast(worm *Sandworm, deltaSeconds float32) {
+func (g *Game) updateWormBlast(worm *DrillWorm, deltaSeconds float32) {
 	worm.BlastSeconds -= deltaSeconds
 	if worm.BlastHits == 0 || worm.BlastSeconds > 0 {
 		return

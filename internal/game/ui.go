@@ -427,7 +427,7 @@ func (u *UI) drawWormBar(g *Game, screen *ebiten.Image, y float32) {
 		return
 	}
 	drawBossBar(screen, y, worm.HealthFraction(), wormArmorColor)
-	u.drawText(screen, "SANDWORM", u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
+	u.drawText(screen, "DRILL-WORM", u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }
 
 func (u *UI) drawSpiderBar(g *Game, screen *ebiten.Image, rig *SpiderRig, y float32) {

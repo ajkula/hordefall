@@ -99,7 +99,7 @@ type Game struct {
 	isLanguageDrumFocused bool
 	intro                 Intro
 	chatter               Chatter
-	worm                  Sandworm
+	worm                  DrillWorm
 	wormCraters           []WormCrater
 	hordeWaveCount        int
 	optionsReturnState    GameState
@@ -261,7 +261,7 @@ func (g *Game) resetRun() {
 	g.bossKillsRequired = bossKillsRequiredAt(0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
-	g.worm, g.hordeWaveCount, g.wormCraters = Sandworm{}, 0, g.wormCraters[:0]
+	g.worm, g.hordeWaveCount, g.wormCraters = DrillWorm{}, 0, g.wormCraters[:0]
 	g.resetWeather()
 	g.resetChatter()
 	g.isDemo, g.isScoreRecorded = false, false

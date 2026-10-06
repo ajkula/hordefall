@@ -157,10 +157,16 @@
   "tachikoma.spider_inbound.3": "Могу ли тенкови бити пријатељи? Не? Добро.",
   "tachikoma.storm.1": "Ако зарђам, да ли старим?",
   "tachikoma.storm.2": "Муње! Бесплатно енергетско пиће!",
-  "tachikoma.worm_down.1": "Враћај се у свој песак!",
+  "tachikoma.worm_blast.1": "Вааах, летим!",
+  "tachikoma.worm_blast.2": "Еј! Тако се не поздравља!",
+  "tachikoma.worm_down.1": "Враћај се у своју рупу!",
   "tachikoma.worm_down.2": "Да ли је то био црв или воз?",
+  "tachikoma.worm_frost.1": "Уста му светле плаво… измичи!",
+  "tachikoma.worm_frost.2": "Бррр, циља на мене!",
+  "tachikoma.worm_head.1": "Глава му је отпала… и још увек јури!",
+  "tachikoma.worm_head.2": "Остала је само глава? Котрља се ка мени!",
   "tachikoma.worm_inbound.1": "Тло преде. То није нормално!",
-  "tachikoma.worm_inbound.2": "Нешто огромно плива испод песка!",
+  "tachikoma.worm_inbound.2": "Нешто огромно буши испод земље!",
   "title.audio": "ЗВУК",
   "title.controls": "КОНТРОЛЕ",
   "title.erase_scores": "ОБРИСАТИ РЕКОРДЕ?",
@@ -209,7 +215,7 @@
   "weather.blizzard": "МЕЋАВА",
   "weather.heatwave": "ТОПЛОТНИ ТАЛАС",
   "weather.storm": "ОЛУЈА",
-  "worm.destroyed": "SANDWORM УНИШТЕН",
-  "worm.inbound": "SANDWORM СТИЖЕ"
+  "worm.destroyed": "DRILL-WORM УНИШТЕН",
+  "worm.inbound": "DRILL-WORM СТИЖЕ"
  }
 }
