@@ -1,7 +1,5 @@
 package game
 
-import "hordefall/internal/audio"
-
 // ===== Types =====
 
 type LaserPhase uint8
@@ -18,7 +16,7 @@ type BeamProfile struct {
 	EnemyDamagePerSecond  float32
 	Status                StatusFlags
 	Stimulus              GroundStimulus
-	Sounds                [laserPhaseCount]audio.SoundKind
+	Sounds                [laserPhaseCount]SoundKind
 	TargetingColor        [3]float32
 	CoreColor             [3]float32
 	BeamColor             [3]float32
@@ -61,7 +59,7 @@ var spiderBeamProfile = BeamProfile{
 	HalfWidth: 20, Range: 1700, WidthScale: 1,
 	PlayerDamagePerSecond: 140, EnemyDamagePerSecond: 420,
 	Status: StatusBurning, Stimulus: StimulusScorch,
-	Sounds:         [laserPhaseCount]audio.SoundKind{LaserCharging: audio.SoundLaserCharge, LaserFiring: audio.SoundLaserFire},
+	Sounds:         [laserPhaseCount]SoundKind{LaserCharging: SoundLaserCharge, LaserFiring: SoundLaserFire},
 	TargetingColor: [3]float32{1, 0.25, 0.15}, CoreColor: [3]float32{1, 0.95, 0.8},
 	BeamColor: [3]float32{1, 0.55, 0.2}, HotColor: [3]float32{1, 0.85, 0.4},
 }
@@ -72,7 +70,7 @@ var frostBeamProfile = BeamProfile{
 	HalfWidth: 40, Range: 1700, WidthScale: 2,
 	PlayerDamagePerSecond: 140, EnemyDamagePerSecond: 420,
 	Status: StatusChilled, Stimulus: StimulusChill,
-	Sounds:         [laserPhaseCount]audio.SoundKind{LaserCharging: audio.SoundFrostCharge, LaserFiring: audio.SoundFrostFire},
+	Sounds:         [laserPhaseCount]SoundKind{LaserCharging: SoundFrostCharge, LaserFiring: SoundFrostFire},
 	TargetingColor: [3]float32{0.35, 0.8, 1}, CoreColor: [3]float32{0.9, 1, 1},
 	BeamColor: [3]float32{0.3, 0.7, 1}, HotColor: [3]float32{0.65, 0.95, 1},
 }

@@ -2,12 +2,10 @@ package game
 
 import (
 	"fmt"
-	"github.com/ajkula/ajkurig/i18n"
 	"testing"
 
+	"github.com/ajkula/ajkurig/i18n"
 	"github.com/ajkula/ajkurig/rng"
-
-	"hordefall/internal/audio"
 )
 
 // ===== Public API =====
@@ -15,14 +13,14 @@ import (
 func TestMusicSettingIsSavedAndRestored(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
-	game.audio = audio.NewSilentEngine(1)
+	game.attachAudio(newSilentAudio(1))
 	game.loadSettings()
 	if !game.settings.IsMusicOn || game.musicLabel() != "Music: ON" {
 		t.Fatalf("music should default to on, label %q", game.musicLabel())
 	}
 	game.toggleMusic()
 	restarted := newHeadlessGame()
-	restarted.audio = audio.NewSilentEngine(1)
+	restarted.attachAudio(newSilentAudio(1))
 	restarted.loadSettings()
 	if restarted.settings.IsMusicOn || restarted.audio.IsMusicOn() || restarted.musicLabel() != "Music: OFF" {
 		t.Fatalf("music off was not restored after restart, label %q", restarted.musicLabel())
@@ -30,10 +28,10 @@ func TestMusicSettingIsSavedAndRestored(t *testing.T) {
 }
 
 func TestSongRotatesEveryFiveMinutes(t *testing.T) {
-	engine := audio.NewSilentEngine(99)
-	engine.MusicVolume = 1
+	engine, soundIDs := newSilentAudio(99)
+	engine.SetMusicVolume(1)
 	game := newHeadlessGame()
-	game.audio = engine
+	game.attachAudio(engine, soundIDs)
 	game.buildPlaylistMenu()
 	songCount := engine.SongCount()
 	for slot := range songCount + 1 {
@@ -52,8 +50,8 @@ func TestSongRotatesEveryFiveMinutes(t *testing.T) {
 
 func TestDemoChangesSongEveryFullCycle(t *testing.T) {
 	game := newHeadlessGame()
-	engine := audio.NewSilentEngine(7)
-	game.audio = engine
+	engine, soundIDs := newSilentAudio(7)
+	game.attachAudio(engine, soundIDs)
 	game.buildPlaylistMenu()
 	game.startDemo()
 	game.state = StateMainMenu
@@ -71,7 +69,7 @@ func TestDemoChangesSongEveryFullCycle(t *testing.T) {
 func TestPlaylistTogglesMatchWhatIsHeard(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
-	game.audio = audio.NewSilentEngine(5)
+	game.attachAudio(newSilentAudio(5))
 	game.loadSettings()
 	game.state = StatePlaylist
 	game.rotateSong()
@@ -97,7 +95,7 @@ func TestPlaylistSkipsDisabledTracksAndPersists(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	newPlaylistGame := func() *Game {
 		game := newHeadlessGame()
-		game.audio = audio.NewSilentEngine(5)
+		game.attachAudio(newSilentAudio(5))
 		game.loadSettings()
 		return game
 	}
@@ -106,7 +104,7 @@ func TestPlaylistSkipsDisabledTracksAndPersists(t *testing.T) {
 	for index := range songCount {
 		game.toggleSong(index)
 	}
-	if game.HasEnabledSong() || !game.audio.IsPlaylistEmpty {
+	if game.HasEnabledSong() || !game.audio.IsPlaylistEmpty() {
 		t.Fatalf("disabling every track should leave an empty, silent playlist: %v", game.settings.Tracks)
 	}
 	game.toggleSong(0)
@@ -131,18 +129,18 @@ func TestDemoMusicFollowsTheActionLikeARun(t *testing.T) {
 	game := newHeadlessGame()
 	game.startDemo()
 	game.enemies.Count = 0
-	if quiet := game.computeMusicSignals()[audio.SignalHorde]; quiet != 0 {
+	if quiet := game.computeMusicSignals()[SignalHorde]; quiet != 0 {
 		t.Fatalf("an empty demo still plays the horde layers, horde signal %.2f", quiet)
 	}
 	for range hordeSignalFullCount / 2 {
 		game.enemies.Spawn(EnemySwarmer, game.player.X, game.player.Y, 1)
 	}
-	if half := game.computeMusicSignals()[audio.SignalHorde]; half != 0.5 {
+	if half := game.computeMusicSignals()[SignalHorde]; half != 0.5 {
 		t.Fatalf("the demo horde signal does not follow nearby enemies: %.2f", half)
 	}
 	game.resetRun()
 	game.enemies.Count = 0
-	if game.computeMusicSignals()[audio.SignalHorde] != 0 {
+	if game.computeMusicSignals()[SignalHorde] != 0 {
 		t.Fatalf("in a run with no enemies the horde layers should stay silent")
 	}
 }
@@ -150,7 +148,7 @@ func TestDemoMusicFollowsTheActionLikeARun(t *testing.T) {
 func TestTracksMapIsTheSingleSourceOfTruth(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
 	game := newHeadlessGame()
-	game.audio = audio.NewSilentEngine(5)
+	game.attachAudio(newSilentAudio(5))
 	game.loadSettings()
 	game.settings.Tracks = map[string]bool{"Hordefall Theme": false, "Neon Pursuit": false, "Frozen Wastes": false, "Ember March": true, "Skyline Rush": false, "Grey Transmission": false}
 	for range 5 {
@@ -175,7 +173,7 @@ func TestFirstSongIsPickedAmongEnabledTracks(t *testing.T) {
 	picked := map[int]bool{}
 	for seed := range 40 {
 		game := newHeadlessGame()
-		game.audio = audio.NewSilentEngine(5)
+		game.attachAudio(newSilentAudio(5))
 		game.buildPlaylistMenu()
 		game.musicRandom = rng.New(uint32(seed*7919 + 1))
 		game.rotateSong()
@@ -268,19 +266,19 @@ func TestEffectsVolumeSliderScalesSoundEffects(t *testing.T) {
 	game := newHeadlessGame()
 	game.settings = DefaultSettings()
 	game.settings.EffectsVolumeStep = volumeSteps
-	game.audio = audio.NewSilentEngine(1)
+	game.attachAudio(newSilentAudio(1))
 	game.isDemo = false
 	game.updateAudio()
-	fullVolume := game.audio.EffectsVolume
+	fullVolume := game.audio.EffectsVolume()
 	game.adjustEffectsVolume(-2)
 	game.updateAudio()
-	if game.effectsVolumeLabel() != "Effects volume: 60%" || abs(game.audio.EffectsVolume-fullVolume*0.6) > 0.001 {
-		t.Fatalf("60%% step: label %q, volume %.3f (full %.3f)", game.effectsVolumeLabel(), game.audio.EffectsVolume, fullVolume)
+	if game.effectsVolumeLabel() != "Effects volume: 60%" || abs(game.audio.EffectsVolume()-fullVolume*0.6) > 0.001 {
+		t.Fatalf("60%% step: label %q, volume %.3f (full %.3f)", game.effectsVolumeLabel(), game.audio.EffectsVolume(), fullVolume)
 	}
 	game.adjustEffectsVolume(-10)
 	game.updateAudio()
-	if game.audio.EffectsVolume != 0 || game.settings.MusicVolumeStep != defaultMusicVolumeStep {
-		t.Fatalf("0%% effects should be silent without touching music: effects %.3f, music step %d", game.audio.EffectsVolume, game.settings.MusicVolumeStep)
+	if game.audio.EffectsVolume() != 0 || game.settings.MusicVolumeStep != defaultMusicVolumeStep {
+		t.Fatalf("0%% effects should be silent without touching music: effects %.3f, music step %d", game.audio.EffectsVolume(), game.settings.MusicVolumeStep)
 	}
 }
 

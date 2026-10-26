@@ -1,7 +1,5 @@
 package game
 
-import "hordefall/internal/audio"
-
 // ===== Types =====
 
 type Player struct {
@@ -119,7 +117,7 @@ func (g *Game) DamagePlayer(amount float32) {
 	player.InvulnerableSeconds = hurtInvulnerabilitySeconds
 	player.DamageFlashSeconds = 0.25
 	g.effects.AddShake(4)
-	g.playSound(audio.SoundHurt)
+	g.playSound(SoundHurt)
 	g.effects.SpawnSparks(player.X, player.Y, 8, [3]float32{1, 0.2, 0.2}, 160)
 }
 
@@ -171,7 +169,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	g.spawnDashTrail(isDashing)
 	collected := g.gems.Collect(player.X, player.Y, player.MagnetRadius, deltaSeconds)
 	player.GainExperience(collected)
-	g.playSoundIf(audio.SoundGem, collected > 0)
+	g.playSoundIf(SoundGem, collected > 0)
 	g.updateHealOrbs(deltaSeconds)
 	g.updateTachikoma(deltaSeconds)
 }
@@ -219,7 +217,7 @@ func (g *Game) startDashIfRequested() {
 	player.InvulnerableSeconds = max(player.InvulnerableSeconds, dashDurationSeconds+0.08)
 	player.DashDirectionX, player.DashDirectionY = player.FacingX, player.FacingY
 	g.effects.AddRing(player.X, player.Y, 26, [3]float32{0.7, 0.95, 1})
-	g.playSound(audio.SoundDash)
+	g.playSound(SoundDash)
 }
 
 func (g *Game) spawnDashTrail(isDashing bool) {

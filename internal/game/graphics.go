@@ -4,11 +4,11 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/ajkula/ajkurig/i18n"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 // ===== Types =====

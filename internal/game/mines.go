@@ -1,7 +1,5 @@
 package game
 
-import "hordefall/internal/audio"
-
 // ===== Types =====
 
 type StaticMine struct {
@@ -73,7 +71,7 @@ func (g *Game) detonateMineIf(mine StaticMine, isTriggered bool) {
 	g.ApplyBurst(Burst{X: mine.X, Y: mine.Y, Radius: mine.Radius, Damage: mine.Damage, Element: ElementShock})
 	g.effects.AddRing(mine.X, mine.Y, mine.Radius, mineColor)
 	g.effects.SpawnSparks(mine.X, mine.Y, mineDetonateSparks, mineColor, mine.Radius*2)
-	g.playSound(audio.SoundZap)
+	g.playSound(SoundZap)
 }
 
 func (g *Game) hasEnemyWithin(x, y, radius float32) bool {

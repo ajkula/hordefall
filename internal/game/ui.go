@@ -7,11 +7,11 @@ import (
 	"image/color"
 	"strings"
 
-	"github.com/ajkula/ajkurig/i18n"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"golang.org/x/image/font/gofont/gomonobold"
+
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 // ===== Types =====

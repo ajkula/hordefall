@@ -13,8 +13,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"github.com/ajkula/ajkurig/i18n"
-
-	"hordefall/internal/audio"
 )
 
 // ===== Constants =====
@@ -113,7 +111,7 @@ func (g *Game) updateLanguageDrum() {
 		return
 	}
 	if g.isConfirming() {
-		g.playSound(audio.SoundMenuSelect)
+		g.playSound(SoundMenuSelect)
 		g.chooseLanguage(languages[wrapIndex(g.languageTarget, len(languages))].Code)
 		return
 	}
@@ -123,7 +121,7 @@ func (g *Game) updateLanguageDrum() {
 	}
 	g.languageTarget += step
 	g.languageArrowSeconds = drumArrowFlashSeconds * float32(step)
-	g.playSound(audio.SoundMenuMove)
+	g.playSound(SoundMenuMove)
 	g.previewLanguage(languages[wrapIndex(g.languageTarget, len(languages))].Code)
 }
 

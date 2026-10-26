@@ -4,8 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"hordefall/internal/audio"
+	"github.com/ajkula/ajkurig/audio"
+
+	"hordefall/music"
 )
+
+// ===== Types =====
+
+type MusicSignal uint8
 
 // ===== Constants =====
 
@@ -23,19 +29,54 @@ const (
 	musicBannerDuration     = 45
 )
 
+const (
+	SignalAlways MusicSignal = iota
+	SignalHorde
+	SignalBoss
+	SignalReactions
+	SignalDanger
+	SignalCount
+)
+
+var signalNames = [SignalCount]string{
+	SignalAlways: audio.AlwaysName, SignalHorde: music.SignalHorde, SignalBoss: music.SignalBoss, SignalReactions: music.SignalReactions, SignalDanger: music.SignalDanger,
+}
+
 var laserDangerPhases = [laserPhaseCount]float32{LaserCharging: 1, LaserLocked: 1, LaserFiring: 1}
 
-var fullMusicSignals = [audio.SignalCount]float32{
-	audio.SignalAlways: 1, audio.SignalHorde: 1, audio.SignalBoss: 3, audio.SignalReactions: 1, audio.SignalDanger: 1,
+var fullMusicSignals = [SignalCount]float32{
+	SignalAlways: 1, SignalHorde: 1, SignalBoss: 3, SignalReactions: 1, SignalDanger: 1,
 }
 
 // ===== Internal =====
 
-func (g *Game) playSound(kind audio.SoundKind) {
-	g.audio.Play(kind, g.clockSeconds)
+func newAudio(seed uint32, isSilent bool) (*audio.Engine, SoundIDs) {
+	bank := audio.NewSoundBank()
+	ids := RegisterSounds(bank)
+	board := audio.NewSignalBoard(music.SignalNames()...)
+	engines := [2]func(*audio.SoundBank, *audio.SignalBoard) *audio.Engine{audio.NewEngine, audio.NewSilentEngine}
+	engine := engines[boolToIndex(isSilent)](bank, board)
+	songs, _ := music.Songs(seed)
+	engine.SetSongs(songs)
+	return engine, ids
 }
 
-func (g *Game) playSoundIf(kind audio.SoundKind, shouldPlay bool) {
+func newSilentAudio(seed uint32) (*audio.Engine, SoundIDs) {
+	return newAudio(seed, true)
+}
+
+func (g *Game) attachAudio(engine *audio.Engine, ids SoundIDs) {
+	g.audio, g.soundIDs = engine, ids
+	for signal, name := range signalNames {
+		g.signalIDs[signal] = engine.Signals().Register(name)
+	}
+}
+
+func (g *Game) playSound(kind SoundKind) {
+	g.audio.Play(g.soundIDs[kind], g.clockSeconds)
+}
+
+func (g *Game) playSoundIf(kind SoundKind, shouldPlay bool) {
 	if !shouldPlay {
 		return
 	}
@@ -53,7 +94,18 @@ func (g *Game) updateAudio() {
 		return
 	}
 	g.musicSignals = g.computeMusicSignals()
-	g.audio.SetMusicSignals(g.musicSignals)
+	g.pushMusicSignals()
+}
+
+func (g *Game) pushMusicSignals() {
+	if g.audio == nil {
+		return
+	}
+	board := g.audio.Signals()
+	for signal, value := range g.musicSignals {
+		board.Set(g.signalIDs[signal], value)
+	}
+	g.audio.PushSignals()
 }
 
 func (g *Game) rotateSong() {
@@ -90,7 +142,7 @@ func (g *Game) describeMusic() string {
 		titles = appendIf(titles, g.audio.SongTitle(index), g.IsSongEnabled(index))
 	}
 	signals := g.musicSignals
-	levels := fmt.Sprintf("   layers %d/16  horde %.2f  boss %.0f  reactions %.2f  danger %.2f", g.audio.AudibleLayerCount(), signals[audio.SignalHorde], signals[audio.SignalBoss], signals[audio.SignalReactions], signals[audio.SignalDanger])
+	levels := fmt.Sprintf("   layers %d/16  horde %.2f  boss %.0f  reactions %.2f  danger %.2f", g.audio.AudibleLayerCount(), signals[SignalHorde], signals[SignalBoss], signals[SignalReactions], signals[SignalDanger])
 	return "Music playing: " + g.audio.PlayingDescription() + levels + "   enabled: " + strings.Join(titles, ", ")
 }
 
@@ -113,17 +165,17 @@ func (g *Game) playSong(index int) {
 	g.musicBannerSeconds = musicBannerDuration
 }
 
-func (g *Game) computeMusicSignals() [audio.SignalCount]float32 {
+func (g *Game) computeMusicSignals() [SignalCount]float32 {
 	if g.state == StateGameOver {
 		return fullMusicSignals
 	}
-	var signals [audio.SignalCount]float32
-	signals[audio.SignalAlways] = 1
+	var signals [SignalCount]float32
+	signals[SignalAlways] = 1
 	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1)
-	signals[audio.SignalHorde] = hordeSignal
-	signals[audio.SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive) + boolToIndex(g.worm.IsActive))
-	signals[audio.SignalReactions] = g.reactionSignal()
-	signals[audio.SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())
+	signals[SignalHorde] = hordeSignal
+	signals[SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive) + boolToIndex(g.worm.IsActive))
+	signals[SignalReactions] = g.reactionSignal()
+	signals[SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())
 	return signals
 }
 
@@ -142,7 +194,7 @@ func (g *Game) reactionSignal() float32 {
 	g.previousReactions = total
 	rate := float32(newReactions) * ticksPerSecond / musicSignalFrames
 	target := clamp(rate/reactionSignalFullRate, 0, 1)
-	return g.musicSignals[audio.SignalReactions] + (target-g.musicSignals[audio.SignalReactions])*reactionSignalSmoothing
+	return g.musicSignals[SignalReactions] + (target-g.musicSignals[SignalReactions])*reactionSignalSmoothing
 }
 
 func (g *Game) lowHealthSignal() float32 {

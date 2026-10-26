@@ -1,8 +1,9 @@
 package game
 
 import (
-	"hordefall/internal/config"
 	"github.com/ajkula/ajkurig/i18n"
+
+	"hordefall/internal/config"
 )
 
 // ===== Types =====

@@ -3,6 +3,7 @@ package game
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+
 	"github.com/ajkula/ajkurig/i18n"
 )
 

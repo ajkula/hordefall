@@ -5,7 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"hordefall/internal/audio"
+	"github.com/ajkula/ajkurig/audio"
 )
 
 // ===== Types =====
@@ -63,7 +63,7 @@ func (g *Game) updateIntro() {
 	intro.Seconds += deltaSeconds
 	intro.FirePresses += boolToIndex(g.controls.JustPressed&ActionFire != 0)
 	g.startIntroSkipIf(intro.FirePresses >= introSkipPresses && !intro.IsSkipping)
-	g.playSoundIf(audio.SoundBombWhistle, intro.Seconds >= introBlackSeconds && intro.Seconds-deltaSeconds < introBlackSeconds && !intro.IsSkipping)
+	g.playSoundIf(SoundBombWhistle, intro.Seconds >= introBlackSeconds && intro.Seconds-deltaSeconds < introBlackSeconds && !intro.IsSkipping)
 	g.impactIf(intro.Seconds >= introImpactAt && !intro.HasImpacted && !intro.IsSkipping)
 	shake := introShakeStrength * max(0, 1-(intro.Seconds-introImpactAt)/introShakeSeconds) * boolToFloat(intro.HasImpacted)
 	intro.ShakeX, intro.ShakeY = g.random.Between(-shake, shake), g.random.Between(-shake, shake)
@@ -87,8 +87,8 @@ func (g *Game) impactIf(shouldImpact bool) {
 	}
 	g.intro.HasImpacted = true
 	g.intro.Glass = NewShatteredGlass(screenWidth/2, screenHeight/2, introGlassSeed)
-	g.playSound(audio.SoundBigImpact)
-	g.playSound(audio.SoundGlassShatter)
+	g.playSound(SoundBigImpact)
+	g.playSound(SoundGlassShatter)
 }
 
 func (g *Game) finishIntro() {

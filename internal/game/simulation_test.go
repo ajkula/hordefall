@@ -4,11 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ajkula/ajkurig/spatial"
-
 	"github.com/ajkula/ajkurig/rng"
-
-	"hordefall/internal/audio"
+	"github.com/ajkula/ajkurig/spatial"
 )
 
 // ===== Constants =====
@@ -691,7 +688,7 @@ func TestShockedFoesReactToFireBladesAndRain(t *testing.T) {
 }
 
 func TestBeamChargeSoundsLastUntilTheShot(t *testing.T) {
-	cases := map[*BeamProfile]float32{&spiderBeamProfile: audio.LaserChargeSoundSeconds, &frostBeamProfile: audio.FrostChargeSoundSeconds}
+	cases := map[*BeamProfile]float32{&spiderBeamProfile: LaserChargeSoundSeconds, &frostBeamProfile: FrostChargeSoundSeconds}
 	for profile, soundSeconds := range cases {
 		untilShot := profile.Durations[LaserCharging] + profile.Durations[LaserLocked]
 		if abs(soundSeconds-untilShot) > 0.001 {

@@ -1,7 +1,5 @@
 package game
 
-import "hordefall/internal/audio"
-
 // ===== Types =====
 
 type StatusFlags uint8
@@ -39,7 +37,7 @@ type ReactionDefinition struct {
 	GroundRadiusCells int
 	ShakeStrength     float32
 	DamagesPlayer     bool
-	Sound             audio.SoundKind
+	Sound             SoundKind
 }
 
 type ReactionRule struct {
@@ -119,47 +117,47 @@ var reactionTable = [reactionKindCount]ReactionDefinition{
 		Name: "INFERNO", Color: [3]float32{1, 0.5, 0.1}, DamageMultiplier: 1,
 		RemovesStatus: StatusOiled, AddsStatus: StatusBurning,
 		AreaRadius: 75, AreaDamage: 28, AreaElement: ElementFire,
-		GroundStimulus: StimulusHeat, GroundRadiusCells: 3, ShakeStrength: 7, DamagesPlayer: true, Sound: audio.SoundExplosion,
+		GroundStimulus: StimulusHeat, GroundRadiusCells: 3, ShakeStrength: 7, DamagesPlayer: true, Sound: SoundExplosion,
 	},
 	ReactionSteam: {
 		Name: "STEAM", Color: [3]float32{0.9, 0.92, 0.95}, DamageMultiplier: 1.5,
 		RemovesStatus: StatusBurning | StatusChilled, SuppressedStatus: StatusBurning | StatusChilled,
-		AreaRadius: 50, AreaDamage: 12, AreaElement: ElementWater, ShakeStrength: 1.5, Sound: audio.SoundHiss,
+		AreaRadius: 50, AreaDamage: 12, AreaElement: ElementWater, ShakeStrength: 1.5, Sound: SoundHiss,
 	},
 	ReactionFreeze: {
 		Name: "FREEZE", Color: [3]float32{0.6, 0.9, 1}, DamageMultiplier: 1,
 		RemovesStatus: StatusChilled | StatusWet | StatusBurning, SuppressedStatus: StatusChilled, AddsStatus: StatusFrozen,
-		GroundStimulus: StimulusChill, GroundRadiusCells: 1, Sound: audio.SoundFreeze,
+		GroundStimulus: StimulusChill, GroundRadiusCells: 1, Sound: SoundFreeze,
 	},
 	ReactionShatter: {
 		Name: "SHATTER", Color: [3]float32{0.8, 0.95, 1}, DamageMultiplier: 3,
 		RemovesStatus: StatusFrozen,
-		AreaRadius:    45, AreaDamage: 10, AreaElement: ElementPhysical, ShakeStrength: 3, Sound: audio.SoundShatter,
+		AreaRadius:    45, AreaDamage: 10, AreaElement: ElementPhysical, ShakeStrength: 3, Sound: SoundShatter,
 	},
 	ReactionElectrocute: {
 		Name: "ELECTROCUTE", Color: [3]float32{1, 1, 0.45}, DamageMultiplier: 2,
 		RemovesStatus: StatusWet,
-		AreaRadius:    120, AreaDamage: 16, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 2, Sound: audio.SoundElectrocute,
+		AreaRadius:    120, AreaDamage: 16, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 2, Sound: SoundElectrocute,
 	},
 	ReactionExtinguish: {
 		Name: "HISS", Color: [3]float32{0.7, 0.75, 0.8}, DamageMultiplier: 0.5,
-		RemovesStatus: StatusBurning | StatusWet, SuppressedStatus: StatusBurning | StatusWet, Sound: audio.SoundHiss,
+		RemovesStatus: StatusBurning | StatusWet, SuppressedStatus: StatusBurning | StatusWet, Sound: SoundHiss,
 	},
 	ReactionPlasma: {
 		Name: "PLASMA", Color: [3]float32{1, 0.4, 0.9}, DamageMultiplier: 1.8,
 		RemovesStatus: StatusShocked, AddsStatus: StatusBurning,
 		AreaRadius: 70, AreaDamage: 18, AreaElement: ElementFire, AreaRequires: StatusShocked,
-		GroundStimulus: StimulusHeat, GroundRadiusCells: 1, ShakeStrength: 3, Sound: audio.SoundExplosion,
+		GroundStimulus: StimulusHeat, GroundRadiusCells: 1, ShakeStrength: 3, Sound: SoundExplosion,
 	},
 	ReactionOverload: {
 		Name: "OVERLOAD", Color: [3]float32{1, 0.92, 0.35}, DamageMultiplier: 2.5,
 		RemovesStatus: StatusShocked,
-		AreaRadius:    45, AreaDamage: 8, AreaElement: ElementPhysical, AreaRequires: StatusShocked, ShakeStrength: 2, Sound: audio.SoundZap,
+		AreaRadius:    45, AreaDamage: 8, AreaElement: ElementPhysical, AreaRequires: StatusShocked, ShakeStrength: 2, Sound: SoundZap,
 	},
 	ReactionConduction: {
 		Name: "CONDUCTION", Color: [3]float32{0.45, 0.85, 1}, DamageMultiplier: 1,
 		RemovesStatus: StatusShocked, SuppressedStatus: StatusWet,
-		AreaRadius: 130, AreaDamage: 10, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 1.5, Sound: audio.SoundElectrocute,
+		AreaRadius: 130, AreaDamage: 10, AreaElement: ElementShock, AreaRequires: StatusWet, ShakeStrength: 1.5, Sound: SoundElectrocute,
 	},
 }
 

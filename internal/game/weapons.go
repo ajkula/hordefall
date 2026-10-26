@@ -1,7 +1,5 @@
 package game
 
-import "hordefall/internal/audio"
-
 // ===== Types =====
 
 type WeaponKind uint8
@@ -12,7 +10,7 @@ type WeaponDefinition struct {
 	Key              string
 	Element          Element
 	IsAimed          bool
-	FireSound        audio.SoundKind
+	FireSound        SoundKind
 	Color            [3]float32
 	BaseCooldown     float32
 	CooldownPerLevel float32
@@ -84,19 +82,19 @@ var hammerDustColor = [3]float32{0.75, 0.68, 0.55}
 var weaponTable = [weaponKindCount]WeaponDefinition{
 	WeaponEmberBolt: {
 		Key:     "ember_bolt",
-		Element: ElementFire, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{1, 0.55, 0.15},
+		Element: ElementFire, IsAimed: true, FireSound: SoundPew, Color: [3]float32{1, 0.55, 0.15},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 11, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},
 	WeaponFrostNova: {
 		Key:     "frost_nova",
-		Element: ElementFrost, FireSound: audio.SoundNova, Color: [3]float32{0.6, 0.85, 1},
+		Element: ElementFrost, FireSound: SoundNova, Color: [3]float32{0.6, 0.85, 1},
 		BaseCooldown: 2.6, CooldownPerLevel: 0.06, BaseDamage: 5, DamagePerLevel: 3,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 95, RadiusPerLevel: 14,
 	},
 	WeaponArcLightning: {
 		Key:     "arc_lightning",
-		Element: ElementShock, IsAimed: true, FireSound: audio.SoundZap, Color: [3]float32{1, 1, 0.5},
+		Element: ElementShock, IsAimed: true, FireSound: SoundZap, Color: [3]float32{1, 1, 0.5},
 		BaseCooldown: 0.9, CooldownPerLevel: 0.06, BaseDamage: 12, DamagePerLevel: 4,
 		BaseCount: 3, LevelsPerCount: 1,
 	},
@@ -108,7 +106,7 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 	},
 	WeaponDownpour: {
 		Key:     "downpour",
-		Element: ElementWater, IsAimed: true, FireSound: audio.SoundRain, Color: [3]float32{0.35, 0.6, 1},
+		Element: ElementWater, IsAimed: true, FireSound: SoundRain, Color: [3]float32{0.35, 0.6, 1},
 		BaseCooldown: 3.6, CooldownPerLevel: 0.07, BaseDamage: 3, DamagePerLevel: 1.5,
 		BaseCount: 1, LevelsPerCount: 3, BaseRadius: 85, RadiusPerLevel: 12,
 	},
@@ -119,25 +117,25 @@ var weaponTable = [weaponKindCount]WeaponDefinition{
 	},
 	WeaponSeismicHammer: {
 		Key:     "seismic_hammer",
-		Element: ElementPhysical, FireSound: audio.SoundStomp, Color: [3]float32{0.85, 0.72, 0.5},
+		Element: ElementPhysical, FireSound: SoundStomp, Color: [3]float32{0.85, 0.72, 0.5},
 		BaseCooldown: 2.4, CooldownPerLevel: 0.06, BaseDamage: 14, DamagePerLevel: 5,
 		BaseCount: 1, LevelsPerCount: 99, BaseRadius: 120, RadiusPerLevel: 12,
 	},
 	WeaponPulseShot: {
 		Key:     "pulse_shot",
-		Element: ElementNone, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{0.85, 0.88, 1},
+		Element: ElementNone, IsAimed: true, FireSound: SoundPew, Color: [3]float32{0.85, 0.88, 1},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot, IsFamilyBase: true,
 	},
 	WeaponFrostShard: {
 		Key:     "frost_shard",
-		Element: ElementFrost, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{0.6, 0.88, 1},
+		Element: ElementFrost, IsAimed: true, FireSound: SoundPew, Color: [3]float32{0.6, 0.88, 1},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},
 	WeaponVoltBolt: {
 		Key:     "volt_bolt",
-		Element: ElementShock, IsAimed: true, FireSound: audio.SoundPew, Color: [3]float32{1, 0.95, 0.4},
+		Element: ElementShock, IsAimed: true, FireSound: SoundPew, Color: [3]float32{1, 0.95, 0.4},
 		BaseCooldown: 0.42, CooldownPerLevel: 0.07, BaseDamage: 10, DamagePerLevel: 4,
 		BaseCount: 1, LevelsPerCount: 2, Family: FamilyMainShot,
 	},

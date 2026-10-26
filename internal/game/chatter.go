@@ -7,7 +7,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
-	"hordefall/internal/audio"
 	"github.com/ajkula/ajkurig/i18n"
 )
 
@@ -163,7 +162,7 @@ func (g *Game) say(event ChatterEvent) {
 	chatter.Seconds, chatter.QuietSeconds = 0, 0
 	chatter.Cooldowns[event] = topic.CooldownSeconds
 	chatter.HasGreeted = true
-	g.playSound(audio.SoundChatter)
+	g.playSound(SoundChatter)
 }
 
 func (c *Chatter) IsSpeaking(textWidth, boxWidth float32) bool {

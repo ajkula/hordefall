@@ -4,7 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
-	"hordefall/internal/audio"
 	"github.com/ajkula/ajkurig/i18n"
 )
 
@@ -91,7 +90,7 @@ func (g *Game) startHordeEvent() {
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.F("horde.approaches", spawnedCount), hordeBarColor)
 	g.say(ChatterHordeIncoming)
 	g.effects.AddShake(8)
-	g.playSound(audio.SoundStomp)
+	g.playSound(SoundStomp)
 }
 
 func (g *Game) spawnHordeEnemy(spawned int) bool {
@@ -132,7 +131,7 @@ func (g *Game) finishHordeEvent() {
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("horde.vanquished"), accentColor)
 	g.say(ChatterHordeCleared)
 	g.effects.AddShake(6)
-	g.playSound(audio.SoundLevelUp)
+	g.playSound(SoundLevelUp)
 }
 
 func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {

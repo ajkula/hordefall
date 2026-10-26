@@ -3,7 +3,6 @@ package game
 import (
 	"math"
 
-	"hordefall/internal/audio"
 	"github.com/ajkula/ajkurig/i18n"
 )
 
@@ -279,7 +278,7 @@ func (g *Game) spawnWormEvent() {
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("worm.inbound"), warningColor)
 	g.say(ChatterWormInbound)
 	g.effects.AddShake(6)
-	g.playSound(audio.SoundWormRoar)
+	g.playSound(SoundWormRoar)
 }
 
 func (g *Game) updateWorm(deltaSeconds float32) {
@@ -318,7 +317,7 @@ func (g *Game) updateWormBurrowing(worm *DrillWorm, deltaSeconds float32) {
 	}
 	worm.X, worm.Y = clampToArena(g.player.X), clampToArena(g.player.Y)
 	g.enterWormPhase(worm, WormWarning)
-	g.playSound(audio.SoundWormRumble)
+	g.playSound(SoundWormRumble)
 }
 
 func (g *Game) updateWormWarning(worm *DrillWorm, deltaSeconds float32) {
@@ -381,7 +380,7 @@ func (g *Game) updateWormAiming(worm *DrillWorm, deltaSeconds float32) {
 	}
 	worm.Travel = 0
 	worm.DiveControls = wormDiveControls(worm)
-	g.playSound(audio.SoundWormRumble)
+	g.playSound(SoundWormRumble)
 	g.enterWormPhase(worm, WormDiving)
 }
 
@@ -606,7 +605,7 @@ func (g *Game) detachWormHeadIf(worm *DrillWorm, shouldDetach bool) {
 	worm.HeadEnemyID = g.enemies.Spawn(EnemyDrillWorm, worm.HeadX, worm.HeadY, worm.Power)
 	g.setEnemyHealthIfPresent(worm.HeadEnemyID, worm.HeadHealth)
 	g.slamWorm(worm, worm.HeadX, worm.HeadY)
-	g.playSound(audio.SoundWormRoar)
+	g.playSound(SoundWormRoar)
 	g.say(ChatterWormHead)
 	g.enterWormPhase(worm, WormHeadResting)
 	worm.PhaseSeconds = wormHeadCycleSeconds - wormHeadAimSeconds - wormHeadRollSeconds - 1
@@ -635,7 +634,7 @@ func (g *Game) updateWormHeadAiming(worm *DrillWorm, deltaSeconds float32) {
 		return
 	}
 	worm.RollFromX, worm.RollFromY, worm.HasRollHit = worm.HeadX, worm.HeadY, false
-	g.playSound(audio.SoundWormRoll)
+	g.playSound(SoundWormRoll)
 	g.enterWormPhase(worm, WormHeadRolling)
 }
 
@@ -691,7 +690,7 @@ func (g *Game) slamWorm(worm *DrillWorm, x, y float32) {
 	g.effects.SpawnSparks(x, y, 18, wormDirtColor, 220)
 	g.effects.AddRing(x, y, wormEruptionRadius, wormDirtColor)
 	g.effects.AddShake(7)
-	g.playSound(audio.SoundStomp)
+	g.playSound(SoundStomp)
 }
 
 func (g *Game) kickUpWormDust(worm *DrillWorm, x, y, deltaSeconds float32) {
@@ -712,8 +711,8 @@ func (g *Game) eruptWorm(worm *DrillWorm) {
 	g.effects.SpawnSparks(x, y, 30, wormDirtColor, 320)
 	g.effects.AddRing(x, y, wormEruptionRadius, wormDirtColor)
 	g.effects.AddShake(10)
-	g.playSound(audio.SoundStomp)
-	g.playSound(audio.SoundWormRoar)
+	g.playSound(SoundStomp)
+	g.playSound(SoundWormRoar)
 	reach := float32(wormEruptionRadius * wormBlastReach)
 	isPlayerCaught := distanceSquared(x, y, g.player.X, g.player.Y) < reach*reach
 	g.blastPlayerIf(worm, x, y, isPlayerCaught)
@@ -742,7 +741,7 @@ func (g *Game) updateWormBlast(worm *DrillWorm, deltaSeconds float32) {
 	g.effects.SpawnSparks(player.X, player.Y, 6, wormDirtColor, 180)
 	g.effects.AddDust(player.X, player.Y, 10)
 	g.effects.AddShake(3)
-	g.playSound(audio.SoundHurt)
+	g.playSound(SoundHurt)
 }
 
 func (g *Game) raiseWormDust(x, y float32, count int) {

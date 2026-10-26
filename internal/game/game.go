@@ -5,11 +5,9 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"github.com/ajkula/ajkurig/spatial"
-
+	"github.com/ajkula/ajkurig/audio"
 	"github.com/ajkula/ajkurig/rng"
-
-	"hordefall/internal/audio"
+	"github.com/ajkula/ajkurig/spatial"
 )
 
 // ===== Types =====
@@ -36,7 +34,9 @@ type Game struct {
 	renderer              *Renderer
 	post                  *PostProcessor
 	audio                 *audio.Engine
-	musicSignals          [audio.SignalCount]float32
+	soundIDs              SoundIDs
+	signalIDs             [SignalCount]audio.SignalID
+	musicSignals          [SignalCount]float32
 	previousReactions     int
 	ui                    *UI
 	director              SpawnDirector
@@ -201,7 +201,7 @@ func NewGame() *Game {
 	game.post = NewPostProcessor()
 	game.loadBindings()
 	game.loadHighScores()
-	game.audio = audio.NewEngine()
+	game.attachAudio(newAudio(uint32(time.Now().UnixNano()), false))
 	game.loadSettings()
 	game.startDemo()
 	game.startIntro()
@@ -341,7 +341,7 @@ func (g *Game) openLevelUpIfPending() {
 		return
 	}
 	g.buildUpgradeOffers()
-	g.playSound(audio.SoundLevelUp)
+	g.playSound(SoundLevelUp)
 	g.say(ChatterLevelUp)
 	if len(g.offers) == 1 {
 		g.applySoleOffer()

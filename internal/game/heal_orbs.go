@@ -1,7 +1,5 @@
 package game
 
-import "hordefall/internal/audio"
-
 // ===== Types =====
 
 type HealOrb struct {
@@ -73,7 +71,7 @@ func (g *Game) collectHealOrb(index int) {
 	player.Health = min(player.MaximumHealth, player.Health+healOrbAmount)
 	g.say(ChatterHeal)
 	g.effects.AddPopup(player.X, player.Y-healOrbPopupRise, "+20 HP", healOrbColor)
-	g.playSound(audio.SoundGem)
+	g.playSound(SoundGem)
 	g.healOrbs[index] = g.healOrbs[len(g.healOrbs)-1]
 	g.healOrbs = g.healOrbs[:len(g.healOrbs)-1]
 }

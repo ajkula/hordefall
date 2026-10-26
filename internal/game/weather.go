@@ -4,8 +4,6 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-
-	"hordefall/internal/audio"
 )
 
 // ===== Types =====
@@ -36,7 +34,7 @@ type WeatherDefinition struct {
 	GroundCellsPerTick    float32
 	GroundInnerCells      float32
 	StrikeChancePerSecond float32
-	StartSound            audio.SoundKind
+	StartSound            SoundKind
 	Precipitation         Precipitation
 }
 
@@ -82,7 +80,7 @@ var weatherTable = [weatherKindCount]WeatherDefinition{
 		Multiply: [3]float32{0.62, 0.68, 0.82}, Lift: [3]float32{0, 0.01, 0.03},
 		EnemyStatus: StatusWet, ClearedStatus: StatusBurning, StatusChancePerSecond: 0.35,
 		GroundStimulus: StimulusDouse, GroundCellsPerTick: 160,
-		StrikeChancePerSecond: 0.3, StartSound: audio.SoundRain,
+		StrikeChancePerSecond: 0.3, StartSound: SoundRain,
 		Precipitation: Precipitation{
 			Count: 260, VelocityX: -160, VelocityY: 1100, Size: 22, SizeSpread: 10,
 			Color: [3]float32{0.65, 0.75, 1}, Alpha: 0.4, Queue: queueRainStreak,
@@ -92,7 +90,7 @@ var weatherTable = [weatherKindCount]WeatherDefinition{
 		Key: "heatwave", LabelColor: [3]float32{1, 0.6, 0.2},
 		Multiply: [3]float32{1, 0.86, 0.66}, Lift: [3]float32{0.1, 0.04, 0},
 		GroundStimulus: StimulusHeat, GroundCellsPerTick: 30, GroundInnerCells: 5,
-		StartSound: audio.SoundHiss,
+		StartSound: SoundHiss,
 		Precipitation: Precipitation{
 			Count: 90, VelocityX: 15, VelocityY: -45, Size: 1.5, SizeSpread: 1.2, Sway: 10,
 			Color: [3]float32{1, 0.55, 0.15}, Alpha: 0.8, Queue: queueEmber,
@@ -103,7 +101,7 @@ var weatherTable = [weatherKindCount]WeatherDefinition{
 		Multiply: [3]float32{0.7, 0.84, 1}, Lift: [3]float32{0.12, 0.16, 0.22},
 		EnemyStatus: StatusChilled, StatusChancePerSecond: 0.4,
 		GroundStimulus: StimulusChill, GroundCellsPerTick: 30,
-		StartSound: audio.SoundFreeze,
+		StartSound: SoundFreeze,
 		Precipitation: Precipitation{
 			Count: 320, VelocityX: -50, VelocityY: 90, Size: 1.6, SizeSpread: 1.6, Sway: 18,
 			Color: [3]float32{1, 1, 1}, Alpha: 0.85, Queue: queueSnowflake,
@@ -208,7 +206,7 @@ func (g *Game) strikeLightningIf(shouldStrike bool) {
 	g.effects.AddRing(x, y, strikeRadius, weatherTable[WeatherStorm].LabelColor)
 	g.effects.SpawnSparks(x, y, 12, flashColor, 200)
 	g.effects.AddShake(strikeShake)
-	g.playSound(audio.SoundElectrocute)
+	g.playSound(SoundElectrocute)
 	g.QueueBurst(Burst{X: x, Y: y, Radius: strikeRadius, Damage: strikeDamage, Element: ElementShock})
 }
 

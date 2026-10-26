@@ -3,7 +3,6 @@ package game
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"hordefall/internal/audio"
 	"github.com/ajkula/ajkurig/i18n"
 )
 
@@ -67,11 +66,11 @@ func (g *Game) navigateMenu(options []MenuOption) {
 	isNext := g.controls.JustPressed&(ActionRight|ActionDown) != 0
 	count := len(options)
 	g.menuSelection = (g.menuSelection + count + boolToIndex(isNext) - boolToIndex(isPrevious)) % count
-	g.playSoundIf(audio.SoundMenuMove, isNext || isPrevious)
+	g.playSoundIf(SoundMenuMove, isNext || isPrevious)
 	if !g.isConfirming() {
 		return
 	}
-	g.playSound(audio.SoundMenuSelect)
+	g.playSound(SoundMenuSelect)
 	options[g.menuSelection].Activate(g)
 }
 
@@ -85,7 +84,7 @@ func (g *Game) adjustSelectedSlider(slider *MenuSlider) bool {
 		return false
 	}
 	slider.Adjust(g, delta)
-	g.playSound(audio.SoundMenuMove)
+	g.playSound(SoundMenuMove)
 	return true
 }
 

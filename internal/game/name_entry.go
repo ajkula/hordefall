@@ -4,7 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
-	"hordefall/internal/audio"
 	"github.com/ajkula/ajkurig/i18n"
 )
 
@@ -38,11 +37,11 @@ func (g *Game) updateNameEntry() {
 	cursorDelta := boolToIndex(pressed&ActionRight != 0) - boolToIndex(pressed&(ActionLeft|ActionAimLock) != 0)
 	g.shiftNameEntryLetter(letterDelta)
 	g.nameEntryCursor = clampInt(g.nameEntryCursor+cursorDelta, 0, initialsLength-1)
-	g.playSoundIf(audio.SoundMenuMove, letterDelta != 0 || cursorDelta != 0)
+	g.playSoundIf(SoundMenuMove, letterDelta != 0 || cursorDelta != 0)
 	if !g.isConfirming() {
 		return
 	}
-	g.playSound(audio.SoundMenuSelect)
+	g.playSound(SoundMenuSelect)
 	if g.nameEntryCursor < initialsLength-1 {
 		g.nameEntryCursor++
 		return

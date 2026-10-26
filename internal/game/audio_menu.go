@@ -6,7 +6,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
-	"hordefall/internal/audio"
 	"github.com/ajkula/ajkurig/i18n"
 )
 
@@ -111,7 +110,7 @@ func (g *Game) adjustEffectsVolume(delta int) {
 
 func (g *Game) cycleEffectsVolume() {
 	g.setVolumeStep(&g.settings.EffectsVolumeStep, (g.settings.EffectsVolumeStep+1)%(volumeSteps+1))
-	g.playSound(audio.SoundMenuMove)
+	g.playSound(SoundMenuMove)
 }
 
 func (g *Game) setVolumeStep(step *int, value int) {
