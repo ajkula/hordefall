@@ -5,7 +5,7 @@ import (
 	"hordefall/internal/i18n"
 	"testing"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 
 	"hordefall/internal/audio"
 )

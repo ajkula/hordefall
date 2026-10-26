@@ -1,6 +1,6 @@
 package audio
 
-import "hordefall/internal/rng"
+import "github.com/ajkula/ajkurig/rng"
 
 // ===== Types =====
 

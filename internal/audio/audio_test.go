@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 )
 
 // ===== Constants =====

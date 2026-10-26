@@ -3,7 +3,7 @@ package audio
 import (
 	"math"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 )
 
 // ===== Types =====

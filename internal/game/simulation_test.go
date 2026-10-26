@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"hordefall/internal/spatial"
+	"github.com/ajkula/ajkurig/spatial"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 
 	"hordefall/internal/audio"
 )
@@ -52,7 +52,7 @@ func newHeadlessGame() *Game {
 		projectiles: NewProjectileStore(maximumProjectiles),
 		gems:        NewGemStore(maximumGems),
 		effects:     NewEffects(),
-		grid:        spatial.NewGrid(arenaSize, spatialCellSize, maximumEnemies),
+		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
 		musicSlot:   noMusicSlot,
 	}
 	game.resetRun()

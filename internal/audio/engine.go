@@ -10,7 +10,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 )
 
 // ===== Types =====

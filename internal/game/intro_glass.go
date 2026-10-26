@@ -6,7 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 )
 
 // ===== Types =====

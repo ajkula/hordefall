@@ -5,9 +5,9 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"hordefall/internal/spatial"
+	"github.com/ajkula/ajkurig/spatial"
 
-	"hordefall/internal/rng"
+	"github.com/ajkula/ajkurig/rng"
 
 	"hordefall/internal/audio"
 )
@@ -192,7 +192,7 @@ func NewGame() *Game {
 		projectiles: NewProjectileStore(maximumProjectiles),
 		gems:        NewGemStore(maximumGems),
 		effects:     NewEffects(),
-		grid:        spatial.NewGrid(arenaSize, spatialCellSize, maximumEnemies),
+		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
 		musicSlot:   noMusicSlot,
 		musicRandom: rng.New(uint32(time.Now().UnixNano())),
 	}
