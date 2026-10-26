@@ -3,7 +3,7 @@ package game
 import "testing"
 
 func TestWeatherStartsAfterCalmAndEnds(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.weather.CalmSeconds = deltaSeconds
 	game.updateWeather(deltaSeconds)
 	if game.weather.Kind == WeatherClear {
@@ -18,7 +18,7 @@ func TestWeatherStartsAfterCalmAndEnds(t *testing.T) {
 }
 
 func TestBlizzardOnlyAppliesFirstChillLevel(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	for index := range 200 {
 		game.enemies.Spawn(EnemyKind(0), game.player.X+float32(index), game.player.Y+300, 1)
 	}
@@ -40,7 +40,7 @@ func TestBlizzardOnlyAppliesFirstChillLevel(t *testing.T) {
 }
 
 func TestStormSoaksEnemiesAndPutsOutFire(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	for index := range 200 {
 		game.enemies.Spawn(EnemyKind(0), game.player.X+float32(index), game.player.Y+300, 1)
 		game.enemies.ApplyStatus(index, StatusBurning)

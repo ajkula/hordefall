@@ -1,5 +1,9 @@
 package game
 
+import (
+	"github.com/ajkula/ajkurig/mathx"
+)
+
 // ===== Types =====
 
 type StaticMine struct {
@@ -41,7 +45,7 @@ func (g *Game) layStaticMines(weapon *WeaponState, definition *WeaponDefinition)
 			Damage: definition.DamageAt(weapon.Level) * player.DamageMultiplier,
 			Radius: definition.RadiusAt(weapon.Level) * player.AreaMultiplier,
 		}
-		g.mines = appendIf(g.mines, mine, len(g.mines) < maximumMines)
+		g.mines = mathx.AppendIf(g.mines, mine, len(g.mines) < maximumMines)
 	}
 }
 

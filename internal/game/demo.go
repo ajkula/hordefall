@@ -3,7 +3,7 @@ package game
 import (
 	"strings"
 
-	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/input"
 )
 
 // ===== Types =====
@@ -103,37 +103,10 @@ var demoSequences = []DemoSequence{
 	},
 }
 
-// ===== Public API =====
-
-func (g *Game) DemoSequenceName() string {
-	return g.currentDemo.Name
-}
-
-func (g *Game) DemoSequenceSubtitle() string {
-	return i18n.TOr(g.currentDemo.Subtitle, g.currentDemo.Subtitle)
-}
-
-func (g *Game) DemoSequenceProgress() float32 {
-	return clamp(g.demoSeconds/demoSequenceSeconds, 0, 1)
-}
-
 // ===== Internal =====
 
-func (g *Game) startDemo() {
-	g.demoSlot = -1
-	g.demoClipCount, g.highScoreBoardSeconds = 0, 0
-	g.startNextDemoSequence()
-}
-
-func (g *Game) startNextDemoSequence() {
-	g.demoSlot++
-	g.demoSequence = (g.demoSlot / 2) % len(demoSequences)
-	candidates := [2]DemoSequence{demoSequences[g.demoSequence], g.randomDemoSequence()}
-	g.currentDemo = candidates[g.demoSlot%2]
-	sequence := &g.currentDemo
-	g.resetRun()
+func (g *Game) stageDemo(sequence *DemoSequence) {
 	g.isDemo = true
-	g.demoSeconds = 0
 	g.director.accumulator = -1e9
 	g.director.nextWaveSeconds = 1e9
 	g.bossKillsRequired = 1 << 30
@@ -230,37 +203,20 @@ func (g *Game) reinforceDemoIfThin() {
 	}
 }
 
-func (g *Game) updateDemo() {
-	if g.highScoreBoardSeconds > 0 {
-		g.advanceDemoBoard()
-		return
-	}
-	g.demoSeconds += deltaSeconds
-	g.startNextDemoSequenceIfDone()
-	menuControls := g.controls
-	g.controls = g.autopilotControls()
+func (g *Game) simulateDemo() {
 	g.aimAtNearestEnemy()
 	g.reinforceDemoIfThin()
 	g.simulate()
 	g.player.Health = g.player.MaximumHealth
 	g.player.PendingLevelUps = 0
-	g.controls = menuControls
 }
 
-func (g *Game) startNextDemoSequenceIfDone() {
-	if g.demoSeconds <= demoSequenceSeconds {
-		return
-	}
-	g.startNextDemoSequence()
-	g.startDemoBoardIfDue()
-}
-
-func (g *Game) autopilotControls() Controls {
-	angle := g.demoSeconds * demoOrbitSpeed
-	firePhase := g.demoSeconds/demoFirePeriod - float32(int(g.demoSeconds/demoFirePeriod))
+func (g *Game) autopilotControls(seconds float32) input.Controls {
+	angle := seconds * demoOrbitSpeed
+	firePhase := seconds/demoFirePeriod - float32(int(seconds/demoFirePeriod))
 	isFiring := firePhase >= g.currentDemo.FireRestFraction
-	held := ActionAimLock | ActionFire*Action(boolToIndex(isFiring))
-	return Controls{MoveX: -sine(angle) * demoOrbitDrift, MoveY: cosine(angle) * demoOrbitDrift, Held: held}
+	held := ActionAimLock | ActionFire*input.Action(boolToIndex(isFiring))
+	return input.Controls{MoveX: -sine(angle) * demoOrbitDrift, MoveY: cosine(angle) * demoOrbitDrift, Held: held}
 }
 
 func (g *Game) aimAtNearestEnemy() {

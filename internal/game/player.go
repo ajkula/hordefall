@@ -1,5 +1,9 @@
 package game
 
+import (
+	"github.com/ajkula/ajkurig/draw"
+)
+
 // ===== Types =====
 
 type Player struct {
@@ -197,7 +201,7 @@ func (g *Game) applyMouseAim() {
 	if !g.controls.HasMouseAim || g.renderer == nil {
 		return
 	}
-	cursorX, cursorY := g.renderer.ScreenToWorld(g.controls.CursorX/renderScale, g.controls.CursorY/renderScale)
+	cursorX, cursorY := g.renderer.ScreenToWorld(g.controls.CursorX/draw.Scale, g.controls.CursorY/draw.Scale)
 	player := g.player
 	offsetX, offsetY := cursorX-player.X, cursorY-player.Y
 	if length(offsetX, offsetY) < mouseAimDeadzone {

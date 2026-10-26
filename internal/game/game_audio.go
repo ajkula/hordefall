@@ -1,9 +1,6 @@
 package game
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/ajkula/ajkurig/audio"
 
 	"hordefall/music"
@@ -22,11 +19,6 @@ const (
 	reactionSignalFullRate  = 18
 	reactionSignalSmoothing = 0.15
 	dangerHealthThreshold   = 0.45
-	menuEffectsVolume       = 0.45
-	gameEffectsVolume       = 0.8
-	songRotationSeconds     = 300
-	noMusicSlot             = -1
-	musicBannerDuration     = 45
 )
 
 const (
@@ -50,21 +42,6 @@ var fullMusicSignals = [SignalCount]float32{
 
 // ===== Internal =====
 
-func newAudio(seed uint32, isSilent bool) (*audio.Engine, SoundIDs) {
-	bank := audio.NewSoundBank()
-	ids := RegisterSounds(bank)
-	board := audio.NewSignalBoard(music.SignalNames()...)
-	engines := [2]func(*audio.SoundBank, *audio.SignalBoard) *audio.Engine{audio.NewEngine, audio.NewSilentEngine}
-	engine := engines[boolToIndex(isSilent)](bank, board)
-	songs, _ := music.Songs(seed)
-	engine.SetSongs(songs)
-	return engine, ids
-}
-
-func newSilentAudio(seed uint32) (*audio.Engine, SoundIDs) {
-	return newAudio(seed, true)
-}
-
 func (g *Game) attachAudio(engine *audio.Engine, ids SoundIDs) {
 	g.audio, g.soundIDs = engine, ids
 	for signal, name := range signalNames {
@@ -73,7 +50,7 @@ func (g *Game) attachAudio(engine *audio.Engine, ids SoundIDs) {
 }
 
 func (g *Game) playSound(kind SoundKind) {
-	g.audio.Play(g.soundIDs[kind], g.clockSeconds)
+	g.app.PlaySound(g.soundIDs[kind])
 }
 
 func (g *Game) playSoundIf(kind SoundKind, shouldPlay bool) {
@@ -83,90 +60,20 @@ func (g *Game) playSoundIf(kind SoundKind, shouldPlay bool) {
 	g.playSound(kind)
 }
 
-func (g *Game) updateAudio() {
-	if g.controls.JustPressed&ActionMute != 0 {
-		g.toggleMusic()
-	}
-	contextVolume := menuEffectsVolume + (gameEffectsVolume-menuEffectsVolume)*boolToFloat(!g.isDemo || g.state == StateIntro)
-	g.audio.SetEffectsVolume(contextVolume * g.effectsVolumeScale())
-	g.rotateSong()
-	if g.frame%musicSignalFrames != 0 {
+func (g *Game) updateMusicSignals() {
+	isDue := g.frame%musicSignalFrames == 0 || g.player.Health <= 0
+	if !isDue {
 		return
 	}
 	g.musicSignals = g.computeMusicSignals()
-	g.pushMusicSignals()
-}
-
-func (g *Game) pushMusicSignals() {
-	if g.audio == nil {
-		return
-	}
 	board := g.audio.Signals()
 	for signal, value := range g.musicSignals {
 		board.Set(g.signalIDs[signal], value)
 	}
-	g.audio.PushSignals()
-}
-
-func (g *Game) rotateSong() {
-	if !g.HasEnabledSong() {
-		return
-	}
-	slot := g.currentMusicSlot()
-	isFirstObservation := g.musicSlot == noMusicSlot
-	isSlotChanged := slot != g.musicSlot && !isFirstObservation
-	g.musicSlot = slot
-	if isFirstObservation {
-		songCount := g.audio.SongCount()
-		g.playSong(g.nextEnabledSong((g.musicRandom.Below(songCount) + songCount - 1) % songCount))
-		return
-	}
-	isCurrentDisabled := !g.IsSongEnabled(g.audio.CurrentSong())
-	if !isSlotChanged && !isCurrentDisabled {
-		return
-	}
-	g.playSong(g.nextEnabledSong(g.audio.CurrentSong()))
-}
-
-func (g *Game) currentMusicSlot() int {
-	isInRun := !g.isDemo && g.state != StateMainMenu && g.state != StateOptions && g.state != StateRemap && g.state != StatePlaylist
-	runSlot := int(g.elapsedSeconds) / songRotationSeconds
-	demoSlot := max(0, g.demoSlot) / (2 * len(demoSequences))
-	slots := [2]int{demoSlot, runSlot}
-	return slots[boolToIndex(isInRun)]*2 + boolToIndex(isInRun)
-}
-
-func (g *Game) describeMusic() string {
-	titles := make([]string, 0, g.audio.SongCount())
-	for index := range g.audio.SongCount() {
-		titles = appendIf(titles, g.audio.SongTitle(index), g.IsSongEnabled(index))
-	}
-	signals := g.musicSignals
-	levels := fmt.Sprintf("   layers %d/16  horde %.2f  boss %.0f  reactions %.2f  danger %.2f", g.audio.AudibleLayerCount(), signals[SignalHorde], signals[SignalBoss], signals[SignalReactions], signals[SignalDanger])
-	return "Music playing: " + g.audio.PlayingDescription() + levels + "   enabled: " + strings.Join(titles, ", ")
-}
-
-func (g *Game) nextEnabledSong(current int) int {
-	songCount := g.audio.SongCount()
-	for step := 1; step <= songCount; step++ {
-		candidate := (current + step) % songCount
-		if g.IsSongEnabled(candidate) {
-			return candidate
-		}
-	}
-	return current
-}
-
-func (g *Game) playSong(index int) {
-	if !g.audio.SelectSong(index) {
-		return
-	}
-	g.musicBanner = "\u266A  " + g.audio.SongTitle(index)
-	g.musicBannerSeconds = musicBannerDuration
 }
 
 func (g *Game) computeMusicSignals() [SignalCount]float32 {
-	if g.state == StateGameOver {
+	if g.player.Health <= 0 {
 		return fullMusicSignals
 	}
 	var signals [SignalCount]float32

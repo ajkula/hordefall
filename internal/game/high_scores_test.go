@@ -4,195 +4,169 @@ import (
 	"math"
 	"testing"
 
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/ajkula/ajkurig/input"
+	"github.com/ajkula/ajkurig/rig"
+	"github.com/ajkula/ajkurig/scores"
+	"github.com/ajkula/ajkurig/shell"
 )
 
-const boardColumnMinimumGap = 48
+// ===== Public API =====
 
 func TestHighScoreTableKeepsTheTopTenInOrder(t *testing.T) {
-	var table HighScoreTable
+	table := scores.NewTable(scores.DefaultTableSize)
 	for score := 1; score <= 15; score++ {
-		table.Insert(HighScoreEntry{Initials: "AAA", Score: score * 100})
+		table.Insert(scores.Entry{Initials: "AAA", Score: score * 100})
 	}
-	if len(table.Entries) != highScoreTableSize || table.Best().Score != 1500 || table.Entries[highScoreTableSize-1].Score != 600 {
+	if len(table.Entries) != scores.DefaultTableSize || table.Best().Score != 1500 || table.Entries[scores.DefaultTableSize-1].Score != 600 {
 		t.Fatalf("unexpected table %+v", table.Entries)
 	}
-	if table.RankOf(550) != noRank || table.RankOf(1200) != 3 || table.RankOf(0) != noRank {
+	if table.RankOf(550) != scores.NoRank || table.RankOf(1200) != 3 || table.RankOf(0) != scores.NoRank {
 		t.Fatalf("ranks %d %d %d", table.RankOf(550), table.RankOf(1200), table.RankOf(0))
 	}
 }
 
 func TestDeathWithRankedScoreAsksForInitials(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	game.killScore = 5000
-	game.finishRun()
-	if game.state != StateNameEntry {
-		t.Fatalf("state %d, want name entry", game.state)
+	dieAndWait(app, game)
+	if app.CurrentScreen() != shell.ScreenNameEntry {
+		t.Fatalf("screen %q, want name entry", app.CurrentScreen())
 	}
-	game.menuLockSeconds = 0
-	game.controls = Controls{JustPressed: ActionDown}
-	game.updateNameEntry()
-	for range initialsLength {
-		game.controls = Controls{JustPressed: ActionConfirm}
-		game.updateNameEntry()
+	press(app, input.ActionDown)
+	for range rig.InitialsLength {
+		press(app, input.ActionConfirm)
 	}
-	best := game.highScores.Best()
-	if game.state != StateGameOver || game.newEntryRank != 0 || best.Initials != ".AA" || best.Score != 5000 || game.settings.Initials != ".AA" {
-		t.Fatalf("state %d, best %+v, initials %q", game.state, best, game.settings.Initials)
+	best := app.Scores.Best()
+	if app.CurrentScreen() != shell.ScreenGameOver || game.shell.NewEntryRank != 0 || best.Initials != ".AA" || best.Score != 5000 || app.Settings.Initials != ".AA" {
+		t.Fatalf("screen %q, best %+v, initials %q", app.CurrentScreen(), best, app.Settings.Initials)
 	}
-	game.recordHighScore()
-	if len(game.highScores.Entries) != 1 {
-		t.Fatalf("score recorded twice: %+v", game.highScores.Entries)
+	game.shell.RecordScore()
+	if len(app.Scores.Entries) != 1 {
+		t.Fatalf("score recorded twice: %+v", app.Scores.Entries)
 	}
 }
 
 func TestEveryDeathAsksForInitialsStartingAtAAA(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	game := newHeadlessGame()
-	game.settings.Initials = "XYZ"
-	for range highScoreTableSize {
-		game.highScores.Insert(HighScoreEntry{Initials: "TOP", Score: 90000})
+	app, game := newRunningApp(t)
+	app.Settings.Initials = "XYZ"
+	for range scores.DefaultTableSize {
+		app.Scores.Insert(scores.Entry{Initials: "TOP", Score: 90000})
 	}
 	game.killScore = 100
-	game.finishRun()
-	if game.state != StateNameEntry || string(game.nameEntryLetters[:]) != defaultInitials || game.newEntryRank != noRank {
-		t.Fatalf("state %d, letters %q, rank %d", game.state, string(game.nameEntryLetters[:]), game.newEntryRank)
+	dieAndWait(app, game)
+	initials := nameEntry(app).Entry.Initials()
+	if app.CurrentScreen() != shell.ScreenNameEntry || initials != scores.DefaultInitials || game.shell.NewEntryRank != scores.NoRank {
+		t.Fatalf("screen %q, letters %q, rank %d", app.CurrentScreen(), initials, game.shell.NewEntryRank)
 	}
-	game.menuLockSeconds = 0
-	for range initialsLength {
-		game.controls = Controls{JustPressed: ActionConfirm}
-		game.updateNameEntry()
+	for range rig.InitialsLength {
+		press(app, input.ActionConfirm)
 	}
-	if game.state != StateGameOver || game.highScores.Best().Initials != "TOP" {
-		t.Fatalf("an unranked score reached the table: state %d, best %+v", game.state, game.highScores.Best())
+	if app.CurrentScreen() != shell.ScreenGameOver || app.Scores.Best().Initials != "TOP" {
+		t.Fatalf("an unranked score reached the table: screen %q, best %+v", app.CurrentScreen(), app.Scores.Best())
 	}
 }
 
 func TestHoldingUpScrollsLettersAfterTheDelay(t *testing.T) {
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	game.killScore = 5000
-	game.finishRun()
-	game.menuLockSeconds = 0
-	game.controls = Controls{Held: ActionUp, JustPressed: ActionUp}
-	game.updateNameEntry()
-	game.controls = Controls{Held: ActionUp}
-	for range letterRepeatDelay*ticksPerSecond - 2 {
-		game.updateNameEntry()
+	dieAndWait(app, game)
+	letters := nameEntry(app).Entry.Letters
+	app.Step(input.Controls{Held: input.ActionUp, JustPressed: input.ActionUp, RawJustPressed: input.NoInput})
+	stepFor(app, scores.LetterRepeatDelay-2*deltaSeconds, input.ActionUp)
+	if letters[0] != 'B' {
+		t.Fatalf("letter %c before the delay, want B", letters[0])
 	}
-	if game.nameEntryLetters[0] != 'B' {
-		t.Fatalf("letter %c before the delay, want B", game.nameEntryLetters[0])
-	}
-	for range ticksPerSecond {
-		game.updateNameEntry()
-	}
-	if game.nameEntryLetters[0] < 'L' {
-		t.Fatalf("letter %c one second after the delay, repeat too slow", game.nameEntryLetters[0])
+	stepFor(app, 1, input.ActionUp)
+	if letters[0] < 'L' {
+		t.Fatalf("letter %c one second after the delay, repeat too slow", letters[0])
 	}
 }
 
 func TestResetHighScoresNeedsConfirmation(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	game := newHeadlessGame()
-	game.highScores.Insert(HighScoreEntry{Initials: "ABC", Score: 900})
-	game.openResetScores()
-	game.menuLockSeconds = 0
-	game.controls = Controls{JustPressed: ActionConfirm}
-	game.updateResetScores()
-	if len(game.highScores.Entries) != 1 || game.state != StateGameplay {
+	app, _ := newHomeApp(t)
+	app.Scores.Insert(scores.Entry{Initials: "ABC", Score: 900})
+	app.Switch(shell.ScreenResetScores)
+	waitForMenuLock(app)
+	press(app, input.ActionConfirm)
+	if len(app.Scores.Entries) != 1 || app.CurrentScreen() != shell.ScreenGameplay {
 		t.Fatalf("default choice erased the scores")
 	}
-	game.openResetScores()
-	game.menuLockSeconds = 0
-	game.controls = Controls{JustPressed: ActionDown}
-	game.updateResetScores()
-	game.controls = Controls{JustPressed: ActionConfirm}
-	game.updateResetScores()
-	if len(game.highScores.Entries) != 0 {
-		t.Fatalf("confirmed reset kept %d scores", len(game.highScores.Entries))
+	app.Switch(shell.ScreenResetScores)
+	waitForMenuLock(app)
+	press(app, input.ActionDown)
+	press(app, input.ActionConfirm)
+	if len(app.Scores.Entries) != 0 {
+		t.Fatalf("confirmed reset kept %d scores", len(app.Scores.Entries))
 	}
 }
 
 func TestRankingBoardPausesTheDemo(t *testing.T) {
-	game := newHeadlessGame()
-	game.startDemo()
-	game.highScoreBoardSeconds = attractBoardSeconds
-	frame, demoSeconds := game.frame, game.demoSeconds
+	app, game := newHomeApp(t)
+	game.shell.BoardSeconds = shell.AttractBoardSeconds
+	frame, demoSeconds := game.frame, game.shell.DemoSeconds
 	for range 60 {
-		game.updateDemo()
+		game.shell.UpdateBackdrop(app.Frame())
 	}
-	if game.frame != frame || game.demoSeconds != demoSeconds {
+	if game.frame != frame || game.shell.DemoSeconds != demoSeconds {
 		t.Fatal("the demo kept running behind the ranking")
 	}
-	game.highScoreBoardSeconds = deltaSeconds
-	game.updateDemo()
-	game.updateDemo()
+	game.shell.BoardSeconds = deltaSeconds
+	game.shell.UpdateBackdrop(app.Frame())
+	game.shell.UpdateBackdrop(app.Frame())
 	if game.frame == frame {
 		t.Fatal("the demo did not resume after the ranking")
 	}
 }
 
 func TestDemoShowsHighScoresEveryFewClips(t *testing.T) {
-	game := newHeadlessGame()
-	game.startDemo()
-	for clip := 1; clip < demoClipsPerBoard; clip++ {
-		game.demoSeconds = demoSequenceSeconds + 1
-		game.startNextDemoSequenceIfDone()
-		if game.highScoreBoardSeconds > 0 {
+	app, game := newHomeApp(t)
+	for clip := 1; clip < game.shell.Options.ClipsPerBoard; clip++ {
+		game.shell.DemoSeconds = demoSequenceSeconds + 1
+		game.shell.UpdateBackdrop(app.Frame())
+		if game.shell.BoardSeconds > 0 {
 			t.Fatalf("board shown after clip %d", clip)
 		}
 	}
-	game.demoSeconds = demoSequenceSeconds + 1
-	game.startNextDemoSequenceIfDone()
-	if game.highScoreBoardSeconds != attractBoardSeconds {
-		t.Fatalf("board %v", game.highScoreBoardSeconds)
+	game.shell.DemoSeconds = demoSequenceSeconds + 1
+	game.shell.UpdateBackdrop(app.Frame())
+	if game.shell.BoardSeconds != shell.AttractBoardSeconds {
+		t.Fatalf("board %v", game.shell.BoardSeconds)
 	}
 }
 
-func TestButtonLabelsFollowTheLastDevice(t *testing.T) {
-	var reader InputReader
-	reader.UseBindings(DefaultControlBindings())
-	reader.lastDevice = pickDevice(DeviceGamepad, true, false)
-	if reader.ButtonLabel(ActionStart) != "ENTER" || reader.ButtonLabel(ActionSelect) != "BACKSPACE" {
-		t.Fatalf("keyboard labels %q %q", reader.ButtonLabel(ActionStart), reader.ButtonLabel(ActionSelect))
+func TestButtonLabelsFollowTheRemappedButtons(t *testing.T) {
+	layout := input.NewLayout(remaps, len(remaps))
+	bindings := input.DefaultBindings(layout)
+	if bindings.Label(layout, input.DeviceKeyboard, 0) != "J" || bindings.Label(layout, input.DeviceGamepad, 0) != "A" {
+		t.Fatalf("default fire labels %q %q", bindings.Label(layout, input.DeviceKeyboard, 0), bindings.Label(layout, input.DeviceGamepad, 0))
 	}
-	bindings := DefaultControlBindings()
-	bindings.Buttons[RemapFire], bindings.Buttons[RemapAimLock], bindings.Buttons[RemapDash] = 2, 3, 0
-	reader.UseBindings(bindings)
-	reader.lastDevice = pickDevice(DeviceKeyboard, false, true)
-	if reader.ButtonLabel(ActionStart) != "START" || reader.ButtonLabel(ActionFire) != "BUTTON 2" {
-		t.Fatalf("gamepad labels %q %q", reader.ButtonLabel(ActionStart), reader.ButtonLabel(ActionFire))
-	}
-	if pickDevice(DeviceGamepad, false, false) != DeviceGamepad {
-		t.Fatal("idle input changed the device")
-	}
-}
-
-func TestBoardColumnsFitTheLongestRow(t *testing.T) {
-	longest := [4]string{rankOrdinals[highScoreTableSize-1], formatThousands(maximumScore), formatClock(99*60 + 59), "WWW"}
-	previousRight := float32(0)
-	for index, column := range highScoreColumns {
-		width := PixelTextWidth(longest[index], rankingRowPixel)
-		left := column.X - width*boolToFloat(column.Align == text.AlignEnd)
-		if left-previousRight < boardColumnMinimumGap {
-			t.Fatalf("column %s starts %.0f px after the previous one", column.Header, left-previousRight)
-		}
-		previousRight = left + width
-	}
-	if previousRight > screenWidth {
-		t.Fatalf("the board overflows the screen at %.0f px", previousRight)
+	*bindings.Binding(input.DeviceGamepad, 0), *bindings.Binding(input.DeviceGamepad, 1), *bindings.Binding(input.DeviceGamepad, 2) = 2, 3, 0
+	if bindings.Label(layout, input.DeviceGamepad, 0) != "BUTTON 2" {
+		t.Fatalf("gamepad fire label %q", bindings.Label(layout, input.DeviceGamepad, 0))
 	}
 }
 
 func TestScoresStopAtTheCapAndTheNewestTieRanksFirst(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.killScore = math.MaxInt32 * 4
-	if game.CurrentScore() != maximumScore {
+	if game.CurrentScore() != scores.MaximumScore {
 		t.Fatalf("score %d is not capped", game.CurrentScore())
 	}
-	var table HighScoreTable
-	table.Insert(HighScoreEntry{Initials: "OLD", Score: maximumScore})
-	if rank := table.Insert(HighScoreEntry{Initials: "NEW", Score: maximumScore}); rank != 0 || table.Best().Initials != "NEW" {
+	table := scores.NewTable(scores.DefaultTableSize)
+	table.Insert(scores.Entry{Initials: "OLD", Score: scores.MaximumScore})
+	if rank := table.Insert(scores.Entry{Initials: "NEW", Score: scores.MaximumScore}); rank != 0 || table.Best().Initials != "NEW" {
 		t.Fatalf("the newest capped score ranks %d, best is %s", rank, table.Best().Initials)
 	}
+}
+
+// ===== Internal =====
+
+func dieAndWait(app *rig.App, game *Game) {
+	game.player.Health = 0
+	app.Step(input.Controls{RawJustPressed: input.NoInput})
+	waitForMenuLock(app)
+}
+
+func nameEntry(app *rig.App) *shell.NameEntryScreen {
+	return app.Screen(shell.ScreenNameEntry).(*shell.NameEntryScreen)
 }

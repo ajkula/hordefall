@@ -1,28 +1,24 @@
 package game
 
 import (
-	"time"
-
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/ajkula/ajkurig/audio"
+	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/input"
+	"github.com/ajkula/ajkurig/rig"
 	"github.com/ajkula/ajkurig/rng"
+	"github.com/ajkula/ajkurig/shell"
 	"github.com/ajkula/ajkurig/spatial"
 )
 
 // ===== Types =====
 
-type GameState uint8
-
-type StateHandler struct {
-	Update func(game *Game)
-	Draw   func(game *Game, screen *ebiten.Image)
-}
-
 type Game struct {
-	state                 GameState
-	input                 InputReader
-	controls              Controls
+	app                   *rig.App
+	stats                 map[string]int
+	shell                 *shell.Shell
+	controls              input.Controls
 	random                rng.Random
 	player                *Player
 	enemies               *EnemyStore
@@ -32,7 +28,6 @@ type Game struct {
 	ground                *Ground
 	grid                  *spatial.Grid
 	renderer              *Renderer
-	post                  *PostProcessor
 	audio                 *audio.Engine
 	soundIDs              SoundIDs
 	signalIDs             [SignalCount]audio.SignalID
@@ -55,192 +50,91 @@ type Game struct {
 	weather               Weather
 	offers                []UpgradeOffer
 	offerPool             []UpgradeOffer
-	selectedOffer         int
 	lastRotatedPassive    PassiveKind
 	levelUpBanner         string
-	musicBanner           string
-	musicBannerSeconds    float32
 	levelUpBannerSeconds  float32
-	menuSelection         int
-	menuLockSeconds       float32
-	stateTicks            int
 	reactionCounts        [reactionKindCount]int
 	elapsedSeconds        float32
-	clockSeconds          float32
 	kills                 int
 	killScore             int
-	highScores            HighScoreTable
-	newEntryRank          int
-	isScoreRecorded       bool
-	nameEntryLetters      [initialsLength]byte
-	nameEntryCursor       int
-	nameEntryHoldSeconds  float32
-	highScoreBoardSeconds float32
-	boardOpenedSeconds    float32
-	demoClipCount         int
-	scoreMessage          string
 	frame                 uint32
 	runCount              uint32
 	isDemo                bool
-	demoSeconds           float32
-	demoSequence          int
-	demoSlot              int
 	currentDemo           DemoSequence
-	simulationMillis      float32
-	isQuitRequested       bool
-	isInputDebugVisible   bool
-	remapStep             int
-	remapReturnState      GameState
-	languageReturnState   GameState
-	languageTarget        int
-	languageScroll        float32
-	languageHoldSeconds   float32
-	languageArrowSeconds  float32
-	isLanguageDrumFocused bool
-	intro                 Intro
 	chatter               Chatter
 	worm                  DrillWorm
 	wormCraters           []WormCrater
 	hordeWaveCount        int
-	optionsReturnState    GameState
-	remapDevice           InputDevice
-	remapListening        RemapAction
-	remapListenSeconds    float32
-	remapMessage          string
-	remapMenu             []MenuOption
-	controlBindings       ControlBindings
-	bindingsMessage       string
-	settings              Settings
-	settingsMessage       string
-	playlistMenu          []MenuOption
-	enabledSongs          []int
-	musicSlot             int
-	musicRandom           rng.Random
 }
 
 // ===== Constants =====
 
 const (
-	StateMainMenu GameState = iota
-	StatePlaying
-	StateLevelUp
-	StatePaused
-	StateGameOver
-	StateRemap
-	StateOptions
-	StatePlaylist
-	StateGraphics
-	StateAudio
-	StateGameplay
-	StateHighScores
-	StateResetScores
-	StateNameEntry
-	StateLanguage
-	StateIntro
-	stateCount
+	screenWidth           = 1280
+	screenHeight          = 720
+	arenaSize             = 4096
+	ticksPerSecond        = 60
+	deltaSeconds          = 1.0 / ticksPerSecond
+	spatialCellSize       = 32
+	levelUpBannerDuration = 2.2
+	groundSeedBase        = 0x5EED
+	gameRandomSeed        = 0xA11CE
+	worldModuleName       = "hordefall"
 )
 
-const (
-	screenWidth             = 1280
-	screenHeight            = 720
-	arenaSize               = 4096
-	ticksPerSecond          = 60
-	deltaSeconds            = 1.0 / ticksPerSecond
-	spatialCellSize         = 32
-	menuLockDuration        = 0.45
-	levelUpBannerDuration   = 2.2
-	groundSeedBase          = 0x5EED
-	selectionDirections     = ActionLeft | ActionUp
-	simulationTimeSmoothing = 0.05
-)
-
-var stateHandlers = [stateCount]StateHandler{
-	StateMainMenu:    {(*Game).updateMainMenu, (*Game).drawMainMenu},
-	StatePlaying:     {(*Game).updatePlaying, (*Game).drawPlaying},
-	StateLevelUp:     {(*Game).updateLevelUp, (*Game).drawLevelUp},
-	StatePaused:      {(*Game).updatePaused, (*Game).drawPaused},
-	StateGameOver:    {(*Game).updateGameOver, (*Game).drawGameOver},
-	StateRemap:       {(*Game).updateRemap, (*Game).drawRemap},
-	StateOptions:     {(*Game).updateOptions, (*Game).drawOptions},
-	StatePlaylist:    {(*Game).updatePlaylist, (*Game).drawPlaylist},
-	StateGraphics:    {(*Game).updateGraphics, (*Game).drawGraphics},
-	StateAudio:       {(*Game).updateAudioMenu, (*Game).drawAudioMenu},
-	StateGameplay:    {(*Game).updateGameplay, (*Game).drawGameplay},
-	StateHighScores:  {(*Game).updateHighScores, (*Game).drawHighScores},
-	StateResetScores: {(*Game).updateResetScores, (*Game).drawResetScores},
-	StateNameEntry:   {(*Game).updateNameEntry, (*Game).drawNameEntry},
-	StateLanguage:    {(*Game).updateLanguageMenu, (*Game).drawLanguageMenu},
-	StateIntro:       {(*Game).updateIntro, (*Game).drawIntro},
-}
+var worldUpdaters = [2]func(g *Game){(*Game).simulate, (*Game).simulateDemo}
 
 // ===== Public API =====
 
-func Run() error {
-	ebiten.SetWindowSize(screenWidth, screenHeight)
-	ebiten.SetWindowTitle("Hordefall")
-	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetWindowClosingHandled(true)
-	return ebiten.RunGame(NewGame())
-}
-
-func NewGame() *Game {
-	loadLanguages()
+func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 	game := &Game{
-		random:      rng.New(0xA11CE),
-		ui:          NewUI(),
+		app:         app,
+		stats:       map[string]int{},
+		random:      rng.New(gameRandomSeed),
+		ui:          NewUI(app.Kit),
 		enemies:     NewEnemyStore(maximumEnemies),
 		projectiles: NewProjectileStore(maximumProjectiles),
 		gems:        NewGemStore(maximumGems),
 		effects:     NewEffects(),
 		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
-		musicSlot:   noMusicSlot,
-		musicRandom: rng.New(uint32(time.Now().UnixNano())),
 	}
 	game.resetRun()
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
-	game.post = NewPostProcessor()
-	game.loadBindings()
-	game.loadHighScores()
-	game.attachAudio(newAudio(uint32(time.Now().UnixNano()), false))
-	game.loadSettings()
-	game.startDemo()
-	game.startIntro()
+	game.attachAudio(app.Audio, soundIDs)
 	return game
 }
 
-func (g *Game) Update() error {
-	if ebiten.IsWindowBeingClosed() || g.isQuitRequested {
-		g.recordHighScore()
-		return ebiten.Termination
-	}
-	g.controls = g.input.Read()
-	isSelectTogglingDebug := g.controls.JustPressed&ActionSelect != 0 && (g.state == StatePlaying || g.state == StateLevelUp)
-	g.isInputDebugVisible = g.isInputDebugVisible != (g.controls.JustPressed&ActionDebug != 0 || isSelectTogglingDebug)
-	g.clockSeconds += deltaSeconds
-	g.intro.FadeInSeconds = max(0, g.intro.FadeInSeconds-deltaSeconds)
-	g.menuLockSeconds = max(0, g.menuLockSeconds-deltaSeconds)
-	stateHandlers[g.state].Update(g)
-	g.toggleFullscreenIfRequested()
-	g.updateCursorVisibility()
-	g.updateAudio()
-	return nil
+func (g *Game) Name() string {
+	return worldModuleName
 }
 
-func (g *Game) Draw(screen *ebiten.Image) {
-	postSettings := g.postSettings()
-	scene := g.post.Begin(screen, postSettings)
-	stateHandlers[g.state].Draw(g, scene)
-	g.drawMenuFadeIn(scene)
-	g.post.Finish(screen, postSettings)
-	if !g.isInputDebugVisible {
-		return
-	}
-	g.ui.DrawDebugOverlay(append(g.input.DescribeDevices(g.controls), g.describeMusic()), screen)
+func (g *Game) Reset(frame *rig.Frame) {
+	g.resetRun()
+	g.isDemo = frame.IsDemo
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	renderScale = resolutionChoices[g.settings.Resolution].Scale(outsideWidth, outsideHeight)
-	return int(screenWidth * renderScale), int(screenHeight * renderScale)
+func (g *Game) Update(frame *rig.Frame) {
+	g.controls = frame.Controls
+	g.applyGraphicsSettings()
+	worldUpdaters[boolToIndex(frame.IsDemo)](g)
+	g.updateMusicSignals()
+}
+
+func (g *Game) Draw(frame *rig.Frame, screen *ebiten.Image) {
+	g.renderer.DrawWorld(g, screen)
+}
+
+func (g *Game) DrawHUD(frame *rig.Frame, screen *ebiten.Image) {
+	g.ui.DrawHud(g, screen)
+}
+
+func (g *Game) Report(report *rig.Report) {
+	report.Count(i18n.T("bench.enemies"), g.enemies.Count)
+	report.Count(i18n.T("bench.spiders"), len(g.spiders))
+	report.Count(i18n.T("bench.particles"), g.effects.ParticleCount)
+	report.Count(i18n.T("bench.projectiles"), g.projectiles.Count)
+	report.Count(i18n.T("bench.ground"), g.ground.Columns*g.ground.Rows)
+	report.Count(i18n.T("bench.reactions"), sumReactions(g.reactionCounts))
 }
 
 // ===== Internal =====
@@ -264,44 +158,17 @@ func (g *Game) resetRun() {
 	g.worm, g.hordeWaveCount, g.wormCraters = DrillWorm{}, 0, g.wormCraters[:0]
 	g.resetWeather()
 	g.resetChatter()
-	g.isDemo, g.isScoreRecorded = false, false
-	g.newEntryRank = noRank
+	g.isDemo = false
 	g.levelUpBannerSeconds = 0
 	g.lastRotatedPassive = passiveKindCount - 1
 }
 
-func (g *Game) updateCursorVisibility() {
-	isPlayingWithMouse := g.controls.HasMouseAim && g.state == StatePlaying
-	modes := [2]ebiten.CursorModeType{ebiten.CursorModeVisible, ebiten.CursorModeHidden}
-	ebiten.SetCursorMode(modes[boolToIndex(isPlayingWithMouse)])
-}
-
-func (g *Game) isConfirming() bool {
-	return g.menuLockSeconds == 0 && g.controls.JustPressed&ActionConfirm != 0
-}
-
-func (g *Game) switchState(state GameState) {
-	g.state = state
-	g.stateTicks = 0
-	g.menuLockSeconds = menuLockDuration
-	g.menuSelection = 0
-}
-
-func (g *Game) updatePlaying() {
-	if g.controls.JustPressed&ActionPause != 0 {
-		g.switchState(StatePaused)
-		return
-	}
-	g.simulate()
-	if g.player.Health <= 0 {
-		g.finishRun()
-		return
-	}
-	g.openLevelUpIfPending()
+func (g *Game) applyGraphicsSettings() {
+	g.effects.ShakeFactor = g.app.Settings.ShakeFactor()
+	g.effects.Density = g.app.Settings.EffectsFactor()
 }
 
 func (g *Game) simulate() {
-	defer g.measureSimulation(time.Now())
 	g.frame++
 	g.elapsedSeconds += deltaSeconds
 	g.grid.Rebuild(g.enemies.PositionX, g.enemies.PositionY, g.enemies.Count)
@@ -321,12 +188,6 @@ func (g *Game) simulate() {
 	g.updateChatter(deltaSeconds)
 	g.effects.Update(deltaSeconds)
 	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
-	g.musicBannerSeconds = max(0, g.musicBannerSeconds-deltaSeconds)
-}
-
-func (g *Game) measureSimulation(started time.Time) {
-	elapsedMillis := float32(time.Since(started).Microseconds()) / 1000
-	g.simulationMillis += (elapsedMillis - g.simulationMillis) * simulationTimeSmoothing
 }
 
 func (g *Game) tickGroundIfDue() {
@@ -334,48 +195,4 @@ func (g *Game) tickGroundIfDue() {
 		return
 	}
 	g.ground.Tick()
-}
-
-func (g *Game) openLevelUpIfPending() {
-	if g.player.PendingLevelUps == 0 {
-		return
-	}
-	g.buildUpgradeOffers()
-	g.playSound(SoundLevelUp)
-	g.say(ChatterLevelUp)
-	if len(g.offers) == 1 {
-		g.applySoleOffer()
-		return
-	}
-	g.switchState(StateLevelUp)
-}
-
-func (g *Game) applySoleOffer() {
-	offer := g.offers[0]
-	g.applyOffer(offer)
-	g.levelUpBanner = "LEVEL UP!   " + offer.Title() + "  " + offer.Subtitle()
-	g.levelUpBannerSeconds = levelUpBannerDuration
-}
-
-func (g *Game) updateLevelUp() {
-	isPrevious := g.controls.JustPressed&selectionDirections != 0
-	isNext := g.controls.JustPressed&(ActionRight|ActionDown) != 0
-	offerCount := len(g.offers)
-	g.selectedOffer = (g.selectedOffer + offerCount + boolToIndex(isNext) - boolToIndex(isPrevious)) % offerCount
-	if !g.isConfirming() {
-		return
-	}
-	g.applyOffer(g.offers[g.selectedOffer])
-	g.switchState(StatePlaying)
-	g.openLevelUpIfPending()
-}
-
-func (g *Game) drawPlaying(screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
-	g.ui.DrawHud(g, screen)
-}
-
-func (g *Game) drawLevelUp(screen *ebiten.Image) {
-	g.drawPlaying(screen)
-	g.ui.DrawLevelUp(g, screen)
 }

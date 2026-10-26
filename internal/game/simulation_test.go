@@ -4,8 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ajkula/ajkurig/rng"
-	"github.com/ajkula/ajkurig/spatial"
+	"github.com/ajkula/ajkurig/draw"
+	"github.com/ajkula/ajkurig/input"
+	"github.com/ajkula/ajkurig/scores"
+	"github.com/ajkula/ajkurig/shell"
 )
 
 // ===== Constants =====
@@ -15,7 +17,7 @@ const simulatedMinutes = 8
 // ===== Public API =====
 
 func TestLongRunWithEveryWeaponStaysStable(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	equipEveryWeapon(game)
 	frameCount := simulatedMinutes * 60 * ticksPerSecond
 	slowestFrame := time.Duration(0)
@@ -28,7 +30,7 @@ func TestLongRunWithEveryWeaponStaysStable(t *testing.T) {
 }
 
 func BenchmarkSimulateFullHorde(b *testing.B) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(b)
 	equipEveryWeapon(game)
 	for range 5 * 60 * ticksPerSecond {
 		stepHeadless(game)
@@ -42,21 +44,6 @@ func BenchmarkSimulateFullHorde(b *testing.B) {
 
 // ===== Internal =====
 
-func newHeadlessGame() *Game {
-	game := &Game{
-		random:      rng.New(0xA11CE),
-		enemies:     NewEnemyStore(maximumEnemies),
-		projectiles: NewProjectileStore(maximumProjectiles),
-		gems:        NewGemStore(maximumGems),
-		effects:     NewEffects(),
-		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
-		musicSlot:   noMusicSlot,
-	}
-	game.resetRun()
-	game.state = StatePlaying
-	return game
-}
-
 func equipEveryWeapon(game *Game) {
 	game.player.Weapons = game.player.Weapons[:0]
 	for kind := range weaponKindCount {
@@ -66,14 +53,14 @@ func equipEveryWeapon(game *Game) {
 
 func stepHeadless(game *Game) {
 	game.frame++
-	game.controls = Controls{MoveX: cosine(float32(game.frame) * 0.002), MoveY: sine(float32(game.frame) * 0.002), Held: ActionFire}
+	game.controls = input.Controls{MoveX: cosine(float32(game.frame) * 0.002), MoveY: sine(float32(game.frame) * 0.002), Held: ActionFire}
 	game.player.Health = game.player.MaximumHealth
 	game.player.PendingLevelUps = 0
 	game.simulate()
 }
 
 func BenchmarkSimulateTenThousandEnemies(b *testing.B) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(b)
 	for spawned := range 10000 {
 		angle := float32(spawned) * 0.6180339 * 6.2831853
 		distance := 300 + float32(spawned%400)*2.5
@@ -97,7 +84,7 @@ func BenchmarkGroundRefreshAndTick(b *testing.B) {
 }
 
 func TestLifestealIsOneTimeAndCapped(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	player := game.player
 	game.applyOffer(UpgradeOffer{Kind: UpgradePassive, Passive: PassiveLifesteal, NextLevel: 1})
 	if abs(player.KillHealFraction-0.01) > 1e-6 {
@@ -126,7 +113,7 @@ func TestExperienceCostAlwaysGrows(t *testing.T) {
 }
 
 func TestNoMoreThanThreeSpiderTanks(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	for range 10 {
 		game.bossProgressKills = game.bossKillsRequired
 		game.bossEventCount = 0
@@ -138,7 +125,7 @@ func TestNoMoreThanThreeSpiderTanks(t *testing.T) {
 }
 
 func TestBoltStopsOnToughTarget(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.enemies.Spawn(EnemyBrute, game.player.X+40, game.player.Y, 1)
 	game.grid.Rebuild(game.enemies.PositionX, game.enemies.PositionY, game.enemies.Count)
 	game.projectiles.SpawnBolt(game.player.X+40, game.player.Y, 0, 0, 10, ElementPhysical, 5, [3]float32{1, 1, 1})
@@ -149,7 +136,7 @@ func TestBoltStopsOnToughTarget(t *testing.T) {
 }
 
 func TestBossBeamCycleLocksThenFires(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
 	phasesSeen := map[LaserPhase]bool{}
@@ -172,7 +159,7 @@ func TestBossBeamCycleLocksThenFires(t *testing.T) {
 }
 
 func TestLaserBurnsPlayerUnlessDashing(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	beam := &BossBeam{Profile: &spiderBeamProfile, Phase: LaserFiring, OriginX: game.player.X - 300, OriginY: game.player.Y}
 	game.burnPlayerInBeam(beam, 1, 1, 0, 0.1)
 	if game.player.Health >= game.player.MaximumHealth {
@@ -187,7 +174,7 @@ func TestLaserBurnsPlayerUnlessDashing(t *testing.T) {
 }
 
 func TestBossKillsGiveNoReward(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.enemies.Spawn(EnemySwarmer, 100, 100, 1)
 	game.enemies.LastHitByBoss[0] = true
 	game.enemies.Health[0] = 0
@@ -205,61 +192,54 @@ func TestBossKillsGiveNoReward(t *testing.T) {
 
 func stepHeadlessIdle(game *Game) {
 	game.frame++
-	game.controls = Controls{}
+	game.controls = input.Controls{}
 	game.player.Health = game.player.MaximumHealth
 	game.simulate()
 }
 
 func TestHighScoreIsSavedAndReloaded(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	game.killScore, game.elapsedSeconds, game.kills = 4200, 90, 321
-	game.recordHighScoreAs("GRG")
-	if game.newEntryRank != 0 {
-		t.Fatalf("first score ranked %d, want 0", game.newEntryRank)
+	game.shell.RecordScoreAs("GRG")
+	if game.shell.NewEntryRank != 0 {
+		t.Fatalf("first score ranked %d, want 0", game.shell.NewEntryRank)
 	}
-	reloaded, err := LoadHighScores()
+	reloaded, err := scores.Load(app.Store, scores.DefaultTableSize)
 	best := reloaded.Best()
-	if err != nil || best.Score != game.CurrentScore() || best.Kills != 321 || best.Initials != "GRG" {
+	if err != nil || best.Score != game.CurrentScore() || best.Stats[statKills] != 321 || best.Initials != "GRG" {
 		t.Fatalf("reloaded %+v (err %v), want score %d", best, err, game.CurrentScore())
 	}
 }
 
 func TestDemoNeverRecordsHighScore(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	game := newHeadlessGame()
-	game.startDemo()
+	app, game := newHomeApp(t)
 	game.killScore = 999999
-	game.recordHighScore()
-	if len(game.highScores.Entries) != 0 {
-		t.Fatalf("demo recorded a high score of %d", game.highScores.Best().Score)
+	game.shell.RecordScore()
+	if len(app.Scores.Entries) != 0 {
+		t.Fatalf("demo recorded a high score of %d", app.Scores.Best().Score)
 	}
 }
 
 func TestPauseFreezesTheWorld(t *testing.T) {
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	game.effects.AddShake(20)
-	stepHeadless(game)
-	game.state = StatePaused
+	app.Step(input.Controls{RawJustPressed: input.NoInput})
+	press(app, input.ActionPause)
 	frame, shakeX, enemyCount := game.frame, game.effects.ShakeX, game.enemies.Count
-	for range 120 {
-		game.controls = Controls{}
-		game.updatePaused()
-	}
-	if game.frame != frame || game.effects.ShakeX != shakeX || game.enemies.Count != enemyCount {
-		t.Fatalf("world changed while paused")
+	stepFor(app, 2, 0)
+	if app.CurrentScreen() != shell.ScreenPause || game.frame != frame || game.effects.ShakeX != shakeX || game.enemies.Count != enemyCount {
+		t.Fatalf("world changed while paused on %q", app.CurrentScreen())
 	}
 }
 
 func TestDemoSequencesLoopCleanly(t *testing.T) {
-	game := newHeadlessGame()
-	game.startDemo()
+	app, game := newHomeApp(t)
 	seen := map[int]bool{}
 	randomClips := 0
-	for game.demoClipCount <= 2*len(demoSequences) {
-		isStarting := game.demoSeconds+deltaSeconds > demoSequenceSeconds
-		game.updateDemo()
-		seen[game.demoSequence] = true
+	for game.shell.DemoSlot <= 2*len(demoSequences) {
+		isStarting := game.shell.DemoSeconds+deltaSeconds > demoSequenceSeconds
+		game.shell.UpdateBackdrop(app.Frame())
+		seen[(game.shell.DemoSlot/2)%len(demoSequences)] = true
 		randomClips += boolToIndex(isStarting && game.currentDemo.Name == randomClipName)
 	}
 	if randomClips < len(demoSequences)-1 {
@@ -271,7 +251,7 @@ func TestDemoSequencesLoopCleanly(t *testing.T) {
 }
 
 func TestBossCycleIsThreeSpidersHordeWormHorde(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	expected := []BossEventKind{BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde, BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde}
 	expectedHordeSizes := []int{500, 1000, 1500, 2000}
 	hordesSeen := 0
@@ -290,7 +270,7 @@ func TestBossCycleIsThreeSpidersHordeWormHorde(t *testing.T) {
 }
 
 func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde
 	game.startBossEvent()
 	total := game.hordeEvent.Total
@@ -312,7 +292,7 @@ func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 }
 
 func TestBossesKeepComingDuringAHorde(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde
 	game.startBossEvent()
 	game.bossEventCount = 0
@@ -324,7 +304,7 @@ func TestBossesKeepComingDuringAHorde(t *testing.T) {
 }
 
 func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde + 1
 	game.startBossEvent()
 	game.bossProgressKills = game.bossKillsRequired
@@ -343,7 +323,7 @@ func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
 }
 
 func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde + 1
 	game.startBossEvent()
 	game.bossEventCount = spidersBeforeHorde + 1
@@ -363,7 +343,7 @@ func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
 }
 
 func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde + 1
 	game.startBossEvent()
 	for range maximumBossesAlive {
@@ -386,7 +366,7 @@ func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
 }
 
 func TestOverlappingHordesMerge(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde
 	game.startBossEvent()
 	first := game.hordeEvent.Total
@@ -398,7 +378,7 @@ func TestOverlappingHordesMerge(t *testing.T) {
 }
 
 func TestDrillWormEmergesFiresAFrostBeamThenDives(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.spawnWormEvent()
 	phasesSeen := [wormPhaseCount]bool{}
 	hasFired, hasHittableSegmentUnderground := false, false
@@ -423,7 +403,7 @@ func TestDrillWormEmergesFiresAFrostBeamThenDives(t *testing.T) {
 }
 
 func TestDrillWormLosesItsBodyThenRollsItsHead(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.spawnWormEvent()
 	for game.worm.Phase != WormAiming {
 		stepHeadlessIdle(game)
@@ -453,7 +433,7 @@ func TestDrillWormLosesItsBodyThenRollsItsHead(t *testing.T) {
 }
 
 func TestSoleOfferIsAppliedWithoutPausing(t *testing.T) {
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	game.player.Weapons = game.player.Weapons[:0]
 	for kind := range weaponKindCount {
 		game.player.Weapons = append(game.player.Weapons, WeaponState{Kind: kind, Level: maximumWeaponLevel})
@@ -463,9 +443,9 @@ func TestSoleOfferIsAppliedWithoutPausing(t *testing.T) {
 	}
 	game.player.Health = 10
 	game.player.PendingLevelUps = 1
-	game.openLevelUpIfPending()
-	if game.state != StatePlaying || game.player.PendingLevelUps != 0 || game.player.Health <= 10 {
-		t.Fatalf("sole offer: state %d, pending %d, health %.0f", game.state, game.player.PendingLevelUps, game.player.Health)
+	app.Step(input.Controls{RawJustPressed: input.NoInput})
+	if app.CurrentScreen() != shell.ScreenPlay || game.player.PendingLevelUps != 0 || game.player.Health <= 10 {
+		t.Fatalf("sole offer: screen %q, pending %d, health %.0f", app.CurrentScreen(), game.player.PendingLevelUps, game.player.Health)
 	}
 	if game.levelUpBannerSeconds <= 0 || game.levelUpBanner == "" {
 		t.Fatalf("no level up banner shown")
@@ -474,22 +454,22 @@ func TestSoleOfferIsAppliedWithoutPausing(t *testing.T) {
 }
 
 func TestSeveralOffersStillOpenTheMenu(t *testing.T) {
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	game.player.PendingLevelUps = 1
-	game.openLevelUpIfPending()
-	if game.state != StateLevelUp {
-		t.Fatalf("with several offers the level up menu should open, state %d", game.state)
+	app.Step(input.Controls{RawJustPressed: input.NoInput})
+	if app.CurrentScreen() != shell.ScreenLevelUp {
+		t.Fatalf("with several offers the level up menu should open, screen %q", app.CurrentScreen())
 	}
 }
 
 func TestRightStickAimsIndependentlyOfMovement(t *testing.T) {
-	game := newHeadlessGame()
-	game.controls = Controls{MoveX: 1, AimX: 0, AimY: -1, HasAimStick: true}
+	game := newHeadlessGame(t)
+	game.controls = input.Controls{MoveX: 1, AimX: 0, AimY: -1, HasAimStick: true}
 	game.updatePlayer(deltaSeconds)
 	if game.player.AimY > -0.99 || game.player.FacingX < 0.99 {
 		t.Fatalf("moving right while aiming up: aim (%.2f, %.2f), facing (%.2f, %.2f)", game.player.AimX, game.player.AimY, game.player.FacingX, game.player.FacingY)
 	}
-	game.controls = Controls{MoveY: 1}
+	game.controls = input.Controls{MoveY: 1}
 	game.updatePlayer(deltaSeconds)
 	if game.player.AimY < 0.99 {
 		t.Fatalf("without the right stick the aim should follow movement, aim (%.2f, %.2f)", game.player.AimX, game.player.AimY)
@@ -497,14 +477,14 @@ func TestRightStickAimsIndependentlyOfMovement(t *testing.T) {
 }
 
 func TestRightStickFiresAutomatically(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	expectations := []struct {
-		controls   Controls
+		controls   input.Controls
 		isExpected bool
 	}{
-		{Controls{AimX: 1, HasAimStick: true}, true},
-		{Controls{MoveX: 1}, false},
-		{Controls{Held: ActionFire}, true},
+		{input.Controls{AimX: 1, HasAimStick: true}, true},
+		{input.Controls{MoveX: 1}, false},
+		{input.Controls{Held: ActionFire}, true},
 	}
 	for _, expectation := range expectations {
 		game.controls = expectation.controls
@@ -516,7 +496,7 @@ func TestRightStickFiresAutomatically(t *testing.T) {
 }
 
 func TestBossKillsDoNotCarryOverAndRequirementGrows(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	firstRequirement := game.bossKillsRequired
 	game.elapsedSeconds = 600
 	game.bossProgressKills = firstRequirement * 5
@@ -536,7 +516,7 @@ func TestBossKillsDoNotCarryOverAndRequirementGrows(t *testing.T) {
 }
 
 func TestHordeIsVariedWithExplosivesOnTheOutside(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.bossEventCount = spidersBeforeHorde
 	game.startBossEvent()
 	kindCounts := [enemyKindCount]int{}
@@ -562,7 +542,7 @@ func TestHordeIsVariedWithExplosivesOnTheOutside(t *testing.T) {
 }
 
 func TestHordeDoesNotDetonateAtOnce(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	equipEveryWeapon(game)
 	game.elapsedSeconds = 900
 	game.bossEventCount = spidersBeforeHorde
@@ -580,7 +560,7 @@ func TestHordeDoesNotDetonateAtOnce(t *testing.T) {
 }
 
 func TestOnlyPassivesLeftRotateThroughRemainingOnes(t *testing.T) {
-	game := newHeadlessGame()
+	app, game := newRunningApp(t)
 	equipEveryWeapon(game)
 	remaining := []PassiveKind{PassiveSwiftness, PassiveHaste, PassiveMight, PassiveReach}
 	for kind := range passiveKindCount {
@@ -599,8 +579,8 @@ func TestOnlyPassivesLeftRotateThroughRemainingOnes(t *testing.T) {
 	for turn, want := range expected {
 		before := game.player.PassiveLevels
 		game.player.PendingLevelUps = 1
-		game.openLevelUpIfPending()
-		if game.state != StatePlaying || game.player.PendingLevelUps != 0 {
+		app.Step(input.Controls{RawJustPressed: input.NoInput})
+		if app.CurrentScreen() != shell.ScreenPlay || game.player.PendingLevelUps != 0 {
 			t.Fatalf("turn %d: the level up paused the game", turn)
 		}
 		if game.player.PassiveLevels[want] != before[want]+1 {
@@ -611,13 +591,12 @@ func TestOnlyPassivesLeftRotateThroughRemainingOnes(t *testing.T) {
 
 func TestDemoClipsNeverRunEmpty(t *testing.T) {
 	const tolerableEmptySeconds = 0.5
-	game := newHeadlessGame()
-	game.startDemo()
+	app, game := newHomeApp(t)
 	for range 2 * len(demoSequences) * 2 {
 		sequence := game.currentDemo
 		emptySeconds := float32(0)
 		for range demoSequenceSeconds*ticksPerSecond - 2 {
-			game.updateDemo()
+			game.shell.UpdateBackdrop(app.Frame())
 			emptySeconds += deltaSeconds * boolToFloat(game.enemies.Count*10 < sequence.EnemyCount)
 		}
 		t.Logf("%-22s %-50s spawned %4d, nearly empty for %.2fs", sequence.Name, sequence.Subtitle, sequence.EnemyCount, emptySeconds)
@@ -625,13 +604,13 @@ func TestDemoClipsNeverRunEmpty(t *testing.T) {
 			t.Errorf("%s %s stayed nearly empty for %.2fs", sequence.Name, sequence.Subtitle, emptySeconds)
 		}
 		for game.currentDemo.Name == sequence.Name && game.currentDemo.Subtitle == sequence.Subtitle {
-			game.updateDemo()
+			game.shell.UpdateBackdrop(app.Frame())
 		}
 	}
 }
 
 func TestSeismicHammerShattersEveryFrozenFoeInReach(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	for slot := range 6 {
 		angle := float32(slot)
 		game.enemies.Spawn(EnemyBrute, game.player.X+cosine(angle)*80, game.player.Y+sine(angle)*80, 1)
@@ -646,7 +625,7 @@ func TestSeismicHammerShattersEveryFrozenFoeInReach(t *testing.T) {
 }
 
 func TestStaticMineArmsThenShocksWhoStepsNear(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	weapon := WeaponState{Kind: WeaponStaticMines, Level: 1}
 	game.layStaticMines(&weapon, &weaponTable[WeaponStaticMines])
 	mine := game.mines[0]
@@ -672,7 +651,7 @@ func TestShockedFoesReactToFireBladesAndRain(t *testing.T) {
 		{ElementWater, ReactionConduction},
 	}
 	for _, expectation := range expectations {
-		game := newHeadlessGame()
+		game := newHeadlessGame(t)
 		game.enemies.Spawn(EnemyBrute, game.player.X+200, game.player.Y, 1)
 		game.enemies.Spawn(EnemyBrute, game.player.X+240, game.player.Y, 1)
 		game.enemies.ApplyStatus(0, StatusShocked)
@@ -698,7 +677,7 @@ func TestBeamChargeSoundsLastUntilTheShot(t *testing.T) {
 }
 
 func TestHealOrbsDropRarelyAndHealWithoutExperience(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	const kills = 20000
 	for range kills {
 		game.dropHealOrbIf(game.player.X+300, game.player.Y)
@@ -729,7 +708,7 @@ func TestHealOrbsDropRarelyAndHealWithoutExperience(t *testing.T) {
 }
 
 func TestBossKillsDropNoHealOrbs(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	for range 500 {
 		game.enemies.Spawn(EnemySwarmer, game.player.X+300, game.player.Y, 1)
 		game.enemies.LastHitByBoss[game.enemies.Count-1] = true
@@ -742,7 +721,7 @@ func TestBossKillsDropNoHealOrbs(t *testing.T) {
 }
 
 func TestRepeatedFireHitsHeatEnemiesUpToLevelThree(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.enemies.Spawn(EnemyBrute, game.player.X+300, game.player.Y, 1)
 	burning := statusBitIndex(StatusBurning)
 	for hit := 1; hit <= 4; hit++ {
@@ -765,7 +744,7 @@ func TestRepeatedFireHitsHeatEnemiesUpToLevelThree(t *testing.T) {
 }
 
 func TestFrostFreezesOnTheThirdHit(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.enemies.Spawn(EnemyBrute, game.player.X+300, game.player.Y, 1)
 	for hit := 1; hit <= 3; hit++ {
 		isFrozen := game.enemies.Status[0]&StatusFrozen != 0
@@ -780,7 +759,7 @@ func TestFrostFreezesOnTheThirdHit(t *testing.T) {
 }
 
 func TestShotEvolvesIntoOneElementOnly(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.player.Weapons = []WeaponState{{Kind: WeaponPulseShot, Level: 3}}
 	game.offerPool = game.offerPool[:0]
 	for kind := range weaponKindCount {
@@ -810,7 +789,7 @@ func TestShotEvolvesIntoOneElementOnly(t *testing.T) {
 }
 
 func TestSpiderTanksDoNotOverlap(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.spawnSpiderAt(0, 400)
 	game.spawnSpiderAt(0.01, 400)
 	game.spawnSpiderAt(0.02, 410)
@@ -831,10 +810,10 @@ func TestSpiderTanksDoNotOverlap(t *testing.T) {
 }
 
 func TestMouseAimsTheCannonAndClicksFireAndDash(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.renderer = &Renderer{CameraX: game.player.X - screenWidth/2, CameraY: game.player.Y - screenHeight/2}
-	cursorX, cursorY := float32(screenWidth/2)*renderScale, float32(screenHeight/2+200)*renderScale
-	game.controls = Controls{HasMouseAim: true, CursorX: cursorX, CursorY: cursorY, Held: ActionFire, JustPressed: ActionDash}
+	cursorX, cursorY := float32(screenWidth/2)*draw.Scale, float32(screenHeight/2+200)*draw.Scale
+	game.controls = input.Controls{HasMouseAim: true, CursorX: cursorX, CursorY: cursorY, Held: ActionFire, JustPressed: ActionDash}
 	game.updatePlayer(deltaSeconds)
 	if game.player.AimY < 0.99 || !game.player.IsFiring || game.player.DashSeconds <= 0 {
 		t.Fatalf("aim %.2f,%.2f firing %v dash %.2f", game.player.AimX, game.player.AimY, game.player.IsFiring, game.player.DashSeconds)
@@ -850,7 +829,7 @@ func TestEveryDrillWormPhaseIsUpdatedAndDrawn(t *testing.T) {
 }
 
 func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.spawnWormEvent()
 	game.worm.HoleX, game.worm.HoleY = game.player.X+10, game.player.Y
 	startX := game.player.X
@@ -858,7 +837,7 @@ func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
 	game.eruptWorm(&game.worm)
 	for range ticksPerSecond {
 		game.frame++
-		game.controls = Controls{}
+		game.controls = input.Controls{}
 		game.simulate()
 	}
 	if game.player.Health < 1 || game.worm.BlastHits != 0 {

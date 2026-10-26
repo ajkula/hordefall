@@ -33,7 +33,7 @@ func TestChatterIsDebounced(t *testing.T) {
 		t.Fatal(err)
 	}
 	i18n.Use(i18n.FallbackCode)
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.chatter.QuietSeconds = chatterGlobalGap
 	game.say(ChatterHeal)
 	if len(game.chatter.Runes) == 0 {
@@ -63,7 +63,7 @@ func TestBossLinesCutTheGlobalGapShort(t *testing.T) {
 		t.Fatal(err)
 	}
 	i18n.Use(i18n.FallbackCode)
-	game := newHeadlessGame()
+	game := newHeadlessGame(t)
 	game.chatter.QuietSeconds = chatterUrgentGap
 	game.say(ChatterHeal)
 	if len(game.chatter.Runes) != 0 {

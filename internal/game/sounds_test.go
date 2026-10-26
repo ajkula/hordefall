@@ -38,7 +38,9 @@ func TestEverySoundKindHasItsOwnDefinition(t *testing.T) {
 // ===== Internal =====
 
 func renderSoundPeak(kind SoundKind, frames int) float32 {
-	engine, ids := newSilentAudio(1)
+	bank := audio.NewSoundBank()
+	ids := RegisterSounds(bank)
+	engine := audio.NewSilentEngine(bank, audio.NewSignalBoard())
 	engine.SetMusicOn(false)
 	engine.SetEffectsVolume(1)
 	engine.Play(ids[kind], 10)

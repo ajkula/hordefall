@@ -5,6 +5,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/ui"
 )
 
 // ===== Types =====
@@ -142,5 +143,5 @@ func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {
 	fraction := float32(g.hordeEvent.Remaining) / float32(max(1, g.hordeEvent.Total))
 	drawBossBar(screen, y, fraction, hordeBarColor)
 	label := i18n.F("horde.bar", g.hordeEvent.Remaining, g.hordeEvent.Total)
-	u.drawText(screen, label, u.small, screenWidth/2, y, textColor, 1, text.AlignCenter)
+	u.kit.Text.Draw(screen, label, ui.FaceSmall, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }

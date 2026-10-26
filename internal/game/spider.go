@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/mathx"
 )
 
 // ===== Types =====
@@ -167,7 +168,7 @@ func (g *Game) updateSpiders(deltaSeconds float32) {
 	for index := range g.spiders {
 		enemyIndex := g.enemies.IndexOfID(g.spiders[index].EnemyID)
 		g.updateSpider(&g.spiders[index], enemyIndex, deltaSeconds)
-		kept = appendIf(kept, g.spiders[index], enemyIndex >= 0)
+		kept = mathx.AppendIf(kept, g.spiders[index], enemyIndex >= 0)
 	}
 	g.spiders = kept
 }

@@ -7,7 +7,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/ajkula/ajkurig/draw"
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/ui"
 )
 
 // ===== Types =====
@@ -175,17 +177,17 @@ func marqueeOffset(seconds, boxWidth float32) float32 {
 
 func (u *UI) drawChatter(g *Game, screen *ebiten.Image) {
 	message := string(g.chatter.Runes)
-	textWidth := u.textWidth(message, u.mono)
-	boxWidth := u.textWidth(chatterSample, u.mono)
+	textWidth := u.kit.Text.Width(message, ui.FaceMono)
+	boxWidth := u.kit.Text.Width(chatterSample, ui.FaceMono)
 	if !g.chatter.IsSpeaking(textWidth, boxWidth) {
 		return
 	}
 	playerX, playerY := g.renderer.ToScreen(g.player.X, g.player.Y)
-	height := float32(u.mono.Size) + 2*chatterBoxPadding
+	height := u.kit.Text.Size(ui.FaceMono) + 2*chatterBoxPadding
 	left := float32(int(clamp(playerX-boxWidth/2-chatterBoxPadding, 0, screenWidth-boxWidth-2*chatterBoxPadding)))
 	top := float32(int(clamp(playerY-chatterLift-height, 0, screenHeight-height)))
 	fillRect(screen, left, top, boxWidth+2*chatterBoxPadding, height, toColor(panelColor, chatterBoxAlpha))
-	window := screen.SubImage(image.Rect(int((left+chatterBoxPadding)*renderScale), int(top*renderScale), int((left+chatterBoxPadding+boxWidth)*renderScale), int((top+height)*renderScale))).(*ebiten.Image)
+	window := screen.SubImage(image.Rect(int((left+chatterBoxPadding)*draw.Scale), int(top*draw.Scale), int((left+chatterBoxPadding+boxWidth)*draw.Scale), int((top+height)*draw.Scale))).(*ebiten.Image)
 	textX := left + chatterBoxPadding + marqueeOffset(g.chatter.Seconds, boxWidth)
-	u.drawText(window, message, u.mono, textX, top+chatterBoxPadding-chatterTextRise, textColor, 1, text.AlignStart)
+	u.kit.Text.Draw(window, message, ui.FaceMono, textX, top+chatterBoxPadding-chatterTextRise, textColor, 1, text.AlignStart)
 }

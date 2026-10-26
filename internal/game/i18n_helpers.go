@@ -1,28 +1,8 @@
 package game
 
-import (
-	"strings"
-
-	"github.com/ajkula/ajkurig/i18n"
-)
+import "github.com/ajkula/ajkurig/i18n"
 
 // ===== Internal =====
-
-func translatedLabel(key string) func(game *Game) string {
-	return func(*Game) string { return i18n.T(key) }
-}
-
-func translateValue(label string) string {
-	return i18n.TOr("value."+strings.ToLower(label), label)
-}
-
-func actionName(action RemapAction) string {
-	return i18n.T("action." + remapTable[action].Key)
-}
-
-func remapVerb(device InputDevice) string {
-	return i18n.T(remapInputVerbKeys[device])
-}
 
 func (d *WeaponDefinition) DisplayName() string {
 	return i18n.T("weapon." + d.Key)

@@ -126,7 +126,6 @@ func (g *Game) buildUpgradeOffers() {
 	g.offers = g.offers[:0]
 	offerDrawers[boolToIndex(isOnlyPassivesLeft)](g)
 	g.offers = appendHealIfEmpty(g.offers)
-	g.selectedOffer = 0
 }
 
 func (g *Game) drawRandomOffers() {

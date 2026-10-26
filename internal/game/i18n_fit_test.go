@@ -1,94 +1,28 @@
 package game
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/ui"
 )
 
-type FitRule struct {
-	Prefix   string
-	Size     float64
-	IsBold   bool
-	MaxWidth float64
-	MaxLines int
+// ===== Constants =====
+
+var cardFitRules = []ui.FitRule{
+	{Prefix: "weapon.", Suffix: ".description", Face: ui.FaceRegular, MaxWidth: ui.CardTextWidth, MaxLines: 2},
+	{Prefix: "passive.", Suffix: ".description", Face: ui.FaceRegular, MaxWidth: ui.CardTextWidth, MaxLines: 2},
+	{Prefix: "weapon.", Face: ui.FaceBold, MaxWidth: ui.CardTextWidth, MaxLines: 1},
+	{Prefix: "passive.", Face: ui.FaceBold, MaxWidth: ui.CardTextWidth, MaxLines: 1},
+	{Prefix: "main.controls", Face: ui.FaceSmall, MaxWidth: 1240, MaxLines: 1},
 }
 
-var fitRules = []FitRule{
-	{"title.", 80, true, 1200, 1},
-	{"menu.", 24, true, 560, 1},
-	{"gameplay.", 24, true, 560, 1},
-	{"remap.reset", 24, true, 560, 1},
-	{"audio.", 24, true, 560, 1},
-	{"graphics.", 24, true, 560, 1},
-	{"hint.", 16, false, 1240, 1},
-	{"main.controls", 16, false, 1240, 1},
-	{"remap.list_hint", 16, false, 1240, 1},
-	{"remap.essentials_hint", 16, false, 1240, 1},
-	{"remap.listen_hint", 16, false, 1240, 1},
-	{"gameover.", 24, true, 1240, 1},
-	{"upgrade.", 16, false, descriptionWrapWidth, 1},
-}
+// ===== Public API =====
 
 func TestTranslationsFitTheirSpace(t *testing.T) {
-	if err := loadGameLanguages(); err != nil {
-		t.Fatal(err)
+	app, _ := newTestApp(t)
+	rules := append(append([]ui.FitRule{}, cardFitRules...), ui.DefaultFitRules...)
+	for _, overflow := range app.Kit.Text.FindOverflows(i18n.Languages(), rules) {
+		t.Errorf("does not fit: %s", overflow)
 	}
-	chains := NewFontChains(FontFamily{mustLoadFace(rajdhaniMedium), mustLoadFace(rajdhaniBold)})
-	for _, language := range i18n.Languages() {
-		i18n.Use(language.Code)
-		for key, value := range language.Strings {
-			checkFit(t, chains, language.Code, key, value)
-		}
-	}
-	i18n.Use(i18n.FallbackCode)
-}
-
-func checkFit(t *testing.T, chains *FontChains, code, key, value string) {
-	isCardName := (strings.HasPrefix(key, "weapon.") || strings.HasPrefix(key, "passive.")) && !strings.HasSuffix(key, ".description")
-	isDescription := strings.HasSuffix(key, ".description")
-	rules := fitRules
-	if isCardName {
-		rules = []FitRule{{key, 24, true, descriptionWrapWidth, 1}}
-	}
-	if isDescription {
-		rules = []FitRule{{key, 20, false, descriptionWrapWidth, 2}}
-	}
-	for _, rule := range rules {
-		if !strings.HasPrefix(key, rule.Prefix) {
-			continue
-		}
-		face := measureFace(chains, rule)
-		lines := wrapMeasured(value, face, rule.MaxWidth)
-		widest := 0.0
-		for _, line := range lines {
-			widest = max(widest, text.Advance(line, face))
-		}
-		if len(lines) > rule.MaxLines || widest > rule.MaxWidth {
-			t.Errorf("%s %s: %d lines, %.0f px wide (max %d lines, %.0f px): %q", code, key, len(lines), widest, rule.MaxLines, rule.MaxWidth, value)
-		}
-		return
-	}
-}
-
-func measureFace(chains *FontChains, rule FitRule) text.Face {
-	source := chains.familyFor(rule.IsBold)
-	return combineFaces(chains.Faces(source, rule.Size))
-}
-
-func wrapMeasured(message string, face text.Face, maximumWidth float64) []string {
-	lines := []string{}
-	current := ""
-	for _, token := range wrapTokens(message) {
-		separator := [2]string{"", " "}[boolToIndex(token.IsSpaced && current != "")]
-		if current != "" && text.Advance(current+separator+token.Text, face) > maximumWidth {
-			lines = append(lines, current)
-			current, separator = "", ""
-		}
-		current += separator + token.Text
-	}
-	return append(lines, current)
 }

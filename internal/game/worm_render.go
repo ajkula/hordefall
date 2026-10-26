@@ -5,6 +5,8 @@ import (
 	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/ajkula/ajkurig/draw"
 )
 
 // ===== Types =====
@@ -166,8 +168,8 @@ func (r *Renderer) drawWormDecal(screen *ebiten.Image, decal *ebiten.Image, x, y
 	screenX, screenY := r.ToScreen(x, y)
 	options := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest}
 	options.GeoM.Translate(float64(-size/2), float64(-size/2))
-	options.GeoM.Scale(float64(scale*renderScale), float64(scale*renderScale))
-	options.GeoM.Translate(float64(float32(int(screenX))*renderScale), float64(float32(int(screenY))*renderScale))
+	options.GeoM.Scale(float64(scale*draw.Scale), float64(scale*draw.Scale))
+	options.GeoM.Translate(float64(float32(int(screenX))*draw.Scale), float64(float32(int(screenY))*draw.Scale))
 	options.ColorScale.Scale(tint[0], tint[1], tint[2], tint[3])
 	screen.DrawImage(decal, options)
 }
@@ -258,8 +260,8 @@ func (r *Renderer) drawWormSpriteIf(g *Game, screen *ebiten.Image, piece *WormPi
 	screenX, screenY := r.ToScreen(piece.X, piece.Y-piece.Z)
 	options := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest}
 	options.GeoM.Translate(float64(-size/2), float64(-size/2))
-	options.GeoM.Scale(float64(scale*renderScale), float64(scale*renderScale))
-	options.GeoM.Translate(float64(float32(int(screenX))*renderScale), float64(float32(int(screenY))*renderScale))
+	options.GeoM.Scale(float64(scale*draw.Scale), float64(scale*draw.Scale))
+	options.GeoM.Translate(float64(float32(int(screenX))*draw.Scale), float64(float32(int(screenY))*draw.Scale))
 	tint := r.wormSpriteTint(g, piece, maximumHealth)
 	options.ColorScale.Scale(tint[0], tint[1], tint[2], 1)
 	screen.DrawImage(frame, options)

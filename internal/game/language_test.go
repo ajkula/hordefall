@@ -4,87 +4,85 @@ import (
 	"testing"
 
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/input"
+	"github.com/ajkula/ajkurig/mathx"
+	"github.com/ajkula/ajkurig/rig"
+	"github.com/ajkula/ajkurig/shell"
+	"github.com/ajkula/ajkurig/ui"
 )
 
+// ===== Constants =====
+
+const (
+	gameplayLanguageOption = 0
+	introMaximumSeconds    = 30
+)
+
+// ===== Public API =====
+
 func TestLanguageDrumWrapsRepeatsAndConfirms(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	if err := loadGameLanguages(); err != nil {
-		t.Fatal(err)
-	}
-	game := newHeadlessGame()
-	game.settings.Language = i18n.FallbackCode
-	game.applyLanguage()
-	game.switchState(StateGameplay)
-	game.focusLanguageDrum()
+	app, _ := newHomeApp(t)
+	drum := focusLanguageDrum(app, i18n.FallbackCode)
 	count := len(i18n.Languages())
-	game.menuLockSeconds = 0
-	game.controls = Controls{Held: ActionUp, JustPressed: ActionUp}
-	game.updateGameplay()
-	if wrapIndex(game.languageTarget, count) != count-1 || i18n.Current().Code != i18n.Languages()[count-1].Code {
-		t.Fatalf("up from the first language did not wrap to the last: %d", game.languageTarget)
+	app.Step(input.Controls{Held: input.ActionUp, JustPressed: input.ActionUp, RawJustPressed: input.NoInput})
+	if mathx.WrapIndex(drum.Target, count) != count-1 || i18n.Current().Code != i18n.Languages()[count-1].Code {
+		t.Fatalf("up from the first language did not wrap to the last: %d", drum.Target)
 	}
-	game.controls = Controls{Held: ActionDown, JustPressed: ActionDown}
-	game.updateGameplay()
-	game.controls = Controls{Held: ActionDown}
-	for range drumRepeatDelay*ticksPerSecond - 2 {
-		game.updateGameplay()
+	app.Step(input.Controls{Held: input.ActionDown, JustPressed: input.ActionDown, RawJustPressed: input.NoInput})
+	stepFor(app, ui.DrumRepeatDelay-2*deltaSeconds, input.ActionDown)
+	if mathx.WrapIndex(drum.Target, count) != 0 {
+		t.Fatalf("the drum moved before the hold delay: %d", drum.Target)
 	}
-	if wrapIndex(game.languageTarget, count) != 0 {
-		t.Fatalf("the drum moved before the hold delay: %d", game.languageTarget)
-	}
-	for range ticksPerSecond {
-		game.updateGameplay()
-	}
-	moved := wrapIndex(game.languageTarget, count)
+	stepFor(app, 1, input.ActionDown)
+	moved := mathx.WrapIndex(drum.Target, count)
 	if moved < 3 || moved > 5 {
 		t.Fatalf("one second of auto scroll moved %d languages, want a calm 3 to 5", moved)
 	}
-	game.controls = Controls{JustPressed: ActionConfirm}
-	game.updateGameplay()
-	if game.state != StateGameplay || game.isLanguageDrumFocused || game.settings.Language != i18n.Languages()[moved].Code {
-		t.Fatalf("confirm chose %q, state %d, focused %v", game.settings.Language, game.state, game.isLanguageDrumFocused)
+	press(app, input.ActionConfirm)
+	if app.CurrentScreen() != shell.ScreenGameplay || drum.IsFocused || app.Settings.Language != i18n.Languages()[moved].Code {
+		t.Fatalf("confirm chose %q, screen %q, focused %v", app.Settings.Language, app.CurrentScreen(), drum.IsFocused)
 	}
 }
 
 func TestLanguageDrumCancelRestoresTheLanguage(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	if err := loadGameLanguages(); err != nil {
-		t.Fatal(err)
-	}
-	game := newHeadlessGame()
-	game.settings.Language = "fr"
-	game.applyLanguage()
-	game.switchState(StateGameplay)
-	game.focusLanguageDrum()
-	game.menuLockSeconds = 0
-	game.controls = Controls{Held: ActionDown, JustPressed: ActionDown}
-	game.updateGameplay()
-	game.controls = Controls{JustPressed: ActionPause}
-	game.updateGameplay()
-	if game.isLanguageDrumFocused || i18n.Current().Code != "fr" || game.settings.Language != "fr" {
-		t.Fatalf("cancel left %q active, setting %q", i18n.Current().Code, game.settings.Language)
+	app, _ := newHomeApp(t)
+	drum := focusLanguageDrum(app, "fr")
+	app.Step(input.Controls{Held: input.ActionDown, JustPressed: input.ActionDown, RawJustPressed: input.NoInput})
+	press(app, input.ActionPause|input.ActionBack)
+	if drum.IsFocused || i18n.Current().Code != "fr" || app.Settings.Language != "fr" {
+		t.Fatalf("cancel left %q active, setting %q", i18n.Current().Code, app.Settings.Language)
 	}
 }
 
 func TestFirstRunAsksForTheLanguageThenOpensTheMenu(t *testing.T) {
-	t.Setenv("APPDATA", t.TempDir())
-	if err := loadGameLanguages(); err != nil {
-		t.Fatal(err)
+	app, _ := newTestApp(t)
+	app.Start()
+	for tick := 0; app.CurrentScreen() == shell.ScreenIntro && tick < introMaximumSeconds*ticksPerSecond; tick++ {
+		app.Step(input.Controls{RawJustPressed: input.NoInput})
 	}
-	game := newHeadlessGame()
-	game.openLanguageMenuIfFirstRun()
-	if game.state != StateLanguage || !game.isLanguageDrumFocused {
-		t.Fatalf("first run state %d, focused %v", game.state, game.isLanguageDrumFocused)
+	drum := menuOption(app, shell.ScreenLanguage, gameplayLanguageOption).Drum
+	if app.CurrentScreen() != shell.ScreenLanguage || !drum.IsFocused {
+		t.Fatalf("first run screen %q, focused %v", app.CurrentScreen(), drum.IsFocused)
 	}
-	game.menuLockSeconds = 0
-	game.controls = Controls{JustPressed: ActionPause}
-	game.updateLanguageMenu()
-	if game.state != StateLanguage {
+	waitForMenuLock(app)
+	press(app, input.ActionPause|input.ActionBack)
+	if app.CurrentScreen() != shell.ScreenLanguage {
 		t.Fatal("the first run language page can be skipped without choosing")
 	}
-	game.controls = Controls{JustPressed: ActionConfirm}
-	game.updateLanguageMenu()
-	if game.state != StateMainMenu || game.settings.Language == i18n.DefaultCode {
-		t.Fatalf("confirm left state %d, language %q", game.state, game.settings.Language)
+	press(app, input.ActionConfirm)
+	if app.CurrentScreen() != shell.ScreenMenu || !app.Settings.IsLanguageChosen() {
+		t.Fatalf("confirm left screen %q, language %q", app.CurrentScreen(), app.Settings.Language)
 	}
+}
+
+// ===== Internal =====
+
+func focusLanguageDrum(app *rig.App, code string) *ui.Drum {
+	app.Settings.Language = code
+	app.ApplyLanguage()
+	app.Switch(shell.ScreenGameplay)
+	waitForMenuLock(app)
+	drum := menuOption(app, shell.ScreenGameplay, gameplayLanguageOption).Drum
+	drum.Focus()
+	return drum
 }

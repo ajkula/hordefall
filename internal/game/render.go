@@ -4,6 +4,8 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/ajkula/ajkurig/draw"
 )
 
 // ===== Types =====
@@ -131,8 +133,8 @@ func (b *SpriteBatch) Flush(screen *ebiten.Image) {
 		return
 	}
 	for index := range b.vertices {
-		b.vertices[index].DstX *= renderScale
-		b.vertices[index].DstY *= renderScale
+		b.vertices[index].DstX *= draw.Scale
+		b.vertices[index].DstY *= draw.Scale
 	}
 	screen.DrawTriangles32(b.vertices, b.indices, b.texture, &b.options)
 	b.vertices, b.indices = b.vertices[:0], b.indices[:0]
@@ -165,7 +167,6 @@ func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
 	r.glow.Flush(screen)
 	r.rings.Flush(screen)
 	r.applyWeatherGrade(g, screen)
-	g.post.ApplyBloom(bloomLevels[g.settings.BloomLevel].Factor)
 }
 
 func (r *Renderer) ToScreen(x, y float32) (float32, float32) {
@@ -224,7 +225,7 @@ func (r *Renderer) drawGround(g *Game, screen *ebiten.Image) {
 	options := &ebiten.DrawImageOptions{}
 	options.GeoM.Scale(groundCellSize, groundCellSize)
 	options.GeoM.Translate(float64(-r.CameraX), float64(-r.CameraY))
-	options.GeoM.Scale(float64(renderScale), float64(renderScale))
+	options.GeoM.Scale(float64(draw.Scale), float64(draw.Scale))
 	screen.DrawImage(r.groundImage, options)
 }
 
@@ -332,7 +333,7 @@ func (r *Renderer) queueMouseCrosshair(g *Game) {
 	if !isShown {
 		return
 	}
-	x, y := g.controls.CursorX/renderScale, g.controls.CursorY/renderScale
+	x, y := g.controls.CursorX/draw.Scale, g.controls.CursorY/draw.Scale
 	tint := [2][3]float32{{0.9, 0.95, 1}, {1, 0.75, 0.3}}[boolToIndex(g.player.IsFiring)]
 	r.rings.AddCircle(x, y, crosshairRadius, tint, 0.85)
 	r.solid.AddCircle(x, y, 1.8, tint, 1)

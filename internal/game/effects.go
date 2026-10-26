@@ -1,6 +1,9 @@
 package game
 
-import "github.com/ajkula/ajkurig/rng"
+import (
+	"github.com/ajkula/ajkurig/mathx"
+	"github.com/ajkula/ajkurig/rng"
+)
 
 // ===== Types =====
 
@@ -263,7 +266,7 @@ func filterAlive[T any](items []T, deltaSeconds float32, lifeOf func(item *T) *f
 	for index := range items {
 		life := lifeOf(&items[index])
 		*life -= deltaSeconds
-		kept = appendIf(kept, items[index], *life > 0)
+		kept = mathx.AppendIf(kept, items[index], *life > 0)
 	}
 	return kept
 }

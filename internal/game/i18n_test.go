@@ -8,16 +8,14 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"unicode"
-
-	"golang.org/x/image/font/sfnt"
 
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/ui"
 )
 
 var placeholderPattern = regexp.MustCompile(`%[-0-9.]*[sdf]`)
 
-var translationCallPattern = regexp.MustCompile(`(?:i18n\.T|i18n\.F|i18n\.TOr|translatedLabel)\("([a-z_.]+)"`)
+var translationCallPattern = regexp.MustCompile(`(?:i18n\.T|i18n\.F|i18n\.TOr)\("([a-z_.]+)"`)
 
 func TestEveryKeyUsedByTheGameExistsInEnglish(t *testing.T) {
 	if err := loadGameLanguages(); err != nil {
@@ -42,8 +40,8 @@ func TestEveryKeyUsedByTheGameExistsInEnglish(t *testing.T) {
 	for _, weather := range weatherTable[1:] {
 		keys["weather."+weather.Key] = true
 	}
-	for _, action := range remapTable {
-		keys["action."+action.Key] = true
+	for _, remap := range remaps {
+		keys["action."+remap.Key] = true
 	}
 	for _, topic := range chatterTopics {
 		for line := 1; line <= topic.LineCount; line++ {
@@ -85,47 +83,7 @@ func TestEveryCharacterOfEveryLanguageHasAGlyph(t *testing.T) {
 	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
-	fonts := []*sfnt.Font{mustParseFont(t, rajdhaniMedium)}
-	for _, files := range fallbackFamilyFiles {
-		data, err := fallbackFonts.ReadFile(files[WeightMedium])
-		if err != nil {
-			t.Fatal(err)
-		}
-		fonts = append(fonts, mustParseFont(t, data))
+	for _, missing := range ui.FindMissingGlyphs(i18n.Languages(), ui.DefaultFontFiles()) {
+		t.Errorf("no glyph for %s", missing)
 	}
-	var buffer sfnt.Buffer
-	for _, language := range i18n.Languages() {
-		text := language.Name
-		for _, value := range language.Strings {
-			text += value
-		}
-		for _, character := range text {
-			if unicode.IsSpace(character) || isCombiningMark(character) || hasGlyph(fonts, &buffer, character) {
-				continue
-			}
-			t.Errorf("%s: no glyph for %q (U+%04X)", language.Code, character, character)
-		}
-	}
-}
-
-func mustParseFont(t *testing.T, data []byte) *sfnt.Font {
-	font, err := sfnt.Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return font
-}
-
-func hasGlyph(fonts []*sfnt.Font, buffer *sfnt.Buffer, character rune) bool {
-	for _, font := range fonts {
-		index, err := font.GlyphIndex(buffer, character)
-		if err == nil && index != 0 {
-			return true
-		}
-	}
-	return false
-}
-
-func isCombiningMark(character rune) bool {
-	return unicode.Is(unicode.Mn, character) || unicode.Is(unicode.Mc, character)
 }
