@@ -7,7 +7,7 @@ import (
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
 
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 // ===== Types =====

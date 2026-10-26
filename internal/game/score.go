@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"hordefall/internal/config"
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 // ===== Types =====

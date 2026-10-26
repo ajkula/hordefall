@@ -3,12 +3,12 @@ package game
 import (
 	"testing"
 
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 func TestLanguageDrumWrapsRepeatsAndConfirms(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	game := newHeadlessGame()
@@ -48,7 +48,7 @@ func TestLanguageDrumWrapsRepeatsAndConfirms(t *testing.T) {
 
 func TestLanguageDrumCancelRestoresTheLanguage(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	game := newHeadlessGame()
@@ -68,7 +68,7 @@ func TestLanguageDrumCancelRestoresTheLanguage(t *testing.T) {
 
 func TestFirstRunAsksForTheLanguageThenOpensTheMenu(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	game := newHeadlessGame()

@@ -1,7 +1,9 @@
 package game
 
 import (
+	"embed"
 	"image"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -10,11 +12,15 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/ajkula/ajkurig/i18n"
+
 	"hordefall/internal/audio"
-	"hordefall/internal/i18n"
 )
 
 // ===== Constants =====
+
+//go:embed lang/*.json
+var languageFiles embed.FS
 
 const (
 	drumSlotHeight        = 26
@@ -50,7 +56,15 @@ func loadLanguages() {
 	if workingDirectory, err := os.Getwd(); err == nil {
 		directories = append(directories, workingDirectory)
 	}
-	_ = i18n.Load(directories...)
+	_ = loadGameLanguages(directories...)
+}
+
+func loadGameLanguages(externalDirectories ...string) error {
+	source, err := fs.Sub(languageFiles, "lang")
+	if err != nil {
+		return err
+	}
+	return i18n.Load([]fs.FS{source}, externalDirectories...)
 }
 
 func (g *Game) applyLanguage() {

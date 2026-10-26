@@ -3,7 +3,7 @@ package game
 import (
 	"testing"
 
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 func TestChatterEntersRightAndLeavesLeftPixelByPixel(t *testing.T) {
@@ -29,7 +29,7 @@ func TestChatterEntersRightAndLeavesLeftPixelByPixel(t *testing.T) {
 }
 
 func TestChatterIsDebounced(t *testing.T) {
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	i18n.Use(i18n.FallbackCode)
@@ -59,7 +59,7 @@ func TestChatterIsDebounced(t *testing.T) {
 }
 
 func TestBossLinesCutTheGlobalGapShort(t *testing.T) {
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	i18n.Use(i18n.FallbackCode)

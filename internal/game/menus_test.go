@@ -2,7 +2,7 @@ package game
 
 import (
 	"fmt"
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 	"testing"
 
 	"github.com/ajkula/ajkurig/rng"

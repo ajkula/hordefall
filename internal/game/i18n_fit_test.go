@@ -6,7 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 )
 
 type FitRule struct {
@@ -34,7 +34,7 @@ var fitRules = []FitRule{
 }
 
 func TestTranslationsFitTheirSpace(t *testing.T) {
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	chains := NewFontChains(FontFamily{mustLoadFace(rajdhaniMedium), mustLoadFace(rajdhaniBold)})

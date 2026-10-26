@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"

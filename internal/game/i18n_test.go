@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -11,13 +12,15 @@ import (
 
 	"golang.org/x/image/font/sfnt"
 
-	"hordefall/internal/i18n"
+	"github.com/ajkula/ajkurig/i18n"
 )
+
+var placeholderPattern = regexp.MustCompile(`%[-0-9.]*[sdf]`)
 
 var translationCallPattern = regexp.MustCompile(`(?:i18n\.T|i18n\.F|i18n\.TOr|translatedLabel)\("([a-z_.]+)"`)
 
 func TestEveryKeyUsedByTheGameExistsInEnglish(t *testing.T) {
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	i18n.Use(i18n.FallbackCode)
@@ -55,8 +58,31 @@ func TestEveryKeyUsedByTheGameExistsInEnglish(t *testing.T) {
 	}
 }
 
+func TestEveryLanguageMatchesEnglish(t *testing.T) {
+	if err := loadGameLanguages(); err != nil {
+		t.Fatal(err)
+	}
+	languages := i18n.Languages()
+	if len(languages) < 9 || languages[0].Code != i18n.FallbackCode {
+		t.Fatalf("languages %v", languages)
+	}
+	english := languages[0].Strings
+	for _, language := range languages {
+		for key, text := range language.Strings {
+			reference, exists := english[key]
+			if !exists {
+				t.Errorf("%s: unknown key %s", language.Code, key)
+				continue
+			}
+			if !slices.Equal(placeholderPattern.FindAllString(reference, -1), placeholderPattern.FindAllString(text, -1)) {
+				t.Errorf("%s: %s placeholders differ from English", language.Code, key)
+			}
+		}
+	}
+}
+
 func TestEveryCharacterOfEveryLanguageHasAGlyph(t *testing.T) {
-	if err := i18n.Load(); err != nil {
+	if err := loadGameLanguages(); err != nil {
 		t.Fatal(err)
 	}
 	fonts := []*sfnt.Font{mustParseFont(t, rajdhaniMedium)}
