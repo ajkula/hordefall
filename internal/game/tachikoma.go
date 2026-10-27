@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/ajkula/ajkurig/fx"
+	"github.com/ajkula/ajkurig/procanim"
 )
 
 // ===== Types =====
@@ -40,7 +41,7 @@ type TachikomaRig struct {
 	BobPhase          float32
 	ArmRecoil         float32
 	TuckAmount        float32
-	HeadServo         AngularServo
+	HeadServo         procanim.Servo
 	MuzzleX           float32
 	MuzzleY           float32
 	IsPlaced          bool
@@ -110,16 +111,7 @@ func (rig *TachikomaRig) AbdomenToWorld(originX, originY, forward, side float32)
 }
 
 func (rig *TachikomaRig) KneePosition(hipX, hipY, footX, footY, centerX, centerY float32) (float32, float32) {
-	deltaX, deltaY := footX-hipX, footY-hipY
-	distance := clamp(length(deltaX, deltaY), 1, tachikomaThighLength+tachikomaShinLength-0.5)
-	alongX, alongY := deltaX/distance, deltaY/distance
-	along := (tachikomaThighLength*tachikomaThighLength - tachikomaShinLength*tachikomaShinLength + distance*distance) / (2 * distance)
-	height := sqrt(max(0, tachikomaThighLength*tachikomaThighLength-along*along))
-	baseX, baseY := hipX+alongX*along, hipY+alongY*along
-	firstX, firstY := baseX-alongY*height, baseY+alongX*height
-	secondX, secondY := baseX+alongY*height, baseY-alongX*height
-	weight := boolToFloat(distanceSquared(firstX, firstY, centerX, centerY) >= distanceSquared(secondX, secondY, centerX, centerY))
-	return secondX + (firstX-secondX)*weight, secondY + (firstY-secondY)*weight
+	return procanim.SolveKneeAwayFrom(hipX, hipY, footX, footY, tachikomaThighLength, tachikomaShinLength, centerX, centerY)
 }
 
 // ===== Internal =====
@@ -155,7 +147,7 @@ func (g *Game) steerTachikoma(rig *TachikomaRig, isMoving bool, deltaSeconds flo
 	hasExcess := boolToFloat(abs(excess) > 0.01)
 	travelTurn := angleDifference(rig.Heading, atan2(player.VelocityY, player.VelocityX)) * boolToFloat(isMoving)
 	bodyTarget := rig.Heading + travelTurn*(1-hasExcess) + excess*hasExcess
-	rig.Heading = turnToward(rig.Heading, bodyTarget, tachikomaTurnRate*deltaSeconds)
+	rig.Heading = procanim.TurnToward(rig.Heading, bodyTarget, tachikomaTurnRate*deltaSeconds)
 	headTarget := clamp(angleDifference(rig.Heading, aimAngle), -tachikomaHeadLimit, tachikomaHeadLimit)
 	rig.HeadServo.Drive(headTarget, tachikomaHeadStiffness, tachikomaHeadDamping, deltaSeconds)
 	rig.HeadServo.Angle = clamp(rig.HeadServo.Angle, -tachikomaHeadLimit-0.15, tachikomaHeadLimit+0.15)

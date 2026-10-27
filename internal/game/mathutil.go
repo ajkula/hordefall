@@ -2,13 +2,6 @@ package game
 
 import "math"
 
-// ===== Types =====
-
-type AngularServo struct {
-	Angle    float32
-	Velocity float32
-}
-
 // ===== Public API =====
 
 func length(x, y float32) float32 {
@@ -58,11 +51,6 @@ func sqrt(value float32) float32 {
 
 func angleDifference(from, to float32) float32 {
 	return float32(math.Remainder(float64(to-from), 2*math.Pi))
-}
-
-func (s *AngularServo) Drive(target, stiffness, damping, deltaSeconds float32) {
-	s.Velocity += (angleDifference(s.Angle, target)*stiffness - s.Velocity*damping) * deltaSeconds
-	s.Angle += s.Velocity * deltaSeconds
 }
 
 func rotateOffset(forward, side, angle float32) (float32, float32) {

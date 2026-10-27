@@ -55,7 +55,7 @@ func (r *Renderer) spiderPoint(rig *SpiderRig, forward, side float32) (float32, 
 func (r *Renderer) queueLegShadow(rig *SpiderRig, leg int) {
 	hipX, hipY := r.camera.ToScreen(rig.HipPosition(leg))
 	kneeX, kneeY := r.camera.ToScreen(rig.KneePosition(leg))
-	footX, footY := r.camera.ToScreen(rig.Legs[leg].FootX, rig.Legs[leg].FootY)
+	footX, footY := r.camera.ToScreen(rig.Gait.Legs[leg].FootX, rig.Gait.Legs[leg].FootY)
 	offsetX, offsetY := scaled(spiderShadowOffsetX), scaled(spiderShadowOffsetY)
 	r.batches.Solid.AddSegment(hipX+offsetX, hipY+offsetY, kneeX+offsetX*1.6, kneeY+offsetY*1.6, scaled(9), blackColor, shadowOpacity)
 	r.batches.Solid.AddSegment(kneeX+offsetX*1.6, kneeY+offsetY*1.6, footX+2, footY+3, scaled(7), blackColor, shadowOpacity)
@@ -72,11 +72,11 @@ func (r *Renderer) queueBodyShadow(rig *SpiderRig) {
 func (r *Renderer) queueLeg(rig *SpiderRig, leg int, armor [3]float32) {
 	dark := mixColor(armor, blackColor, 0.5)
 	light := mixColor(armor, whiteColor, 0.25)
-	lift := rig.FootLift(leg)
+	lift := rig.Gait.FootLift(leg)
 	hipX, hipY := r.camera.ToScreen(rig.HipPosition(leg))
 	kneeX, kneeY := r.camera.ToScreen(rig.KneePosition(leg))
 	kneeY -= scaled(spiderKneeHeight) + lift*0.5
-	footX, footY := r.camera.ToScreen(rig.Legs[leg].FootX, rig.Legs[leg].FootY)
+	footX, footY := r.camera.ToScreen(rig.Gait.Legs[leg].FootX, rig.Gait.Legs[leg].FootY)
 	footY -= lift
 	r.batches.Solid.AddSegment(hipX, hipY, kneeX, kneeY, scaled(15), dark, 1)
 	r.batches.Solid.AddSegment(hipX, hipY, kneeX, kneeY, scaled(9), armor, 1)
@@ -88,7 +88,7 @@ func (r *Renderer) queueLeg(rig *SpiderRig, leg int, armor [3]float32) {
 }
 
 func (r *Renderer) queueFoot(rig *SpiderRig, leg int, footX, footY, lift float32, dark, armor [3]float32) {
-	outwardX, outwardY := normalize(rig.Legs[leg].FootX-rig.X, rig.Legs[leg].FootY-rig.Y)
+	outwardX, outwardY := normalize(rig.Gait.Legs[leg].FootX-rig.X, rig.Gait.Legs[leg].FootY-rig.Y)
 	padRadius := scaled(8) + lift*0.18
 	r.batches.Solid.AddSegment(footX, footY, footX+outwardX*scaled(14), footY+outwardY*scaled(14), scaled(4), jointColor, 1)
 	r.batches.Solid.AddCircle(footX, footY, padRadius, dark, 1)
