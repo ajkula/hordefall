@@ -42,6 +42,10 @@ func newHeadlessGame(tb testing.TB) *Game {
 	return game
 }
 
+func simulateWorld(game *Game) {
+	game.app.SimulateWorld(&rig.Frame{App: game.app, Delta: deltaSeconds, Controls: game.controls})
+}
+
 func newRunningApp(tb testing.TB) (*rig.App, *Game) {
 	app, game := newTestApp(tb)
 	app.Settings.Language = "en"

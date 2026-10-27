@@ -49,7 +49,7 @@ func NewUI(kit *ui.Kit) *UI {
 	return &UI{kit: kit, art: NewArtCanvas()}
 }
 
-func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
+func (u *UI) drawStatus(g *Game, screen *ebiten.Image) {
 	player := g.player
 	drawBar(screen, 0, 0, screenWidth, 8, float32(player.Experience)/float32(player.ExperienceToNext), experienceBlue)
 	drawBar(screen, 16, 20, 260, 16, player.Health/player.MaximumHealth, healthColor)
@@ -67,9 +67,6 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawSpiderBars(g, screen)
 	u.drawHordeEventBar(g, screen)
 	u.drawWeatherLabel(g, screen)
-	u.drawChatter(g, screen)
-	u.drawLevelUpBanner(g, screen)
-	g.effects.DrawPopups(screen, u.kit, g.renderer.camera)
 }
 
 // ===== Internal =====

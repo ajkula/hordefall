@@ -1,6 +1,7 @@
 package game
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -57,7 +58,7 @@ func stepHeadless(game *Game) {
 	game.controls = input.Controls{MoveX: cosine(float32(game.frame) * 0.002), MoveY: sine(float32(game.frame) * 0.002), Held: ActionFire}
 	game.player.Health = game.player.MaximumHealth
 	game.player.PendingLevelUps = 0
-	game.simulate()
+	simulateWorld(game)
 }
 
 func BenchmarkSimulateTenThousandEnemies(b *testing.B) {
@@ -195,7 +196,7 @@ func stepHeadlessIdle(game *Game) {
 	game.frame++
 	game.controls = input.Controls{}
 	game.player.Health = game.player.MaximumHealth
-	game.simulate()
+	simulateWorld(game)
 }
 
 func TestHighScoreIsSavedAndReloaded(t *testing.T) {
@@ -810,6 +811,20 @@ func TestSpiderTanksDoNotOverlap(t *testing.T) {
 	}
 }
 
+func TestBenchListsEachGameplayModuleOnce(t *testing.T) {
+	app, _ := newRunningApp(t)
+	expected := []string{moduleWorld, modulePlayer, moduleWeapons, moduleMines, moduleProjectiles, moduleEnemies, moduleSpiders, moduleWorm, moduleDirector, moduleGround, moduleWeather, moduleChatter, moduleEffects, moduleGems, moduleHealOrbs, moduleHud, moduleLevelUp}
+	listed := []string{}
+	for _, timing := range app.World.Timings(nil) {
+		listed = append(listed, timing.Name)
+	}
+	slices.Sort(expected)
+	slices.Sort(listed)
+	if !slices.Equal(listed, expected) {
+		t.Fatalf("bench rows %v, expected %v", listed, expected)
+	}
+}
+
 func TestMouseAimsTheCannonAndClicksFireAndDash(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.renderer.camera.X, game.renderer.camera.Y = game.player.X-screenWidth/2, game.player.Y-screenHeight/2
@@ -839,7 +854,7 @@ func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
 	for range ticksPerSecond {
 		game.frame++
 		game.controls = input.Controls{}
-		game.simulate()
+		simulateWorld(game)
 	}
 	if game.player.Health < 1 || game.worm.BlastHits != 0 {
 		t.Fatalf("the eruption blast killed or never finished: health %.1f, hits left %d", game.player.Health, game.worm.BlastHits)

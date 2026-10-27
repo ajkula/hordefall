@@ -36,38 +36,13 @@ var (
 
 // ===== Public API =====
 
-func NewRenderer(groundColumns, groundRows int) *Renderer {
+func NewRenderer(batches *draw.Batches, camera *draw.Camera, groundColumns, groundRows int) *Renderer {
 	return &Renderer{
-		batches:     draw.NewBatches(),
-		camera:      draw.NewCamera(screenWidth, screenHeight),
+		batches:     batches,
+		camera:      camera,
 		groundImage: ebiten.NewImage(groundColumns, groundRows),
 		wormSprites: NewWormSprites(),
 	}
-}
-
-func (r *Renderer) DrawWorld(g *Game, screen *ebiten.Image) {
-	r.updateCamera(g)
-	r.drawGround(g, screen)
-	r.drawWormGroundSprites(g, screen)
-	r.queueGroundGlow(g)
-	r.queueGems(g)
-	r.queueHealOrbs(g)
-	r.queueMines(g)
-	r.queueDrillWormGround(g)
-	r.queueEnemies(g)
-	r.queuePlayer(g)
-	r.queueSpiders(g)
-	r.queueDrillWorm(g)
-	r.queueProjectiles(g)
-	g.effects.Queue(r.batches, r.camera)
-	r.queueSpiderBeams(g)
-	r.queuePrecipitation(g)
-	r.queueMouseCrosshair(g)
-	r.batches.Solid.Flush(screen)
-	r.drawDrillWormSprites(g, screen)
-	r.batches.Glow.Flush(screen)
-	r.batches.Rings.Flush(screen)
-	r.applyWeatherGrade(g, screen)
 }
 
 // ===== Internal =====

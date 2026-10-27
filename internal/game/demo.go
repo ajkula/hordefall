@@ -203,10 +203,12 @@ func (g *Game) reinforceDemoIfThin() {
 	}
 }
 
-func (g *Game) simulateDemo() {
+func (g *Game) prepareDemoTick() {
 	g.aimAtNearestEnemy()
 	g.reinforceDemoIfThin()
-	g.simulate()
+}
+
+func (g *Game) finishDemoTick() {
 	g.player.Health = g.player.MaximumHealth
 	g.player.PendingLevelUps = 0
 }

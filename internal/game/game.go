@@ -1,8 +1,6 @@
 package game
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
-
 	"github.com/ajkula/ajkurig/audio"
 	"github.com/ajkula/ajkurig/fx"
 	"github.com/ajkula/ajkurig/i18n"
@@ -85,8 +83,6 @@ const (
 	worldModuleName       = "hordefall"
 )
 
-var worldUpdaters = [2]func(g *Game){(*Game).simulate, (*Game).simulateDemo}
-
 // ===== Public API =====
 
 func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
@@ -105,7 +101,7 @@ func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 		weather:     newWeather(soundIDs),
 	}
 	game.resetRun()
-	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)
+	game.renderer = NewRenderer(app.Batches, app.Camera, game.ground.Columns, game.ground.Rows)
 	game.attachAudio(app.Audio, soundIDs)
 	return game
 }
@@ -120,18 +116,7 @@ func (g *Game) Reset(frame *rig.Frame) {
 }
 
 func (g *Game) Update(frame *rig.Frame) {
-	g.controls = frame.Controls
-	g.applyGraphicsSettings()
-	worldUpdaters[boolToIndex(frame.IsDemo)](g)
-	g.updateMusicSignals()
-}
-
-func (g *Game) Draw(frame *rig.Frame, screen *ebiten.Image) {
-	g.renderer.DrawWorld(g, screen)
-}
-
-func (g *Game) DrawHUD(frame *rig.Frame, screen *ebiten.Image) {
-	g.ui.DrawHud(g, screen)
+	g.beginTick(frame)
 }
 
 func (g *Game) Report(report *rig.Report) {
@@ -172,28 +157,6 @@ func (g *Game) resetRun() {
 func (g *Game) applyGraphicsSettings() {
 	g.effects.ShakeFactor = g.app.Settings.ShakeFactor()
 	g.effects.Density = g.app.Settings.EffectsFactor()
-}
-
-func (g *Game) simulate() {
-	g.frame++
-	g.elapsedSeconds += deltaSeconds
-	g.grid.Rebuild(g.enemies.PositionX, g.enemies.PositionY, g.enemies.Count)
-	g.updatePlayer(deltaSeconds)
-	g.updateWeapons(deltaSeconds)
-	g.updateMines(deltaSeconds)
-	g.updateProjectiles(deltaSeconds)
-	g.updateEnemies(deltaSeconds)
-	g.processBursts()
-	g.removeDeadEnemies()
-	g.updateSpiders(deltaSeconds)
-	g.updateWorm(deltaSeconds)
-	g.updateSpawning(deltaSeconds)
-	g.startBossEventIfDue()
-	g.tickGroundIfDue()
-	g.updateWeather(deltaSeconds)
-	g.updateChatter(deltaSeconds)
-	g.effects.Update(deltaSeconds)
-	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
 }
 
 func (g *Game) tickGroundIfDue() {

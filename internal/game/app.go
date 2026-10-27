@@ -75,7 +75,7 @@ func NewApp(isSilent bool) (*rig.App, *Game, error) {
 	})
 	reportMigrationError(app, migrationError)
 	game := NewGame(app, soundIDs)
-	app.World.Mount(game)
+	app.World.Mount(game.Modules()...)
 	game.shell = shell.Mount(app, game, shell.Options{
 		Title: gameTitle, GameOverTitle: gameOverTitle, DemoClipSeconds: demoSequenceSeconds, ClipsPerBoard: 2 * len(demoSequences),
 		GameOverIdle: gameOverIdleSeconds, Intro: introSettings(), AttractArt: game.ui.drawAttractArt,
