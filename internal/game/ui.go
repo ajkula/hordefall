@@ -85,7 +85,7 @@ func (u *UI) drawWeatherLabel(g *Game, screen *ebiten.Image) {
 	if intensity <= 0 {
 		return
 	}
-	definition := &weatherTable[g.weather.Kind]
+	definition := g.weather.Definition()
 	u.kit.Text.Draw(screen, i18n.T("weather."+definition.Key), ui.FaceBold, screenWidth/2, weatherLabelTop, definition.LabelColor, intensity, text.AlignCenter)
 }
 

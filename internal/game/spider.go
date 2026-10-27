@@ -250,7 +250,7 @@ func (g *Game) updateLeg(rig *SpiderRig, leg int, deltaSeconds float32) {
 
 func (g *Game) advanceStep(state *LegRig, power, deltaSeconds float32) {
 	state.StepProgress = min(1, state.StepProgress+deltaSeconds/spiderStepSeconds)
-	eased := smoothstep(state.StepProgress)
+	eased := mathx.Smoothstep(state.StepProgress)
 	state.FootX = state.FromX + (state.ToX-state.FromX)*eased
 	state.FootY = state.FromY + (state.ToY-state.FromY)*eased
 	if state.StepProgress < 1 {

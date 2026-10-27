@@ -1,6 +1,10 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ajkula/ajkurig/world"
+)
 
 func TestWeatherStartsAfterCalmAndEnds(t *testing.T) {
 	game := newHeadlessGame(t)
@@ -22,15 +26,15 @@ func TestBlizzardOnlyAppliesFirstChillLevel(t *testing.T) {
 	for index := range 200 {
 		game.enemies.Spawn(EnemyKind(0), game.player.X+float32(index), game.player.Y+300, 1)
 	}
-	game.weather = Weather{Kind: WeatherBlizzard, ActiveSeconds: weatherActiveSeconds / 2}
+	game.weather.Kind, game.weather.ActiveSeconds = WeatherBlizzard, weatherActiveSeconds/2
 	for range 10 * ticksPerSecond {
 		game.updateWeather(deltaSeconds)
 	}
-	chilledIndex := statusBitIndex(StatusChilled)
+	chilledIndex := world.StatusIndex(StatusChilled)
 	chilled := 0
 	for index := range game.enemies.Count {
 		chilled += boolToIndex(game.enemies.Status[index]&StatusChilled != 0)
-		if game.enemies.StatusLevels[chilledIndex][index] > 1 || game.enemies.Status[index]&StatusFrozen != 0 {
+		if game.enemies.Levels[chilledIndex][index] > 1 || game.enemies.Status[index]&StatusFrozen != 0 {
 			t.Fatalf("enemy %d went past the first chill level", index)
 		}
 	}
@@ -45,7 +49,7 @@ func TestStormSoaksEnemiesAndPutsOutFire(t *testing.T) {
 		game.enemies.Spawn(EnemyKind(0), game.player.X+float32(index), game.player.Y+300, 1)
 		game.enemies.ApplyStatus(index, StatusBurning)
 	}
-	game.weather = Weather{Kind: WeatherStorm, ActiveSeconds: weatherActiveSeconds / 2}
+	game.weather.Kind, game.weather.ActiveSeconds = WeatherStorm, weatherActiveSeconds/2
 	for range 8 * ticksPerSecond {
 		game.updateWeather(deltaSeconds)
 	}

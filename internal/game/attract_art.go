@@ -2,6 +2,8 @@ package game
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/ajkula/ajkurig/mathx"
 )
 
 // ===== Types =====
@@ -134,7 +136,7 @@ func NewArtCanvas() *ArtCanvas {
 
 func (c *ArtCanvas) Render(progress, seconds float32) *ebiten.Image {
 	c.paintFloor()
-	approach := smoothstep(clamp(progress, 0, 1))
+	approach := mathx.Smoothstep(clamp(progress, 0, 1))
 	remaining := 1 - clamp(progress, 0, 1)
 	zoom := artZoomStart + (1-artZoomStart)*(1-remaining*remaining*remaining)
 	spider := zoomedPose(spiderArtX+spiderArtSlide*(1-approach), spiderArtY, zoom)

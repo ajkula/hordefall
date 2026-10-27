@@ -10,6 +10,7 @@ import (
 	"github.com/ajkula/ajkurig/rng"
 	"github.com/ajkula/ajkurig/shell"
 	"github.com/ajkula/ajkurig/spatial"
+	"github.com/ajkula/ajkurig/world"
 )
 
 // ===== Types =====
@@ -25,7 +26,7 @@ type Game struct {
 	projectiles           *ProjectileStore
 	gems                  *GemStore
 	effects               *Effects
-	ground                *Ground
+	ground                *world.Ground
 	grid                  *spatial.Grid
 	renderer              *Renderer
 	audio                 *audio.Engine
@@ -47,7 +48,7 @@ type Game struct {
 	bossProgressKills     int
 	bossEventCount        int
 	hordeEvent            HordeEvent
-	weather               Weather
+	weather               world.Weather
 	offers                []UpgradeOffer
 	offerPool             []UpgradeOffer
 	lastRotatedPassive    PassiveKind
@@ -97,6 +98,7 @@ func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 		gems:        NewGemStore(maximumGems),
 		effects:     NewEffects(),
 		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
+		weather:     newWeather(soundIDs),
 	}
 	game.resetRun()
 	game.renderer = NewRenderer(game.ground.Columns, game.ground.Rows)

@@ -96,7 +96,7 @@ func (g *Game) applyGroundContact(index int) {
 	if (uint32(index)+g.frame)%groundContactInterval != 0 {
 		return
 	}
-	element := groundTable[g.ground.KindAt(g.enemies.PositionX[index], g.enemies.PositionY[index])].ContactElement
+	element := contactElement(g.ground, g.enemies.PositionX[index], g.enemies.PositionY[index])
 	if element == ElementNone {
 		return
 	}

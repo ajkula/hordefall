@@ -8,6 +8,7 @@ import (
 	"github.com/ajkula/ajkurig/input"
 	"github.com/ajkula/ajkurig/scores"
 	"github.com/ajkula/ajkurig/shell"
+	"github.com/ajkula/ajkurig/world"
 )
 
 // ===== Constants =====
@@ -723,12 +724,12 @@ func TestBossKillsDropNoHealOrbs(t *testing.T) {
 func TestRepeatedFireHitsHeatEnemiesUpToLevelThree(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.enemies.Spawn(EnemyBrute, game.player.X+300, game.player.Y, 1)
-	burning := statusBitIndex(StatusBurning)
+	burning := world.StatusIndex(StatusBurning)
 	for hit := 1; hit <= 4; hit++ {
 		game.HitEnemy(0, 0, ElementFire)
 		want := uint8(min(hit, maximumStatusLevel))
-		if game.enemies.LevelsOf(0)[burning] != want {
-			t.Fatalf("after %d fire hits burn level %d, want %d", hit, game.enemies.LevelsOf(0)[burning], want)
+		if game.enemies.Level(0, burning) != want {
+			t.Fatalf("after %d fire hits burn level %d, want %d", hit, game.enemies.Level(0, burning), want)
 		}
 	}
 	before := game.enemies.Health[0]
@@ -738,7 +739,7 @@ func TestRepeatedFireHitsHeatEnemiesUpToLevelThree(t *testing.T) {
 	}
 	game.enemies.TickStatuses(0, statusTable[burning].DurationSeconds)
 	game.HitEnemy(0, 0, ElementFire)
-	if game.enemies.LevelsOf(0)[burning] != 1 {
+	if game.enemies.Level(0, burning) != 1 {
 		t.Fatalf("a burn that went out should restart at level 1")
 	}
 }

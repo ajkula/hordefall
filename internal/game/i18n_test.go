@@ -37,7 +37,7 @@ func TestEveryKeyUsedByTheGameExistsInEnglish(t *testing.T) {
 	for _, passive := range passiveTable {
 		keys["passive."+passive.Key], keys["passive."+passive.Key+".description"] = true, true
 	}
-	for _, weather := range weatherTable[1:] {
+	for _, weather := range weatherDefinitions[1:] {
 		keys["weather."+weather.Key] = true
 	}
 	for _, remap := range remaps {

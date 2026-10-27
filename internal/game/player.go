@@ -160,7 +160,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	dashWeight := boolToFloat(isDashing)
 	directionX := g.controls.MoveX + (player.DashDirectionX-g.controls.MoveX)*dashWeight
 	directionY := g.controls.MoveY + (player.DashDirectionY-g.controls.MoveY)*dashWeight
-	groundKind := g.ground.KindAt(player.X, player.Y)
+	groundKind := g.ground.MaterialAt(player.X, player.Y)
 	speed := player.MoveSpeed * groundPlayerSpeed[groundKind] * (1 + (dashSpeedMultiplier-1)*dashWeight)
 	previousX, previousY := player.X, player.Y
 	player.X = clamp(player.X+directionX*speed*deltaSeconds, playerRadius, arenaSize-playerRadius)

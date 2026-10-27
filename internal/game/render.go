@@ -241,7 +241,7 @@ func (r *Renderer) queueGroundGlow(g *Game) {
 
 func (r *Renderer) queueGroundRowGlow(g *Game, row, firstColumn, lastColumn int) {
 	for column := firstColumn; column <= lastColumn; column++ {
-		isFire := g.ground.cells[row*g.ground.Columns+column] == GroundFire
+		isFire := g.ground.MaterialAtCell(column, row) == GroundFire
 		screenX, screenY := r.ToScreen(float32(column*groundCellSize+groundCellSize/2), float32(row*groundCellSize+groundCellSize/2))
 		r.glow.AddCircleIf(screenX, screenY, groundCellSize*1.6, fireCellGlow, 0.22, isFire)
 	}
@@ -296,7 +296,7 @@ func (r *Renderer) queueStatusAuras(g *Game, index int, screenX, screenY, radius
 	flicker := auraFlickerBase + (1-auraFlickerBase)*sine(float32(g.frame)*auraFlickerSpeed+float32(index))
 	for _, statusIndex := range leveledStatuses {
 		hasStatus := enemies.Status[index]&(1<<statusIndex) != 0
-		level := enemies.StatusLevels[statusIndex][index] * uint8(boolToIndex(hasStatus))
+		level := enemies.Levels[statusIndex][index] * uint8(boolToIndex(hasStatus))
 		color := statusTable[statusIndex].AuraColor
 		r.glow.AddCircleIf(screenX, screenY, radius*auraGlowScales[level], color, auraGlowAlphas[level]*flicker, level > 0)
 		r.solid.AddCircleIf(screenX, screenY, radius+auraRimWidth, color, flicker, level == maximumStatusLevel)

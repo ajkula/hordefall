@@ -1,26 +1,14 @@
 package game
 
+import "github.com/ajkula/ajkurig/world"
+
 // ===== Types =====
 
-type StatusFlags uint8
+type StatusFlags = world.StatusMask
 
-type Element uint8
+type Element = world.ElementID
 
-type ReactionKind uint8
-
-type StatusDefinition struct {
-	Name            string
-	DurationSeconds float32
-	Tint            [3]float32
-	TintStrength    float32
-	SpeedFactor     float32
-	DamagePerSecond float32
-	MaximumLevel    uint8
-	AuraColor       [3]float32
-	PeakTint        [3]float32
-}
-
-type StatusLevels [statusCount]uint8
+type ReactionKind = world.ReactionID
 
 type ReactionDefinition struct {
 	Name              string
@@ -38,13 +26,6 @@ type ReactionDefinition struct {
 	ShakeStrength     float32
 	DamagesPlayer     bool
 	Sound             SoundKind
-}
-
-type ReactionRule struct {
-	Element      Element
-	Status       StatusFlags
-	Reaction     ReactionKind
-	MinimumLevel uint8
 }
 
 // ===== Constants =====
@@ -72,7 +53,7 @@ const (
 )
 
 const (
-	ReactionNone ReactionKind = iota
+	ReactionNone ReactionKind = world.ReactionNone + iota
 	ReactionInferno
 	ReactionSteam
 	ReactionFreeze
@@ -85,7 +66,7 @@ const (
 	reactionKindCount
 )
 
-var statusTable = [statusCount]StatusDefinition{
+var statusTable = []world.StatusDefinition{
 	{Name: "Burning", DurationSeconds: 3, Tint: [3]float32{0.85, 0.2, 0.05}, PeakTint: [3]float32{1, 0.82, 0.3}, TintStrength: 0.85, SpeedFactor: 1, DamagePerSecond: 6, MaximumLevel: 3, AuraColor: [3]float32{1, 0.6, 0.15}},
 	{Name: "Chilled", DurationSeconds: 3, Tint: [3]float32{0.55, 0.8, 1}, PeakTint: [3]float32{0.9, 0.97, 1}, TintStrength: 0.75, SpeedFactor: 0.7, MaximumLevel: 3, AuraColor: [3]float32{0.65, 0.9, 1}},
 	{Name: "Frozen", DurationSeconds: 1.8, Tint: [3]float32{0.85, 0.95, 1}, TintStrength: 0.85, SpeedFactor: 0, MaximumLevel: 1},
@@ -94,14 +75,9 @@ var statusTable = [statusCount]StatusDefinition{
 	{Name: "Shocked", DurationSeconds: 1.5, Tint: [3]float32{1, 1, 0.4}, PeakTint: [3]float32{1, 1, 0.8}, TintStrength: 0.85, SpeedFactor: 0.6, MaximumLevel: 3, AuraColor: [3]float32{1, 1, 0.5}},
 }
 
-const (
-	maximumStatusLevel = 3
-	statusTintFloor    = 0.45
-)
+const maximumStatusLevel = 3
 
-var statusSpeedByLevel = buildStatusSpeedByLevel()
-
-var leveledStatuses = []int{statusBitIndex(StatusBurning), statusBitIndex(StatusChilled), statusBitIndex(StatusShocked)}
+var leveledStatuses = []int{world.StatusIndex(StatusBurning), world.StatusIndex(StatusChilled), world.StatusIndex(StatusShocked)}
 
 var elementStatus = [elementCount]StatusFlags{
 	ElementFire:  StatusBurning,
@@ -161,82 +137,29 @@ var reactionTable = [reactionKindCount]ReactionDefinition{
 	},
 }
 
-var reactionRules = []ReactionRule{
-	{ElementFire, StatusOiled, ReactionInferno, 0},
-	{ElementShock, StatusOiled, ReactionInferno, 0},
-	{ElementOil, StatusBurning, ReactionInferno, 0},
-	{ElementFire, StatusFrozen, ReactionSteam, 0},
-	{ElementFire, StatusChilled, ReactionSteam, 0},
-	{ElementFrost, StatusBurning, ReactionSteam, 0},
-	{ElementFire, StatusWet, ReactionExtinguish, 0},
-	{ElementWater, StatusBurning, ReactionExtinguish, 0},
-	{ElementFrost, StatusWet, ReactionFreeze, 0},
-	{ElementFrost, StatusChilled, ReactionFreeze, chillLevelToFreeze},
-	{ElementShock, StatusWet, ReactionElectrocute, 0},
-	{ElementShock, StatusFrozen, ReactionShatter, 0},
-	{ElementPhysical, StatusFrozen, ReactionShatter, 0},
-	{ElementFire, StatusShocked, ReactionPlasma, 0},
-	{ElementPhysical, StatusShocked, ReactionOverload, 0},
-	{ElementWater, StatusShocked, ReactionConduction, 0},
+var reactionRules = []world.ReactionRule{
+	{Element: ElementFire, Status: StatusOiled, Reaction: ReactionInferno},
+	{Element: ElementShock, Status: StatusOiled, Reaction: ReactionInferno},
+	{Element: ElementOil, Status: StatusBurning, Reaction: ReactionInferno},
+	{Element: ElementFire, Status: StatusFrozen, Reaction: ReactionSteam},
+	{Element: ElementFire, Status: StatusChilled, Reaction: ReactionSteam},
+	{Element: ElementFrost, Status: StatusBurning, Reaction: ReactionSteam},
+	{Element: ElementFire, Status: StatusWet, Reaction: ReactionExtinguish},
+	{Element: ElementWater, Status: StatusBurning, Reaction: ReactionExtinguish},
+	{Element: ElementFrost, Status: StatusWet, Reaction: ReactionFreeze},
+	{Element: ElementFrost, Status: StatusChilled, Reaction: ReactionFreeze, MinimumLevel: chillLevelToFreeze},
+	{Element: ElementShock, Status: StatusWet, Reaction: ReactionElectrocute},
+	{Element: ElementShock, Status: StatusFrozen, Reaction: ReactionShatter},
+	{Element: ElementPhysical, Status: StatusFrozen, Reaction: ReactionShatter},
+	{Element: ElementFire, Status: StatusShocked, Reaction: ReactionPlasma},
+	{Element: ElementPhysical, Status: StatusShocked, Reaction: ReactionOverload},
+	{Element: ElementWater, Status: StatusShocked, Reaction: ReactionConduction},
 }
 
 var statusPriority = []StatusFlags{StatusFrozen, StatusOiled, StatusWet, StatusBurning, StatusChilled, StatusShocked}
 
-var elementReactions = buildElementReactions(reactionRules)
-
-var elementReactionLevels = buildElementReactionLevels(reactionRules)
-
 const chillLevelToFreeze = 2
 
-// ===== Public API =====
-
-func FindReaction(element Element, status StatusFlags, levels StatusLevels) ReactionKind {
-	for _, candidate := range statusPriority {
-		statusIndex := statusBitIndex(candidate)
-		reaction := elementReactions[element][statusIndex]
-		isReady := levels[statusIndex] >= elementReactionLevels[element][statusIndex]
-		if status&candidate != 0 && reaction != ReactionNone && isReady {
-			return reaction
-		}
-	}
-	return ReactionNone
-}
-
-// ===== Internal =====
-
-func buildElementReactions(rules []ReactionRule) [elementCount][statusCount]ReactionKind {
-	var table [elementCount][statusCount]ReactionKind
-	for _, rule := range rules {
-		table[rule.Element][statusBitIndex(rule.Status)] = rule.Reaction
-	}
-	return table
-}
-
-func buildStatusSpeedByLevel() [statusCount][maximumStatusLevel + 1]float32 {
-	var table [statusCount][maximumStatusLevel + 1]float32
-	for statusIndex, status := range statusTable {
-		factor := float32(1)
-		for level := range maximumStatusLevel + 1 {
-			table[statusIndex][level] = factor
-			factor *= status.SpeedFactor
-		}
-	}
-	return table
-}
-
-func buildElementReactionLevels(rules []ReactionRule) [elementCount][statusCount]uint8 {
-	var table [elementCount][statusCount]uint8
-	for _, rule := range rules {
-		table[rule.Element][statusBitIndex(rule.Status)] = rule.MinimumLevel
-	}
-	return table
-}
-
-func statusBitIndex(flag StatusFlags) int {
-	index := 0
-	for flag > 1 {
-		flag >>= 1
-		index++
-	}
-	return index
-}
+var chemistry = world.NewChemistry(world.ChemistrySettings{
+	Statuses: statusTable, ElementStatus: elementStatus[:], Rules: reactionRules, Priority: statusPriority,
+})
