@@ -34,6 +34,7 @@ const (
 	gameOverTitle       = "YOU FELL"
 	controlsHintKey     = "main.controls"
 	gameOverIdleSeconds = 20
+	crackGlowAlpha      = 60.0 / 255
 )
 
 var (
@@ -43,6 +44,7 @@ var (
 	logoSideColor  = [3]float32{0.62, 0.15, 0.03}
 	crackCoreColor = [3]float32{235.0 / 255, 245.0 / 255, 1}
 	crackGlowColor = [3]float32{160.0 / 255, 200.0 / 255, 1}
+	shardColor     = [3]float32{0.8, 0.9, 1}
 )
 
 // ===== Public API =====
@@ -98,6 +100,7 @@ func introSettings() intro.Settings {
 	settings := intro.DefaultSettings
 	settings.CapColor, settings.SideColor = logoCapColor, logoSideColor
 	settings.CrackColor, settings.CrackGlow, settings.FlashColor = crackCoreColor, crackGlowColor, colorx.RGB(textColor)
+	settings.GlowAlpha, settings.ShardColor = crackGlowAlpha, shardColor
 	return settings
 }
 
