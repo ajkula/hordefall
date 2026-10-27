@@ -825,6 +825,17 @@ func TestBenchListsEachGameplayModuleOnce(t *testing.T) {
 	}
 }
 
+func TestRandomDemoClipIsDrawnBeforeTheWorldResets(t *testing.T) {
+	app, game := newTestApp(t)
+	expected := (&Game{random: game.random}).randomDemoSequence()
+	app.ResetWorld(true)
+	game.StartDemo(app, 1)
+	clip := &game.currentDemo
+	if clip.Subtitle != expected.Subtitle || clip.EnemyCount != expected.EnemyCount || clip.RingRadius != expected.RingRadius || clip.SpiderCount != expected.SpiderCount {
+		t.Fatalf("random clip %q x%d, expected %q x%d", clip.Subtitle, clip.EnemyCount, expected.Subtitle, expected.EnemyCount)
+	}
+}
+
 func TestMouseAimsTheCannonAndClicksFireAndDash(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.renderer.camera.X, game.renderer.camera.Y = game.player.X-screenWidth/2, game.player.Y-screenHeight/2

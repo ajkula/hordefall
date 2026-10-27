@@ -16,7 +16,7 @@ func (g *Game) StartRun(app *rig.App) {
 }
 
 func (g *Game) StartDemo(app *rig.App, clip int) shell.DemoClip {
-	candidates := [2]DemoSequence{demoSequences[(clip/2)%len(demoSequences)], g.randomDemoSequence()}
+	candidates := [2]DemoSequence{demoSequences[(clip/2)%len(demoSequences)], g.randomDemo}
 	g.currentDemo = candidates[clip%2]
 	g.stageDemo(&g.currentDemo)
 	return shell.DemoClip{Name: g.currentDemo.Name, Subtitle: g.currentDemo.Subtitle}

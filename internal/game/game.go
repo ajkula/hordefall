@@ -61,6 +61,7 @@ type Game struct {
 	runCount              uint32
 	isDemo                bool
 	currentDemo           DemoSequence
+	randomDemo            DemoSequence
 	chatter               Chatter
 	worm                  DrillWorm
 	wormCraters           []WormCrater
@@ -111,6 +112,7 @@ func (g *Game) Name() string {
 }
 
 func (g *Game) Reset(frame *rig.Frame) {
+	demoDraws[boolToIndex(frame.IsDemo)](g)
 	g.resetRun()
 	g.isDemo = frame.IsDemo
 }

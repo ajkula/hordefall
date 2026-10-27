@@ -46,6 +46,8 @@ const (
 	reinforceFar             = 1.3
 )
 
+var demoDraws = [2]func(g *Game){func(*Game) {}, (*Game).drawRandomDemo}
+
 var randomClipStatuses = []StatusFlags{0, StatusOiled, StatusWet, StatusBurning, StatusChilled}
 
 var randomClipGrounds = []GroundStimulus{StimulusNone, StimulusOil, StimulusScorch, StimulusChill}
@@ -104,6 +106,10 @@ var demoSequences = []DemoSequence{
 }
 
 // ===== Internal =====
+
+func (g *Game) drawRandomDemo() {
+	g.randomDemo = g.randomDemoSequence()
+}
 
 func (g *Game) stageDemo(sequence *DemoSequence) {
 	g.isDemo = true
