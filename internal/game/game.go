@@ -101,6 +101,7 @@ func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 		effects:     newEffects(),
 		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
 		chatter:     newChatter(),
+		ground:      NewGround(arenaSize, groundSeedBase),
 		weather:     newWeather(soundIDs),
 	}
 	game.resetRun()
@@ -149,7 +150,7 @@ func (g *Game) resetRun() {
 	g.player = NewPlayer()
 	g.enemies.Count, g.projectiles.Count, g.gems.Count = 0, 0, 0
 	g.effects.Clear()
-	g.ground = NewGround(arenaSize, groundSeedBase+g.runCount*7919)
+	regenerateGround(g.ground, groundSeedBase+g.runCount*7919)
 	g.director = NewSpawnDirector()
 	g.bursts = g.bursts[:0]
 	g.reactionCounts = [reactionKindCount]int{}

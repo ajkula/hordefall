@@ -93,8 +93,13 @@ func NewGround(worldSize float32, seed uint32) *world.Ground {
 		Materials: groundMaterials, Rules: groundRules, StimulusCount: int(stimulusCount),
 		CellSize: groundCellSize, Columns: columns, Rows: columns, Seed: seed, Generate: generateTerrain,
 	})
-	ground.PaintCircle(columns/2, columns/2, spawnClearingCells, GroundGrass)
+	clearSpawnArea(ground)
 	return ground
+}
+
+func regenerateGround(ground *world.Ground, seed uint32) {
+	ground.Regenerate(seed, generateTerrain)
+	clearSpawnArea(ground)
 }
 
 func contactElement(ground *world.Ground, x, y float32) Element {
@@ -102,6 +107,10 @@ func contactElement(ground *world.Ground, x, y float32) Element {
 }
 
 // ===== Internal =====
+
+func clearSpawnArea(ground *world.Ground) {
+	ground.PaintCircle(ground.Columns/2, ground.Rows/2, spawnClearingCells, GroundGrass)
+}
 
 func generateTerrain(column, row int, seed uint32) GroundKind {
 	x, y := float32(column), float32(row)
