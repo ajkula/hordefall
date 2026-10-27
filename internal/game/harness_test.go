@@ -2,6 +2,7 @@ package game
 
 import (
 	"io/fs"
+	"slices"
 	"testing"
 
 	"github.com/ajkula/ajkurig/i18n"
@@ -9,6 +10,10 @@ import (
 	"github.com/ajkula/ajkurig/rig"
 	"github.com/ajkula/ajkurig/rng"
 )
+
+// ===== Constants =====
+
+var firstHordeSlot = slices.Index(bossEventCycle, BossHorde)
 
 // ===== Internal =====
 

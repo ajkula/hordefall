@@ -361,7 +361,3 @@ func (g *Game) isChained(index int32) bool {
 	}
 	return false
 }
-
-func angleBetween(fromX, fromY, toX, toY float32) float32 {
-	return atan2(toY-fromY, toX-fromX)
-}

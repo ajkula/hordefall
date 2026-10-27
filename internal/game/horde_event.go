@@ -30,7 +30,6 @@ const (
 )
 
 const (
-	spidersBeforeHorde    = 3
 	hordeEventBaseSize    = 500
 	hordeShellPeriod      = 8
 	hordePowerBonus       = 2

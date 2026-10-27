@@ -108,7 +108,6 @@ const (
 	wormSegmentCount         = 14
 	wormSegmentSpacing       = 28
 	wormHeadLength           = 46
-	wormBodyLength           = wormHeadLength + wormSegmentCount*wormSegmentSpacing
 	wormEmergeSpeed          = 520
 	wormRearSeconds          = 0.8
 	wormRearAimTurnRate      = 3.5
@@ -785,17 +784,6 @@ func bezierPoint(controls [4]Point3, t float32) Point3 {
 	return point
 }
 
-func bezierLength(controls [4]Point3) float32 {
-	total := float32(0)
-	previous := controls[0]
-	for step := 1; step <= wormPathSamples; step++ {
-		point := bezierPoint(controls, float32(step)/wormPathSamples)
-		total += length3(point.X-previous.X, point.Y-previous.Y, point.Z-previous.Z)
-		previous = point
-	}
-	return total
-}
-
 func lerpPoint(from, to Point3, weight float32) Point3 {
 	return Point3{from.X + (to.X-from.X)*weight, from.Y + (to.Y-from.Y)*weight, from.Z + (to.Z-from.Z)*weight}
 }
@@ -807,12 +795,6 @@ func length3(x, y, z float32) float32 {
 func normalizeVector3(x, y, z float32) (float32, float32, float32) {
 	size := max(length3(x, y, z), 0.0001)
 	return x / size, y / size, z / size
-}
-
-func moveTowardPoint(from, to Point3, maximumStep float32) Point3 {
-	distance := length3(to.X-from.X, to.Y-from.Y, to.Z-from.Z)
-	weight := clamp(maximumStep/max(distance, 0.0001), 0, 1)
-	return lerpPoint(from, to, weight)
 }
 
 func turnVectorToward(from, to Point3, maximumAngle float32) Point3 {

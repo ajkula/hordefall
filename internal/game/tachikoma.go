@@ -89,11 +89,6 @@ func (rig *TachikomaRig) LocalToWorld(originX, originY, forward, side float32) (
 	return originX + offsetX, originY + offsetY
 }
 
-func (rig *TachikomaRig) WorldToLocalDirection(x, y float32) (float32, float32) {
-	cosineHeading, sineHeading := cosine(rig.Heading), sine(rig.Heading)
-	return x*cosineHeading + y*sineHeading, -x*sineHeading + y*cosineHeading
-}
-
 func (rig *TachikomaRig) HeadAngle() float32 {
 	return rig.Heading + rig.HeadServo.Angle
 }

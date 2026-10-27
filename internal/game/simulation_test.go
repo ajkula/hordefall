@@ -273,7 +273,7 @@ func TestBossCycleIsThreeSpidersHordeWormHorde(t *testing.T) {
 
 func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde
+	game.bossEventCount = firstHordeSlot
 	game.startBossEvent()
 	total := game.hordeEvent.Total
 	for index := range game.enemies.Count {
@@ -295,7 +295,7 @@ func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 
 func TestBossesKeepComingDuringAHorde(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde
+	game.bossEventCount = firstHordeSlot
 	game.startBossEvent()
 	game.bossEventCount = 0
 	game.bossProgressKills = game.bossKillsRequired
@@ -307,7 +307,7 @@ func TestBossesKeepComingDuringAHorde(t *testing.T) {
 
 func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossEventCount = firstHordeSlot + 1
 	game.startBossEvent()
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
@@ -326,12 +326,12 @@ func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
 
 func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossEventCount = firstHordeSlot + 1
 	game.startBossEvent()
-	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossEventCount = firstHordeSlot + 1
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
-	if game.bossEventCount != spidersBeforeHorde+1 {
+	if game.bossEventCount != firstHordeSlot+1 {
 		t.Fatalf("a second drill-worm event started while one was alive")
 	}
 	game.worm.IsActive = false
@@ -346,7 +346,7 @@ func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
 
 func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossEventCount = firstHordeSlot + 1
 	game.startBossEvent()
 	for range maximumBossesAlive {
 		game.bossEventCount = 0
@@ -358,7 +358,7 @@ func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
 	}
 	game.spiders = game.spiders[:maximumBossesAlive-1]
 	game.worm.IsActive = false
-	game.bossEventCount = spidersBeforeHorde + 1
+	game.bossEventCount = firstHordeSlot + 1
 	game.bossProgressKills = game.bossKillsRequired
 	game.spawnSpiderEvent()
 	game.startBossEventIfDue()
@@ -369,10 +369,10 @@ func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
 
 func TestOverlappingHordesMerge(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde
+	game.bossEventCount = firstHordeSlot
 	game.startBossEvent()
 	first := game.hordeEvent.Total
-	game.bossEventCount = spidersBeforeHorde + 2
+	game.bossEventCount = firstHordeSlot + 2
 	game.startBossEvent()
 	if game.hordeEvent.Total != first+2*first || game.hordeEvent.Remaining != game.hordeEvent.Total {
 		t.Fatalf("merged horde %d / %d, first wave %d", game.hordeEvent.Remaining, game.hordeEvent.Total, first)
@@ -519,7 +519,7 @@ func TestBossKillsDoNotCarryOverAndRequirementGrows(t *testing.T) {
 
 func TestHordeIsVariedWithExplosivesOnTheOutside(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.bossEventCount = spidersBeforeHorde
+	game.bossEventCount = firstHordeSlot
 	game.startBossEvent()
 	kindCounts := [enemyKindCount]int{}
 	nearestExplosive, farthestCore := float32(1e9), float32(0)
@@ -547,7 +547,7 @@ func TestHordeDoesNotDetonateAtOnce(t *testing.T) {
 	game := newHeadlessGame(t)
 	equipEveryWeapon(game)
 	game.elapsedSeconds = 900
-	game.bossEventCount = spidersBeforeHorde
+	game.bossEventCount = firstHordeSlot
 	game.startBossEvent()
 	total := game.hordeEvent.Total
 	for second := 1; second <= 12; second++ {

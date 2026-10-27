@@ -62,12 +62,6 @@ func (s *GemStore) Collect(playerX, playerY, magnetRadius, deltaSeconds float32)
 	return collected
 }
 
-func (s *GemStore) AttractAll() {
-	for index := range s.Count {
-		s.IsAttracted[index] = true
-	}
-}
-
 func GemTierFor(value int32) *GemTier {
 	tier := &gemTiers[0]
 	for index := range gemTiers {

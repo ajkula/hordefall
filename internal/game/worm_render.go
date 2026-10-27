@@ -42,13 +42,6 @@ const (
 	wormWarningRedness      = 0.7
 	wormSegmentRadius       = 22
 	wormHeadRadius          = 32
-	wormPebbleCount         = 5
-	wormPebbleSpin          = 0.12
-	wormCrackCount          = 9
-	wormCrackWidth          = 3
-	wormWarningPulse        = 0.35
-	wormCraterRadius        = 46
-	wormCraterRockCount     = 10
 	wormShadowOffsetX       = 8
 	wormShadowOffsetY       = 11
 	wormShadowOpacity       = 0.34
@@ -101,15 +94,10 @@ var (
 	wormArmorColor   = wormArmor.Light
 	wormOutlineColor = [3]float32{0.04, 0.04, 0.06}
 	wormCharColor    = [3]float32{0.1, 0.08, 0.07}
-	wormVentColor    = [3]float32{0.3, 0.85, 1}
 	wormSensorColor  = [3]float32{1, 0.15, 0.1}
-	wormHoleColor    = [3]float32{0.1, 0.07, 0.05}
-	wormRockColor    = [3]float32{0.36, 0.27, 0.17}
 	wormGaugeEmpty   = [3]float32{0.05, 0.05, 0.05}
 	wormGaugeFull    = [3]float32{0.3, 1, 0.35}
 	wormGaugeLow     = [3]float32{1, 0.2, 0.1}
-	wormLightX       = float32(-0.6)
-	wormLightY       = float32(-0.8)
 )
 
 // ===== Internal =====
