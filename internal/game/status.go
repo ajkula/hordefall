@@ -39,8 +39,6 @@ const (
 	StatusShocked
 )
 
-const statusCount = 6
-
 const (
 	ElementNone Element = iota
 	ElementFire

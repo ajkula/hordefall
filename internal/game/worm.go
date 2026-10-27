@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/ajkula/ajkurig/i18n"
+	"github.com/ajkula/ajkurig/mathx"
 )
 
 // ===== Types =====
@@ -826,4 +827,14 @@ func turnVectorToward(from, to Point3, maximumAngle float32) Point3 {
 func pointAtDistance(anchor, toward Point3, distance float32) Point3 {
 	x, y, z := normalizeVector3(toward.X-anchor.X, toward.Y-anchor.Y, toward.Z-anchor.Z)
 	return Point3{anchor.X + x*distance, anchor.Y + y*distance, max(0, anchor.Z+z*distance)}
+}
+
+func filterAlive[T any](items []T, deltaSeconds float32, lifeOf func(item *T) *float32) []T {
+	kept := items[:0]
+	for index := range items {
+		life := lifeOf(&items[index])
+		*life -= deltaSeconds
+		kept = mathx.AppendIf(kept, items[index], *life > 0)
+	}
+	return kept
 }

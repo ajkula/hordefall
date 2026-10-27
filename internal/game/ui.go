@@ -7,6 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/ajkula/ajkurig/colorx"
+	"github.com/ajkula/ajkurig/draw"
 	"github.com/ajkula/ajkurig/i18n"
 	"github.com/ajkula/ajkurig/scores"
 	"github.com/ajkula/ajkurig/ui"
@@ -67,7 +69,7 @@ func (u *UI) DrawHud(g *Game, screen *ebiten.Image) {
 	u.drawWeatherLabel(g, screen)
 	u.drawChatter(g, screen)
 	u.drawLevelUpBanner(g, screen)
-	u.drawPopups(g, screen)
+	g.effects.DrawPopups(screen, u.kit, g.renderer.camera)
 }
 
 // ===== Internal =====
@@ -108,7 +110,7 @@ func (u *UI) drawWeaponList(g *Game, screen *ebiten.Image) {
 	for slot, weapon := range g.player.Weapons {
 		definition := &weaponTable[weapon.Kind]
 		y := float32(screenHeight - 30 - (len(g.player.Weapons)-1-slot)*24)
-		fillRect(screen, 16, y+4, 12, 12, toColor(definition.Color, 1))
+		draw.FillRect(screen, 16, y+4, 12, 12, colorx.NRGBA(definition.Color, 1))
 		u.kit.Text.Draw(screen, fmt.Sprintf("%s  %d", definition.DisplayName(), weapon.Level), ui.FaceSmall, 36, y, textColor, 1, text.AlignStart)
 	}
 }
@@ -138,22 +140,15 @@ func (u *UI) drawSpiderBar(g *Game, screen *ebiten.Image, rig *SpiderRig, y floa
 	u.kit.Text.Draw(screen, "SPIDER TANK", ui.FaceSmall, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }
 
-func (u *UI) drawPopups(g *Game, screen *ebiten.Image) {
-	for _, popup := range g.effects.Popups {
-		screenX, screenY := g.renderer.ToScreen(popup.X, popup.Y)
-		u.kit.Text.Draw(screen, popup.Text, ui.FaceBold, screenX, screenY, popup.Color, popup.Life/popupLifeSeconds, text.AlignCenter)
-	}
-}
-
 func drawBar(screen *ebiten.Image, x, y, width, height, fraction float32, tint [3]float32) {
-	fillRect(screen, x, y, width, height, toColor(panelColor, 0.75))
-	fillRect(screen, x, y, width*clamp(fraction, 0, 1), height, toColor(tint, 1))
+	draw.FillRect(screen, x, y, width, height, colorx.NRGBA(panelColor, 0.75))
+	draw.FillRect(screen, x, y, width*clamp(fraction, 0, 1), height, colorx.NRGBA(tint, 1))
 }
 
 func drawBossBar(screen *ebiten.Image, y, fraction float32, tint [3]float32) {
 	x := float32(screenWidth/2 - spiderBarWidth/2)
-	fillRoundedRect(screen, x, y, spiderBarWidth, spiderBarHeight, bossBarCornerRadius, toColor(panelColor, 0.75))
-	fillRoundedRect(screen, x, y, spiderBarWidth*clamp(fraction, 0, 1), spiderBarHeight, bossBarCornerRadius, toColor(tint, 1))
+	draw.FillRoundedRect(screen, x, y, spiderBarWidth, spiderBarHeight, bossBarCornerRadius, colorx.NRGBA(panelColor, 0.75))
+	draw.FillRoundedRect(screen, x, y, spiderBarWidth*clamp(fraction, 0, 1), spiderBarHeight, bossBarCornerRadius, colorx.NRGBA(tint, 1))
 }
 
 func describeReactionCounts(counts [reactionKindCount]int) string {

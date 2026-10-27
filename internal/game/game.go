@@ -4,6 +4,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/ajkula/ajkurig/audio"
+	"github.com/ajkula/ajkurig/fx"
 	"github.com/ajkula/ajkurig/i18n"
 	"github.com/ajkula/ajkurig/input"
 	"github.com/ajkula/ajkurig/rig"
@@ -25,7 +26,7 @@ type Game struct {
 	enemies               *EnemyStore
 	projectiles           *ProjectileStore
 	gems                  *GemStore
-	effects               *Effects
+	effects               *fx.Effects
 	ground                *world.Ground
 	grid                  *spatial.Grid
 	renderer              *Renderer
@@ -80,6 +81,7 @@ const (
 	levelUpBannerDuration = 2.2
 	groundSeedBase        = 0x5EED
 	gameRandomSeed        = 0xA11CE
+	effectsRandomSeed     = 0xBEEF
 	worldModuleName       = "hordefall"
 )
 
@@ -96,8 +98,9 @@ func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 		enemies:     NewEnemyStore(maximumEnemies),
 		projectiles: NewProjectileStore(maximumProjectiles),
 		gems:        NewGemStore(maximumGems),
-		effects:     NewEffects(),
+		effects:     newEffects(),
 		grid:        spatial.NewGrid(arenaSize, arenaSize, spatialCellSize, maximumEnemies),
+		chatter:     newChatter(),
 		weather:     newWeather(soundIDs),
 	}
 	game.resetRun()

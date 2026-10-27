@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/ajkula/ajkurig/colorx"
 	"github.com/ajkula/ajkurig/draw"
 )
 
@@ -165,7 +166,7 @@ func (r *Renderer) drawWormWarningIf(screen *ebiten.Image, worm *DrillWorm, shou
 
 func (r *Renderer) drawWormDecal(screen *ebiten.Image, decal *ebiten.Image, x, y, scale float32, tint [4]float32) {
 	size := float32(decal.Bounds().Dx())
-	screenX, screenY := r.ToScreen(x, y)
+	screenX, screenY := r.camera.ToScreen(x, y)
 	options := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest}
 	options.GeoM.Translate(float64(-size/2), float64(-size/2))
 	options.GeoM.Scale(float64(scale*draw.Scale), float64(scale*draw.Scale))
@@ -257,7 +258,7 @@ func (r *Renderer) drawWormSpriteIf(g *Game, screen *ebiten.Image, piece *WormPi
 	frame := frames[wormSpriteAngleIndex(piece.AxisX, piece.AxisY)]
 	size := float32(frame.Bounds().Dx())
 	scale := wormSpritePixel * wormDepthScale(piece.Z)
-	screenX, screenY := r.ToScreen(piece.X, piece.Y-piece.Z)
+	screenX, screenY := r.camera.ToScreen(piece.X, piece.Y-piece.Z)
 	options := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest}
 	options.GeoM.Translate(float64(-size/2), float64(-size/2))
 	options.GeoM.Scale(float64(scale*draw.Scale), float64(scale*draw.Scale))
@@ -279,11 +280,11 @@ func (r *Renderer) wormSpriteTint(g *Game, piece *WormPiece, maximumHealth float
 func (r *Renderer) drawWormGauge(screen *ebiten.Image, piece *WormPiece, maximumHealth float32) {
 	fraction := clamp(piece.Health/maximumHealth, 0, 1)
 	scale := wormDepthScale(piece.Z)
-	screenX, screenY := r.ToScreen(piece.X, piece.Y-piece.Z-(wormSegmentRadius+wormGaugeLift)*scale)
+	screenX, screenY := r.camera.ToScreen(piece.X, piece.Y-piece.Z-(wormSegmentRadius+wormGaugeLift)*scale)
 	left := float32(int(screenX - wormGaugeLength/2))
 	top := float32(int(screenY))
-	fillRect(screen, left-1, top-1, wormGaugeLength+2, wormGaugeHeight+2, toColor(wormGaugeEmpty, 0.9))
-	fillRect(screen, left, top, wormGaugeLength*fraction, wormGaugeHeight, toColor(mixColor(wormGaugeLow, wormGaugeFull, fraction), 1))
+	draw.FillRect(screen, left-1, top-1, wormGaugeLength+2, wormGaugeHeight+2, colorx.NRGBA(wormGaugeEmpty, 0.9))
+	draw.FillRect(screen, left, top, wormGaugeLength*fraction, wormGaugeHeight, colorx.NRGBA(mixColor(wormGaugeLow, wormGaugeFull, fraction), 1))
 }
 
 func sortedByHeight(pieces []WormPiece) []int {
@@ -300,24 +301,24 @@ func wormPerspective(height float32) float32 {
 }
 
 func (r *Renderer) queueWormShadow(piece *WormPiece, halfLength, radius float32) {
-	screenX, screenY := r.ToScreen(piece.X+wormShadowOffsetX, piece.Y+wormShadowOffsetY)
+	screenX, screenY := r.camera.ToScreen(piece.X+wormShadowOffsetX, piece.Y+wormShadowOffsetY)
 	reach := halfLength * piece.GroundSpan
 	fade := clamp(1-piece.Z/wormShadowFadeHeight, 0.35, 1)
-	r.solid.AddSegment(screenX-piece.GroundAxisX*reach, screenY-piece.GroundAxisY*reach, screenX+piece.GroundAxisX*reach, screenY+piece.GroundAxisY*reach, radius*2+2, blackColor, wormShadowOpacity*fade)
-	r.solid.AddCircle(screenX, screenY, radius+1, blackColor, wormShadowOpacity*fade*0.6)
+	r.batches.Solid.AddSegment(screenX-piece.GroundAxisX*reach, screenY-piece.GroundAxisY*reach, screenX+piece.GroundAxisX*reach, screenY+piece.GroundAxisY*reach, radius*2+2, blackColor, wormShadowOpacity*fade)
+	r.batches.Solid.AddCircle(screenX, screenY, radius+1, blackColor, wormShadowOpacity*fade*0.6)
 }
 
 func (r *Renderer) queueWormJoint(from, to *WormPiece) {
-	startX, startY := r.ToScreen(from.X, from.Y-from.Z)
-	endX, endY := r.ToScreen(to.X, to.Y-to.Z)
+	startX, startY := r.camera.ToScreen(from.X, from.Y-from.Z)
+	endX, endY := r.camera.ToScreen(to.X, to.Y-to.Z)
 	width := wormSegmentRadius * wormJointWidthScale * wormPerspective((from.Z+to.Z)/2)
-	r.solid.AddSegment(startX, startY, endX, endY, width+wormOutlineWidth, wormOutlineColor, 1)
-	r.solid.AddSegment(startX, startY, endX, endY, width, wormArmor.Dark, 1)
+	r.batches.Solid.AddSegment(startX, startY, endX, endY, width+wormOutlineWidth, wormOutlineColor, 1)
+	r.batches.Solid.AddSegment(startX, startY, endX, endY, width, wormArmor.Dark, 1)
 	axisX, axisY := normalize(endX-startX, endY-startY)
 	reach := length(endX-startX, endY-startY)
 	for along := float32(wormRibSpacing); along < reach; along += wormRibSpacing {
 		ribX, ribY := startX+axisX*along, startY+axisY*along
-		r.solid.AddSegment(ribX-axisY*width/2, ribY+axisX*width/2, ribX+axisY*width/2, ribY-axisX*width/2, 2, wormArmor.Mid, 0.9)
+		r.batches.Solid.AddSegment(ribX-axisY*width/2, ribY+axisX*width/2, ribX+axisY*width/2, ribY-axisX*width/2, 2, wormArmor.Mid, 0.9)
 	}
 }
 
@@ -349,8 +350,8 @@ func (r *Renderer) queueWormAimLaserIf(worm *DrillWorm, directionX, directionY f
 	}
 	isBlinking := worm.PhaseSeconds > wormHeadAimSeconds-wormHeadLockSeconds
 	alpha := 1 - 0.6*boolToFloat(isBlinking && int(worm.PhaseSeconds*20)%2 == 0)
-	originX, originY := r.ToScreen(worm.HeadX+directionX*wormMuzzleForward, worm.HeadY+directionY*wormMuzzleForward)
+	originX, originY := r.camera.ToScreen(worm.HeadX+directionX*wormMuzzleForward, worm.HeadY+directionY*wormMuzzleForward)
 	endX, endY := originX+directionX*wormRollDistance, originY+directionY*wormRollDistance
-	r.glow.AddSegment(originX, originY, endX, endY, 7, wormSensorColor, 0.25*alpha)
-	r.glow.AddSegment(originX, originY, endX, endY, 2, wormSensorColor, 0.95*alpha)
+	r.batches.Glow.AddSegment(originX, originY, endX, endY, 7, wormSensorColor, 0.25*alpha)
+	r.batches.Glow.AddSegment(originX, originY, endX, endY, 2, wormSensorColor, 0.95*alpha)
 }

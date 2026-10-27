@@ -1,5 +1,9 @@
 package game
 
+import (
+	"github.com/ajkula/ajkurig/fx"
+)
+
 // ===== Types =====
 
 type TachikomaLeg struct {
@@ -8,8 +12,7 @@ type TachikomaLeg struct {
 	VelocityX float32
 	VelocityY float32
 	WheelSpin float32
-	TrailX    float32
-	TrailY    float32
+	Skid      fx.SkidTracker
 }
 
 type TachikomaLegLayout struct {
@@ -37,7 +40,6 @@ type TachikomaRig struct {
 	BobPhase          float32
 	ArmRecoil         float32
 	TuckAmount        float32
-	SkidAmount        float32
 	HeadServo         AngularServo
 	MuzzleX           float32
 	MuzzleY           float32
@@ -165,7 +167,7 @@ func (g *Game) placeTachikoma(rig *TachikomaRig) {
 	for leg := range tachikomaLegCount {
 		layout := &tachikomaLegLayouts[leg]
 		rig.Legs[leg].FootX, rig.Legs[leg].FootY = rig.LocalToWorld(player.X, player.Y, layout.RestForward, layout.RestSide)
-		rig.Legs[leg].TrailX, rig.Legs[leg].TrailY = rig.Legs[leg].FootX, rig.Legs[leg].FootY
+		rig.Legs[leg].Skid.TrailX, rig.Legs[leg].Skid.TrailY = rig.Legs[leg].FootX, rig.Legs[leg].FootY
 	}
 	rig.LookX, rig.LookY = player.AimX, player.AimY
 	rig.MuzzleX, rig.MuzzleY = player.X, player.Y

@@ -812,7 +812,7 @@ func TestSpiderTanksDoNotOverlap(t *testing.T) {
 
 func TestMouseAimsTheCannonAndClicksFireAndDash(t *testing.T) {
 	game := newHeadlessGame(t)
-	game.renderer = &Renderer{CameraX: game.player.X - screenWidth/2, CameraY: game.player.Y - screenHeight/2}
+	game.renderer.camera.X, game.renderer.camera.Y = game.player.X-screenWidth/2, game.player.Y-screenHeight/2
 	cursorX, cursorY := float32(screenWidth/2)*draw.Scale, float32(screenHeight/2+200)*draw.Scale
 	game.controls = input.Controls{HasMouseAim: true, CursorX: cursorX, CursorY: cursorY, Held: ActionFire, JustPressed: ActionDash}
 	game.updatePlayer(deltaSeconds)

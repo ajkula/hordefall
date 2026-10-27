@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/ajkula/ajkurig/draw"
 	"github.com/ajkula/ajkurig/world"
 )
 
@@ -188,24 +189,24 @@ func (r *Renderer) queuePrecipitation(g *Game) {
 	for particle := range style.Count {
 		seedX, seedY, seedSize := particleSeed(particle, 0), particleSeed(particle, 1), particleSeed(particle, 2)
 		sway := sine(clock*1.7+seedSize*6.28) * style.Sway
-		x := wrap(seedX*spanX+style.VelocityX*clock+sway-r.CameraX, spanX) - weatherParticleMargin
-		y := wrap(seedY*spanY+style.VelocityY*clock*(0.7+seedSize*0.6)-r.CameraY, spanY) - weatherParticleMargin
+		x := wrap(seedX*spanX+style.VelocityX*clock+sway-r.camera.X, spanX) - weatherParticleMargin
+		y := wrap(seedY*spanY+style.VelocityY*clock*(0.7+seedSize*0.6)-r.camera.Y, spanY) - weatherParticleMargin
 		precipitationQueues[style.Style](r, style, x, y, style.Size+style.SizeSpread*seedSize, style.Alpha*intensity)
 	}
 }
 
 func queueRainStreak(r *Renderer, style *world.Precipitation, x, y, size, alpha float32) {
 	directionX, directionY := normalize(style.VelocityX, style.VelocityY)
-	r.glow.AddSegment(x, y, x+directionX*size, y+directionY*size, 1.5, [3]float32(style.Color), alpha)
+	r.batches.Glow.AddSegment(x, y, x+directionX*size, y+directionY*size, 1.5, [3]float32(style.Color), alpha)
 }
 
 func queueSnowflake(r *Renderer, style *world.Precipitation, x, y, size, alpha float32) {
-	r.solid.AddCircle(x, y, size, [3]float32(style.Color), alpha)
+	r.batches.Solid.AddCircle(x, y, size, [3]float32(style.Color), alpha)
 }
 
 func queueEmber(r *Renderer, style *world.Precipitation, x, y, size, alpha float32) {
-	r.glow.AddCircle(x, y, size*3, [3]float32(style.Color), alpha*0.35)
-	r.glow.AddCircle(x, y, size, [3]float32(style.Color), alpha)
+	r.batches.Glow.AddCircle(x, y, size*3, [3]float32(style.Color), alpha*0.35)
+	r.batches.Glow.AddCircle(x, y, size, [3]float32(style.Color), alpha)
 }
 
 func (r *Renderer) applyWeatherGrade(g *Game, screen *ebiten.Image) {
@@ -226,8 +227,7 @@ func drawScreenQuad(screen *ebiten.Image, tint [3]float32, blend ebiten.Blend) {
 			ColorR: tint[0], ColorG: tint[1], ColorB: tint[2], ColorA: 1,
 		})
 	}
-	solidPixel = ensureSolidPixel(solidPixel)
-	screen.DrawTriangles32(vertices, []uint32{0, 1, 2, 1, 3, 2}, solidPixel, &ebiten.DrawTrianglesOptions{Blend: blend})
+	screen.DrawTriangles32(vertices, []uint32{0, 1, 2, 1, 3, 2}, draw.SolidPixel(), &ebiten.DrawTrianglesOptions{Blend: blend})
 }
 
 func particleSeed(particle, channel int) float32 {

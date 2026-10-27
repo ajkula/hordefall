@@ -92,12 +92,12 @@ func (g *Game) hasEnemyWithin(x, y, radius float32) bool {
 
 func (r *Renderer) queueMines(g *Game) {
 	for _, mine := range g.mines {
-		screenX, screenY := r.ToScreen(mine.X, mine.Y)
-		isVisible := r.isVisible(mine.X, mine.Y, mineGlowRadius)
+		screenX, screenY := r.camera.ToScreen(mine.X, mine.Y)
+		isVisible := r.camera.IsVisible(mine.X, mine.Y, mineGlowRadius)
 		isArmed := mine.Age >= mineArmSeconds
 		blink := 0.5 + 0.5*sine(mine.Age*mineBlinkSpeed)
-		r.solid.AddCircleIf(screenX, screenY, mineBodyRadius, mineBodyColor, 1, isVisible)
-		r.solid.AddCircleIf(screenX, screenY, mineBodyRadius*0.5, mineColor, 0.4+0.6*blink*boolToFloat(isArmed), isVisible)
-		r.glow.AddCircleIf(screenX, screenY, mineGlowRadius, mineColor, 0.12+0.25*blink*boolToFloat(isArmed), isVisible)
+		r.batches.Solid.AddCircleIf(screenX, screenY, mineBodyRadius, mineBodyColor, 1, isVisible)
+		r.batches.Solid.AddCircleIf(screenX, screenY, mineBodyRadius*0.5, mineColor, 0.4+0.6*blink*boolToFloat(isArmed), isVisible)
+		r.batches.Glow.AddCircleIf(screenX, screenY, mineGlowRadius, mineColor, 0.12+0.25*blink*boolToFloat(isArmed), isVisible)
 	}
 }

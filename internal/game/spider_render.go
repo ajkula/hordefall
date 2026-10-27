@@ -33,7 +33,7 @@ func (r *Renderer) queueSpiders(g *Game) {
 
 func (r *Renderer) queueSpider(g *Game, rig *SpiderRig) {
 	enemyIndex := g.enemies.IndexOfID(rig.EnemyID)
-	if enemyIndex < 0 || !r.isVisible(rig.X, rig.Y, 140*spiderScale) {
+	if enemyIndex < 0 || !r.camera.IsVisible(rig.X, rig.Y, 140*spiderScale) {
 		return
 	}
 	armor := mixColor(enemyTable[EnemySpiderTank].Color, g.enemies.TintedColor(enemyIndex), 0.5)
@@ -49,50 +49,50 @@ func (r *Renderer) queueSpider(g *Game, rig *SpiderRig) {
 }
 
 func (r *Renderer) spiderPoint(rig *SpiderRig, forward, side float32) (float32, float32) {
-	return r.ToScreen(rig.LocalToWorld(forward, side))
+	return r.camera.ToScreen(rig.LocalToWorld(forward, side))
 }
 
 func (r *Renderer) queueLegShadow(rig *SpiderRig, leg int) {
-	hipX, hipY := r.ToScreen(rig.HipPosition(leg))
-	kneeX, kneeY := r.ToScreen(rig.KneePosition(leg))
-	footX, footY := r.ToScreen(rig.Legs[leg].FootX, rig.Legs[leg].FootY)
+	hipX, hipY := r.camera.ToScreen(rig.HipPosition(leg))
+	kneeX, kneeY := r.camera.ToScreen(rig.KneePosition(leg))
+	footX, footY := r.camera.ToScreen(rig.Legs[leg].FootX, rig.Legs[leg].FootY)
 	offsetX, offsetY := scaled(spiderShadowOffsetX), scaled(spiderShadowOffsetY)
-	r.solid.AddSegment(hipX+offsetX, hipY+offsetY, kneeX+offsetX*1.6, kneeY+offsetY*1.6, scaled(9), blackColor, shadowOpacity)
-	r.solid.AddSegment(kneeX+offsetX*1.6, kneeY+offsetY*1.6, footX+2, footY+3, scaled(7), blackColor, shadowOpacity)
-	r.solid.AddCircle(footX+2, footY+3, scaled(7), blackColor, shadowOpacity)
+	r.batches.Solid.AddSegment(hipX+offsetX, hipY+offsetY, kneeX+offsetX*1.6, kneeY+offsetY*1.6, scaled(9), blackColor, shadowOpacity)
+	r.batches.Solid.AddSegment(kneeX+offsetX*1.6, kneeY+offsetY*1.6, footX+2, footY+3, scaled(7), blackColor, shadowOpacity)
+	r.batches.Solid.AddCircle(footX+2, footY+3, scaled(7), blackColor, shadowOpacity)
 }
 
 func (r *Renderer) queueBodyShadow(rig *SpiderRig) {
 	rearX, rearY := r.spiderPoint(rig, -16, 0)
 	frontX, frontY := r.spiderPoint(rig, 20, 0)
-	r.solid.AddCircle(rearX+scaled(spiderShadowOffsetX*1.5), rearY+scaled(spiderShadowOffsetY*1.5), scaled(35), blackColor, shadowOpacity)
-	r.solid.AddCircle(frontX+scaled(spiderShadowOffsetX*1.5), frontY+scaled(spiderShadowOffsetY*1.5), scaled(25), blackColor, shadowOpacity)
+	r.batches.Solid.AddCircle(rearX+scaled(spiderShadowOffsetX*1.5), rearY+scaled(spiderShadowOffsetY*1.5), scaled(35), blackColor, shadowOpacity)
+	r.batches.Solid.AddCircle(frontX+scaled(spiderShadowOffsetX*1.5), frontY+scaled(spiderShadowOffsetY*1.5), scaled(25), blackColor, shadowOpacity)
 }
 
 func (r *Renderer) queueLeg(rig *SpiderRig, leg int, armor [3]float32) {
 	dark := mixColor(armor, blackColor, 0.5)
 	light := mixColor(armor, whiteColor, 0.25)
 	lift := rig.FootLift(leg)
-	hipX, hipY := r.ToScreen(rig.HipPosition(leg))
-	kneeX, kneeY := r.ToScreen(rig.KneePosition(leg))
+	hipX, hipY := r.camera.ToScreen(rig.HipPosition(leg))
+	kneeX, kneeY := r.camera.ToScreen(rig.KneePosition(leg))
 	kneeY -= scaled(spiderKneeHeight) + lift*0.5
-	footX, footY := r.ToScreen(rig.Legs[leg].FootX, rig.Legs[leg].FootY)
+	footX, footY := r.camera.ToScreen(rig.Legs[leg].FootX, rig.Legs[leg].FootY)
 	footY -= lift
-	r.solid.AddSegment(hipX, hipY, kneeX, kneeY, scaled(15), dark, 1)
-	r.solid.AddSegment(hipX, hipY, kneeX, kneeY, scaled(9), armor, 1)
-	r.solid.AddSegment(kneeX, kneeY, footX, footY, scaled(11), dark, 1)
-	r.solid.AddSegment(kneeX, kneeY, footX, footY, scaled(5), light, 1)
-	r.solid.AddCircle(kneeX, kneeY, scaled(6.5), jointColor, 1)
-	r.solid.AddCircle(kneeX, kneeY, scaled(3), light, 1)
+	r.batches.Solid.AddSegment(hipX, hipY, kneeX, kneeY, scaled(15), dark, 1)
+	r.batches.Solid.AddSegment(hipX, hipY, kneeX, kneeY, scaled(9), armor, 1)
+	r.batches.Solid.AddSegment(kneeX, kneeY, footX, footY, scaled(11), dark, 1)
+	r.batches.Solid.AddSegment(kneeX, kneeY, footX, footY, scaled(5), light, 1)
+	r.batches.Solid.AddCircle(kneeX, kneeY, scaled(6.5), jointColor, 1)
+	r.batches.Solid.AddCircle(kneeX, kneeY, scaled(3), light, 1)
 	r.queueFoot(rig, leg, footX, footY, lift, dark, armor)
 }
 
 func (r *Renderer) queueFoot(rig *SpiderRig, leg int, footX, footY, lift float32, dark, armor [3]float32) {
 	outwardX, outwardY := normalize(rig.Legs[leg].FootX-rig.X, rig.Legs[leg].FootY-rig.Y)
 	padRadius := scaled(8) + lift*0.18
-	r.solid.AddSegment(footX, footY, footX+outwardX*scaled(14), footY+outwardY*scaled(14), scaled(4), jointColor, 1)
-	r.solid.AddCircle(footX, footY, padRadius, dark, 1)
-	r.solid.AddCircle(footX, footY, padRadius*0.55, armor, 1)
+	r.batches.Solid.AddSegment(footX, footY, footX+outwardX*scaled(14), footY+outwardY*scaled(14), scaled(4), jointColor, 1)
+	r.batches.Solid.AddCircle(footX, footY, padRadius, dark, 1)
+	r.batches.Solid.AddCircle(footX, footY, padRadius*0.55, armor, 1)
 }
 
 func (r *Renderer) queueChassis(rig *SpiderRig, armor [3]float32) {
@@ -134,33 +134,33 @@ func (r *Renderer) queueTurret(rig *SpiderRig, armor, dark, light [3]float32) {
 }
 
 func (r *Renderer) addTurretCircle(rig *SpiderRig, forward, side, radius float32, tint [3]float32) {
-	x, y := r.ToScreen(rig.TurretToWorld(forward, side))
-	r.solid.AddCircle(x, y, radius, tint, 1)
+	x, y := r.camera.ToScreen(rig.TurretToWorld(forward, side))
+	r.batches.Solid.AddCircle(x, y, radius, tint, 1)
 }
 
 func (r *Renderer) addTurretSegment(rig *SpiderRig, fromForward, fromSide, toForward, toSide, width float32, tint [3]float32) {
-	fromX, fromY := r.ToScreen(rig.TurretToWorld(fromForward, fromSide))
-	toX, toY := r.ToScreen(rig.TurretToWorld(toForward, toSide))
-	r.solid.AddSegment(fromX, fromY, toX, toY, width, tint, 1)
+	fromX, fromY := r.camera.ToScreen(rig.TurretToWorld(fromForward, fromSide))
+	toX, toY := r.camera.ToScreen(rig.TurretToWorld(toForward, toSide))
+	r.batches.Solid.AddSegment(fromX, fromY, toX, toY, width, tint, 1)
 }
 
 func (r *Renderer) queueSensor(rig *SpiderRig, frame uint32) {
 	flicker := 0.75 + 0.25*sine(float32(frame)*0.3)
-	sensorX, sensorY := r.ToScreen(rig.TurretToWorld(28, 0))
-	r.glow.AddCircle(sensorX, sensorY, scaled(22), sensorRed, 0.7*flicker)
-	r.solid.AddCircle(sensorX, sensorY, scaled(4.5), sensorRed, 1)
-	r.solid.AddCircle(sensorX, sensorY, scaled(1.8), whiteColor, flicker)
+	sensorX, sensorY := r.camera.ToScreen(rig.TurretToWorld(28, 0))
+	r.batches.Glow.AddCircle(sensorX, sensorY, scaled(22), sensorRed, 0.7*flicker)
+	r.batches.Solid.AddCircle(sensorX, sensorY, scaled(4.5), sensorRed, 1)
+	r.batches.Solid.AddCircle(sensorX, sensorY, scaled(1.8), whiteColor, flicker)
 }
 
 func (r *Renderer) addLocalCircle(rig *SpiderRig, forward, side, radius float32, tint [3]float32) {
 	x, y := r.spiderPoint(rig, forward, side)
-	r.solid.AddCircle(x, y, radius, tint, 1)
+	r.batches.Solid.AddCircle(x, y, radius, tint, 1)
 }
 
 func (r *Renderer) addLocalSegment(rig *SpiderRig, fromForward, fromSide, toForward, toSide, width float32, tint [3]float32) {
 	fromX, fromY := r.spiderPoint(rig, fromForward, fromSide)
 	toX, toY := r.spiderPoint(rig, toForward, toSide)
-	r.solid.AddSegment(fromX, fromY, toX, toY, width, tint, 1)
+	r.batches.Solid.AddSegment(fromX, fromY, toX, toY, width, tint, 1)
 }
 
 func (r *Renderer) queueSpiderBeams(g *Game) {
@@ -203,15 +203,15 @@ func (r *Renderer) drawFiringBeam(beam *BossBeam, frame uint32) {
 	r.queueBeam(beam, 56*pulse, profile.BeamColor, 0.4*fade)
 	r.queueBeam(beam, 28*pulse, profile.HotColor, 0.75*fade)
 	r.queueBeam(beam, 10*pulse, profile.CoreColor, fade)
-	originX, originY := r.ToScreen(beam.OriginX, beam.OriginY)
-	r.glow.AddCircle(originX, originY, 80*pulse, profile.CoreColor, 0.8*fade)
+	originX, originY := r.camera.ToScreen(beam.OriginX, beam.OriginY)
+	r.batches.Glow.AddCircle(originX, originY, 80*pulse, profile.CoreColor, 0.8*fade)
 }
 
 func (r *Renderer) queueBeam(beam *BossBeam, width float32, tint [3]float32, alpha float32) {
 	directionX, directionY := beam.Direction()
-	originX, originY := r.ToScreen(beam.OriginX, beam.OriginY)
+	originX, originY := r.camera.ToScreen(beam.OriginX, beam.OriginY)
 	reach := beam.Profile.Range
-	r.glow.AddSegment(originX, originY, originX+directionX*reach, originY+directionY*reach, width, tint, alpha)
+	r.batches.Glow.AddSegment(originX, originY, originX+directionX*reach, originY+directionY*reach, width, tint, alpha)
 }
 
 func scaled(value float32) float32 {

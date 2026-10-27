@@ -84,7 +84,7 @@ func (g *Game) ricochetBolt(fromX, fromY, angle, reach float32) {
 }
 
 func (r *Renderer) drawChargeMotes(laser *BossBeam, sphereRadius float32) {
-	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
+	originX, originY := r.camera.ToScreen(laser.OriginX, laser.OriginY)
 	for index := range laser.Motes {
 		r.drawChargeMote(&laser.Motes[index], originX, originY, sphereRadius, laser.Profile.CoreColor)
 	}
@@ -104,8 +104,8 @@ func (r *Renderer) drawChargeMote(mote *ChargeMote, originX, originY, sphereRadi
 	radius := mote.Size * fusion
 	x, y := originX+directionX*distance, originY+directionY*distance
 	alpha := clamp(progress*3, 0, 1)
-	r.glow.AddEllipse(x, y, radius*stretch*2.4, radius*2.4/sqrt(stretch), directionX, directionY, tint, 0.45*alpha)
-	r.solid.AddEllipse(x, y, radius*stretch, radius/sqrt(stretch), directionX, directionY, tint, alpha)
+	r.batches.Glow.AddEllipse(x, y, radius*stretch*2.4, radius*2.4/sqrt(stretch), directionX, directionY, tint, 0.45*alpha)
+	r.batches.Solid.AddEllipse(x, y, radius*stretch, radius/sqrt(stretch), directionX, directionY, tint, alpha)
 }
 
 func chargeSphereSwell(laser *BossBeam) float32 {
@@ -119,9 +119,9 @@ func chargeSphereSwell(laser *BossBeam) float32 {
 }
 
 func (r *Renderer) drawChargeSphere(laser *BossBeam, radius, brightness float32) {
-	originX, originY := r.ToScreen(laser.OriginX, laser.OriginY)
+	originX, originY := r.camera.ToScreen(laser.OriginX, laser.OriginY)
 	tint := laser.Profile.CoreColor
-	r.glow.AddCircle(originX, originY, radius*chargeHaloScale, tint, 0.35*brightness)
-	r.glow.AddCircle(originX, originY, radius*1.4, tint, 0.6*brightness)
-	r.solid.AddCircle(originX, originY, radius, tint, brightness)
+	r.batches.Glow.AddCircle(originX, originY, radius*chargeHaloScale, tint, 0.35*brightness)
+	r.batches.Glow.AddCircle(originX, originY, radius*1.4, tint, 0.6*brightness)
+	r.batches.Solid.AddCircle(originX, originY, radius, tint, brightness)
 }

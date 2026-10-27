@@ -78,11 +78,11 @@ func (g *Game) collectHealOrb(index int) {
 
 func (r *Renderer) queueHealOrbs(g *Game) {
 	for _, orb := range g.healOrbs {
-		screenX, screenY := r.ToScreen(orb.X, orb.Y)
-		isVisible := r.isVisible(orb.X, orb.Y, healOrbRadius*healOrbGlowScale)
+		screenX, screenY := r.camera.ToScreen(orb.X, orb.Y)
+		isVisible := r.camera.IsVisible(orb.X, orb.Y, healOrbRadius*healOrbGlowScale)
 		radius := healOrbRadius * (1 + healOrbPulseDepth*sine(orb.Age*healOrbPulseSpeed))
-		r.glow.AddCircleIf(screenX, screenY, radius*healOrbGlowScale, healOrbColor, healOrbGlowStrength, isVisible)
-		r.solid.AddCircleIf(screenX, screenY, radius, healOrbColor, 1, isVisible)
+		r.batches.Glow.AddCircleIf(screenX, screenY, radius*healOrbGlowScale, healOrbColor, healOrbGlowStrength, isVisible)
+		r.batches.Solid.AddCircleIf(screenX, screenY, radius, healOrbColor, 1, isVisible)
 		r.queueHealCrossIf(screenX, screenY, isVisible)
 	}
 }
@@ -91,6 +91,6 @@ func (r *Renderer) queueHealCrossIf(x, y float32, isVisible bool) {
 	if !isVisible {
 		return
 	}
-	r.solid.AddSegment(x-healOrbCrossLength, y, x+healOrbCrossLength, y, healOrbCrossWidth, healCrossTint, 1)
-	r.solid.AddSegment(x, y-healOrbCrossLength, x, y+healOrbCrossLength, healOrbCrossWidth, healCrossTint, 1)
+	r.batches.Solid.AddSegment(x-healOrbCrossLength, y, x+healOrbCrossLength, y, healOrbCrossWidth, healCrossTint, 1)
+	r.batches.Solid.AddSegment(x, y-healOrbCrossLength, x, y+healOrbCrossLength, healOrbCrossWidth, healCrossTint, 1)
 }
