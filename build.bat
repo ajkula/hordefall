@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-go run ./tools/release %*
+go run github.com/ajkula/ajkurig/cmd/release %*
 pause

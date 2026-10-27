@@ -1,0 +1,7 @@
+{
+  "name": "Hordefall",
+  "binary": "hordefall",
+  "package": ".",
+  "bundleId": "io.github.hordefall",
+  "category": "public.app-category.action-games"
+}
