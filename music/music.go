@@ -6,15 +6,35 @@ import (
 	"github.com/ajkula/ajkurig/audio"
 )
 
+// ===== Types =====
+
+type Song = audio.Song
+
+type Signal uint8
+
+type Preview struct {
+	*audio.MusicPreview
+}
+
 // ===== Constants =====
 
 const (
-	SignalHorde     = "horde"
-	SignalBoss      = "boss"
-	SignalReactions = "reactions"
-	SignalDanger    = "danger"
-	styleSeedStep   = 7919
+	SignalAlways Signal = iota
+	SignalHorde
+	SignalBoss
+	SignalReactions
+	SignalDanger
+	SignalCount
 )
+
+const (
+	SampleRate    = audio.SampleRate
+	styleSeedStep = 7919
+)
+
+var signalNames = [SignalCount]string{
+	SignalAlways: audio.AlwaysName, SignalHorde: "horde", SignalBoss: "boss", SignalReactions: "reactions", SignalDanger: "danger",
+}
 
 //go:embed theme.trk
 var themeSource string
@@ -69,6 +89,22 @@ var Styles = []audio.MusicStyle{
 
 // ===== Public API =====
 
+func Parse(source string) (*Song, error) {
+	return audio.ParseSong(source)
+}
+
+func NewPreview() *Preview {
+	return &Preview{MusicPreview: audio.NewMusicPreview()}
+}
+
+func (p *Preview) SetSignal(signal Signal, value float32) {
+	p.MusicPreview.SetSignal(signal.Name(), value)
+}
+
+func (s Signal) Name() string {
+	return signalNames[s]
+}
+
 func ThemeSource() string {
 	return themeSource
 }
@@ -91,5 +127,5 @@ func Songs(seed uint32) ([]*audio.Song, error) {
 }
 
 func SignalNames() []string {
-	return []string{SignalHorde, SignalBoss, SignalReactions, SignalDanger}
+	return signalNames[SignalHorde:]
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/ajkula/ajkurig/scores"
 	"github.com/ajkula/ajkurig/shell"
 	"github.com/ajkula/ajkurig/ui"
+
+	"hordefall/music"
 )
 
 // ===== Constants =====
@@ -125,18 +127,18 @@ func TestPlaylistSkipsDisabledTracksAndPersists(t *testing.T) {
 func TestDemoMusicFollowsTheActionLikeARun(t *testing.T) {
 	_, game := newHomeApp(t)
 	game.enemies.Count = 0
-	if quiet := game.computeMusicSignals()[SignalHorde]; quiet != 0 {
+	if quiet := game.computeMusicSignals()[music.SignalHorde]; quiet != 0 {
 		t.Fatalf("an empty demo still plays the horde layers, horde signal %.2f", quiet)
 	}
 	for range hordeSignalFullCount / 2 {
 		game.enemies.Spawn(EnemySwarmer, game.player.X, game.player.Y, 1)
 	}
-	if half := game.computeMusicSignals()[SignalHorde]; half != 0.5 {
+	if half := game.computeMusicSignals()[music.SignalHorde]; half != 0.5 {
 		t.Fatalf("the demo horde signal does not follow nearby enemies: %.2f", half)
 	}
 	game.resetRun()
 	game.enemies.Count = 0
-	if game.computeMusicSignals()[SignalHorde] != 0 {
+	if game.computeMusicSignals()[music.SignalHorde] != 0 {
 		t.Fatalf("in a run with no enemies the horde layers should stay silent")
 	}
 }

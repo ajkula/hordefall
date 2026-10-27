@@ -6,10 +6,6 @@ import (
 	"hordefall/music"
 )
 
-// ===== Types =====
-
-type MusicSignal uint8
-
 // ===== Constants =====
 
 const (
@@ -21,31 +17,18 @@ const (
 	dangerHealthThreshold   = 0.45
 )
 
-const (
-	SignalAlways MusicSignal = iota
-	SignalHorde
-	SignalBoss
-	SignalReactions
-	SignalDanger
-	SignalCount
-)
-
-var signalNames = [SignalCount]string{
-	SignalAlways: audio.AlwaysName, SignalHorde: music.SignalHorde, SignalBoss: music.SignalBoss, SignalReactions: music.SignalReactions, SignalDanger: music.SignalDanger,
-}
-
 var laserDangerPhases = [laserPhaseCount]float32{LaserCharging: 1, LaserLocked: 1, LaserFiring: 1}
 
-var fullMusicSignals = [SignalCount]float32{
-	SignalAlways: 1, SignalHorde: 1, SignalBoss: 3, SignalReactions: 1, SignalDanger: 1,
+var fullMusicSignals = [music.SignalCount]float32{
+	music.SignalAlways: 1, music.SignalHorde: 1, music.SignalBoss: 3, music.SignalReactions: 1, music.SignalDanger: 1,
 }
 
 // ===== Internal =====
 
 func (g *Game) attachAudio(engine *audio.Engine, ids SoundIDs) {
 	g.audio, g.soundIDs = engine, ids
-	for signal, name := range signalNames {
-		g.signalIDs[signal] = engine.Signals().Register(name)
+	for signal := range music.SignalCount {
+		g.signalIDs[signal] = engine.Signals().Register(signal.Name())
 	}
 }
 
@@ -72,17 +55,17 @@ func (g *Game) updateMusicSignals() {
 	}
 }
 
-func (g *Game) computeMusicSignals() [SignalCount]float32 {
+func (g *Game) computeMusicSignals() [music.SignalCount]float32 {
 	if g.player.Health <= 0 {
 		return fullMusicSignals
 	}
-	var signals [SignalCount]float32
-	signals[SignalAlways] = 1
+	var signals [music.SignalCount]float32
+	signals[music.SignalAlways] = 1
 	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1)
-	signals[SignalHorde] = hordeSignal
-	signals[SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive) + boolToIndex(g.worm.IsActive))
-	signals[SignalReactions] = g.reactionSignal()
-	signals[SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())
+	signals[music.SignalHorde] = hordeSignal
+	signals[music.SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive) + boolToIndex(g.worm.IsActive))
+	signals[music.SignalReactions] = g.reactionSignal()
+	signals[music.SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())
 	return signals
 }
 
@@ -101,7 +84,7 @@ func (g *Game) reactionSignal() float32 {
 	g.previousReactions = total
 	rate := float32(newReactions) * ticksPerSecond / musicSignalFrames
 	target := clamp(rate/reactionSignalFullRate, 0, 1)
-	return g.musicSignals[SignalReactions] + (target-g.musicSignals[SignalReactions])*reactionSignalSmoothing
+	return g.musicSignals[music.SignalReactions] + (target-g.musicSignals[music.SignalReactions])*reactionSignalSmoothing
 }
 
 func (g *Game) lowHealthSignal() float32 {

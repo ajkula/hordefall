@@ -10,6 +10,8 @@ import (
 	"github.com/ajkula/ajkurig/shell"
 	"github.com/ajkula/ajkurig/spatial"
 	"github.com/ajkula/ajkurig/world"
+
+	"hordefall/music"
 )
 
 // ===== Types =====
@@ -30,8 +32,8 @@ type Game struct {
 	renderer              *Renderer
 	audio                 *audio.Engine
 	soundIDs              SoundIDs
-	signalIDs             [SignalCount]audio.SignalID
-	musicSignals          [SignalCount]float32
+	signalIDs             [music.SignalCount]audio.SignalID
+	musicSignals          [music.SignalCount]float32
 	previousReactions     int
 	ui                    *UI
 	director              SpawnDirector

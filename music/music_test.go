@@ -48,7 +48,7 @@ func TestEachSpiderTankAddsADeeperVoice(t *testing.T) {
 	song := mustTheme(t)
 	bossChannels := []int{}
 	for channel, layer := range song.Layers {
-		if layer.SignalName == SignalBoss {
+		if layer.SignalName == SignalBoss.Name() {
 			bossChannels = append(bossChannels, channel)
 		}
 	}
@@ -142,6 +142,23 @@ func TestExtraLayersPlayChordTonesInEverySong(t *testing.T) {
 	}
 }
 
+func TestTrackerPreviewFollowsNumberedSignals(t *testing.T) {
+	preview := NewPreview()
+	for signal := range SignalCount {
+		preview.SetSignal(signal, float32(signal)+0.5)
+	}
+	for signal := SignalHorde; signal < SignalCount; signal++ {
+		if value := preview.SignalValue(signal.Name()); value != float32(signal)+0.5 {
+			t.Fatalf("signal %q reads %.1f, want %.1f", signal.Name(), value, float32(signal)+0.5)
+		}
+	}
+	calmPeak, calmRMS := renderPreview(t, 0)
+	intensePeak, intenseRMS := renderPreview(t, bossSignalMaximum)
+	if intenseRMS <= calmRMS*1.05 || max(calmPeak, intensePeak) >= 1 || calmRMS <= 0 {
+		t.Fatalf("preview calm rms %.4f peak %.3f, boss rms %.4f peak %.3f", calmRMS, calmPeak, intenseRMS, intensePeak)
+	}
+}
+
 func TestExportSongPreviews(t *testing.T) {
 	outputDirectory := os.Getenv("HORDEFALL_WAV_DIR")
 	if outputDirectory == "" {
@@ -178,7 +195,7 @@ func mustSongs(t *testing.T) []*audio.Song {
 }
 
 func fullSignals() map[string]float32 {
-	return map[string]float32{SignalHorde: 1, SignalBoss: bossSignalMaximum, SignalReactions: 1, SignalDanger: 1}
+	return map[string]float32{SignalHorde.Name(): 1, SignalBoss.Name(): bossSignalMaximum, SignalReactions.Name(): 1, SignalDanger.Name(): 1}
 }
 
 func newBoard(signals map[string]float32) *audio.SignalBoard {
@@ -209,6 +226,25 @@ func renderSong(t *testing.T, song *audio.Song, signals map[string]float32, samp
 		if math.IsNaN(float64(value)) {
 			t.Fatalf("NaN in %s", song.Title)
 		}
+		peak, sumSquares = max(peak, float32(math.Abs(float64(value)))), sumSquares+float64(value*value)
+	}
+	return peak, float32(math.Sqrt(sumSquares / float64(len(buffer)/4)))
+}
+
+func renderPreview(t *testing.T, boss float32) (float32, float32) {
+	preview := NewPreview()
+	preview.SetSong(mustTheme(t))
+	for signal := range SignalCount {
+		preview.SetSignal(signal, 0)
+	}
+	preview.SetSignal(SignalHorde, 1)
+	preview.SetSignal(SignalBoss, boss)
+	preview.Play(0, 0)
+	buffer := make([]byte, 8*SampleRate*bytesPerFrame)
+	preview.Read(buffer)
+	peak, sumSquares := float32(0), float64(0)
+	for offset := 0; offset < len(buffer); offset += 4 {
+		value := math.Float32frombits(binary.LittleEndian.Uint32(buffer[offset:]))
 		peak, sumSquares = max(peak, float32(math.Abs(float64(value)))), sumSquares+float64(value*value)
 	}
 	return peak, float32(math.Sqrt(sumSquares / float64(len(buffer)/4)))
