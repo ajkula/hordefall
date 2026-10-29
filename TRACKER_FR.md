@@ -15,9 +15,9 @@ Il y a quatre étages, du plus bas au plus haut :
 3. **La couche jeu** décide quelles pistes on entend, selon l'intensité de la partie.
 4. **Le mixage** additionne tout et envoie le résultat à la carte son.
 
-Tout le code est dans `internal/audio`.
+Le moteur est dans ajkurig, le framework tiré du jeu (paquet `audio`). Hordefall ne garde que sa partition et ses réglages, dans `music/` : le thème `theme.trk`, les styles des morceaux composés et les noms des signaux.
 
-## Le synthé (`synth.go`)
+## Le synthé (`audio/synth.go` d'ajkurig)
 
 Pas de samples : chaque son est calculé, 44 100 fois par seconde. Une `Voice`, c'est :
 
@@ -27,7 +27,7 @@ Pas de samples : chaque son est calculé, 44 100 fois par seconde. Une `Voice`, 
 - **des options** : la note qui glisse (le kick qui descend), une sous-octave pour les basses des boss, une deuxième voix légèrement désaccordée pour épaissir, de la saturation pour les guitares de Grey Transmission ;
 - **un panoramique** qui garde le même volume au centre et sur les côtés.
 
-## Le tracker (`tracker.go`)
+## Le tracker (`audio/tracker.go` d'ajkurig)
 
 C'est exactement le principe des trackers Amiga.
 
@@ -64,17 +64,17 @@ Chaque piste est branchée sur un signal du jeu, avec un seuil :
 
 Toutes les pistes jouent tout le temps, en rythme. On ne fait que monter ou baisser leur volume, en douceur (0,9 seconde). Du coup, quand une piste rentre, elle tombe pile au bon endroit du morceau. Et plus c'est intense, plus le tempo accélère un peu.
 
-### Le compositeur (`composer.go`)
+### Le compositeur (`audio/composer.go` d'ajkurig)
 
-À chaque lancement, il écrit cinq morceaux à partir de styles : une gamme, une suite d'accords, des rythmes écrits comme `"x...x..x"`, un tempo et des timbres. Neon Pursuit, Frozen Wastes, Ember March, Skyline Rush et Grey Transmission (celui qui sonne post-punk).
+À chaque lancement, il écrit cinq morceaux à partir de styles : une gamme, une suite d'accords, des rythmes écrits comme `"x...x..x"`, un tempo et des timbres. Les styles de Hordefall sont dans `music/music.go` (`music.Styles`) : Neon Pursuit, Frozen Wastes, Ember March, Skyline Rush et Grey Transmission (celui qui sonne post-punk).
 
-### L'arrangeur (`arranger.go`)
+### L'arrangeur (`audio/arranger.go` d'ajkurig)
 
 Il ajoute les pistes 11 à 16 (shaker, clap, pad, arpège pluck, accords sur les contretemps, harmonie sous la mélodie). Il lit les accords de chaque pattern et la batterie du morceau, donc tout ce qu'il ajoute tombe juste : que des notes de l'accord, et des coups qui se calent sur le rythme existant.
 
-## Le mixage (`engine.go`)
+## Le mixage (`audio/engine.go` d'ajkurig)
 
-On additionne la musique et les bruitages, chacun avec son volume. La musique passe par une petite « pièce » stéréo (`stereo_room.go`) : deux échos très courts croisés gauche/droite, sans les basses. Ça donne de la largeur sans que le son penche d'un côté au casque. Les basses restent bien au centre. Enfin, un écrêtage doux évite que ça sature.
+On additionne la musique et les bruitages, chacun avec son volume. La musique passe par une petite « pièce » stéréo (`audio/stereo_room.go`) : deux échos très courts croisés gauche/droite, sans les basses. Ça donne de la largeur sans que le son penche d'un côté au casque. Les basses restent bien au centre. Enfin, un écrêtage doux évite que ça sature.
 
 ## Qui fait tourner tout ça ?
 
@@ -86,11 +86,11 @@ La page `Moteur audio Hordefall.html` montre tout ça en animation, bloc par blo
 
 ## Modifier la musique
 
-- Le thème, c'est `internal/audio/music/theme.trk`. On change une note, on recompile, c'est tout.
+- Le thème, c'est `music/theme.trk`. On change une note, on recompile, c'est tout.
 - En haut du fichier : le tempo, les instruments, le panoramique, et les couches (`layer <piste> <signal> <seuil>`).
 - Si j'écris moi-même des notes dans les pistes 11 à 16, l'arrangeur ne touche plus à ces pistes.
-- `go test ./internal/audio -run Theme` vérifie que le fichier est valide, avec la ligne exacte en cas d'erreur.
-- Pour écouter les morceaux en WAV : `$env:HORDEFALL_WAV_DIR = "./music/previews"; go test ./internal/audio -run ExportSongPreviews`.
+- `go test ./music -run Theme` vérifie que le fichier est valide, avec la ligne exacte en cas d'erreur.
+- Pour écouter les morceaux en WAV : `$env:HORDEFALL_WAV_DIR = "./music/previews"; go test ./music -run ExportSongPreviews`.
 
 ## La différence avec un vrai tracker Amiga
 

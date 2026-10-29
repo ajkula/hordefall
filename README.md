@@ -9,12 +9,14 @@ Thousands of enemies, auto-firing elemental weapons, and a living ground: every 
 go run .
 ```
 
+[ajkurig](https://github.com/ajkula/ajkurig) must sit next to this folder: `go.mod` replaces it with `../ajkurig`.
+
 ## Menus, score and high score
 
 - **Main menu**: Play, Options, Quit, and your high score (dark orange).
 - **Options**: Controls, Gameplay (High scores, to view the ranking; Reset high scores, behind a No / Yes confirmation with No selected), Graphics (Fullscreen, also F11 anywhere; VSync; Resolution 720p / 1080p / Native, where Native renders at the screen's real pixel count for sharp lines and text; Show FPS; Screen shake Off / 50% / 100%; Effects Low / Medium / High, which keeps 30% / 60% / 100% of particles; Bloom Off / Soft / Strong, a glow on the world only (fire, lightning, explosions), never on the HUD; CRT filter, with curved screen, scanlines, RGB mask, colour fringing and vignette), Audio, a submenu with Music on/off (sound effects stay on), Music volume and Effects volume, each from 0 to 100% in 20% steps (Left / Right on its gauge, or Fire to step up and wrap), and Playlist (switch each track on or off: enabling a track plays it at once, disabling the current one moves to the next enabled track, rotation goes to the next enabled track; all off means no music), Back. Settings are saved to `%AppData%\hordefall\settings.json` and restored on launch. Defaults on a fresh install: windowed, VSync off, Native resolution, FPS hidden, screen shake 50%, effects High, bloom Soft, CRT on, music volume 60%, effects volume 80%, every track enabled; the playlist is a `"tracks": { "title": true/false }` map, and a track missing from it counts as enabled. Behind it runs an attract-mode benchmark: eight 5-second gameplay sequences on loop (Inferno chain, firing only half the time; Electrocution; Freeze and shatter; Wildfire; Spider tank; Horde x4000; Siege: 3 spider tanks and a horde of 2000; Full arsenal: all 6 weapons at max level against 2500 soaked foes) interleaved with randomly generated LIVE ACTION clips (random weapons and levels, passives, enemy mix and count, starting statuses, prepared ground, sometimes a spider tank), all played by an autopilot Tachikoma; whenever a chain reaction leaves fewer than 40% of the enemies, a fresh wave without status walks in from the edge so no clip runs empty; with live FPS, TPS, simulation time and entity counts. After every full rotation of the demo (all 16 clips), an arcade interlude takes over (any button closes it): a black screen, a double flash, then a 128x72 artwork, zooming in from the distance, of the Tachikoma rolling toward the camera while a towering spider tank leans in to intercept it, and after 2 seconds the RANKING board scrolls over it for 10 seconds.
 - **Score**: every kill is worth its experience x 10 (a spider tank is worth 1,500, a drill-worm 2,500), and a cleared horde adds 20 per member. Survival time gives no points: the score measures skill. Score and high score are shown in the HUD.
-- **Ranking**: a top 10 sorted by score, saved to `%AppData%\hordefall\highscores.json` (an old single `highscore.json` is imported as `---`). Every run ends with the arcade initials entry, starting at AAA (titled NEW HIGH SCORE!, GREAT SCORE! with the rank, or GAME OVER when the score is not ranked, in which case nothing is recorded): you enter 3 initials (Up / Down: letter, held for 2 seconds it scrolls fast; Left / Right: move, Fire: confirm, Aim lock: back); after confirming, the game over screen shows your ranked line in the pixel font, blinking, above the Start / Select choices; your last initials are reused when a ranked run is left from the pause menu or by closing the window. The board shows the game title, RANKING and columns RANK, SCORE, TIME, NAME in a blocky 5x7 pixel font (`pixel_font.go`), half of it on screen: it pauses, scrolls to the bottom, pauses again.
+- **Ranking**: a top 10 sorted by score, saved to `%AppData%\hordefall\highscores.json` (saves of earlier versions are converted once at launch by `saves.go`: an old single `highscore.json` becomes a `---` entry). Every run ends with the arcade initials entry, starting at AAA (titled NEW HIGH SCORE!, GREAT SCORE! with the rank, or GAME OVER when the score is not ranked, in which case nothing is recorded): you enter 3 initials (Up / Down: letter, held for 2 seconds it scrolls fast; Left / Right: move, Fire: confirm, Aim lock: back); after confirming, the game over screen shows your ranked line in the pixel font, blinking, above the Start / Select choices; your last initials are reused when a ranked run is left from the pause menu or by closing the window. The board shows the game title, RANKING and columns RANK, SCORE, TIME, NAME in the blocky 5x7 pixel font of ajkurig, half of it on screen: it pauses, scrolls to the bottom, pauses again.
 - **Pause** (Start / Esc) freezes everything, including screen shake and fire flicker: Resume, Options (the same options as the main menu; the run stays frozen behind them and Back returns to the pause menu), Music on/off, Back to main menu. In every menu, Start / Esc or the aim lock button (button 2 / K) goes back, or resumes from pause; the button setup screen keeps button 2 free to be assigned.
 - **Game over**: START to retry, SELECT for the main menu. The music plays with every layer in. Left idle for 20 seconds, the screen moves on to the RANKING interlude, then the title. Button names follow the last device used: keyboard keys (ENTER, BACKSPACE) or gamepad buttons, including the buttons you configured.
 - **Level up**: when several upgrades are available the game pauses on a choice of cards, the highlighted one framed in a thick red border; when only one is possible it is applied at once, with a LEVEL UP! banner and no interruption. Once every weapon is maxed and only passives remain, each level up applies the next remaining passive in turn (a b c d a b c d, then a b d a b d once c is maxed), also without pausing.
@@ -23,7 +25,7 @@ go run .
 ## Music and sound
 
 ### Adaptive tracker music
-The soundtrack is a small Amiga-style tracker running live: `internal/audio/music/theme.trk` is a plain-text song with 16 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
+The soundtrack is a small Amiga-style tracker running live, on the ajkurig synth: `music/theme.trk` is a plain-text song with 16 channels, patterns of rows, an order list and synthesized instruments (square with duty cycle, saw, triangle, sine, noise; ADSR envelope, pitch slide, low-pass filter). Effects: `0xy` arpeggio (the classic Amiga chord shimmer) and `Cxx` volume.
 
 The music is procedural in the sense that it follows the game. Every channel always plays in time, but is only heard while its game signal is above a threshold, with a smooth fade:
 
@@ -40,15 +42,15 @@ The music is procedural in the sense that it follows the game. Every channel alw
 | offbeat stabs | `horde` 0.5 | short chords between the kicks |
 | lead harmony | `horde` 0.7 | a second voice on the nearest chord tone under the melody |
 
-Channels 11 to 16 are written by the arranger (`arranger.go`) for every song, the theme and the composed ones alike: it reads each pattern's chord from the arpeggio notes on channel 4 and its rhythm from the drums and hi-hats, so every added note is a chord tone and every added hit falls between or on the existing ones. A test checks this for each song. Write cells in one of those channels in `theme.trk` and the arranger leaves that channel alone.
+Channels 11 to 16 are written by the ajkurig arranger for every song, the theme and the composed ones alike: it reads each pattern's chord from the arpeggio notes on channel 4 and its rhythm from the drums and hi-hats, so every added note is a chord tone and every added hit falls between or on the existing ones. A test checks this for each song. Write cells in one of those channels in `theme.trk` and the arranger leaves that channel alone.
 
 The tempo also rises with intensity (`tempoboost`). M mutes the music.
 
 ### Composing
-Edit `internal/audio/music/theme.trk` and rebuild: it is embedded in the executable. A row is up to 16 cells separated by `|` (missing channels are empty), each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (`stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test ./internal/audio -run Theme` checks the song.
+Edit `music/theme.trk` and rebuild: it is embedded in the executable. A row is up to 16 cells separated by `|` (missing channels are empty), each cell is `NOTE INSTRUMENT EFFECT`, for example `A-4 05 037` (A4, instrument 5, minor-chord arpeggio). `---` means nothing, `===` releases the note, `..` and `...` leave instrument and effect empty. Instruments, layers (`layer <channel> <signal> <threshold>`), tempo and pan are declared at the top of the file. Pan uses a constant-power law (0 left, 0.5 centre, 1 right): kick, bass and boss voices stay centred so the low end is balanced in headphones, while hi-hats, chords, lead, bells and the danger pulse are spread. The music bus then goes through a small stereo room (ajkurig `audio/stereo_room.go`: two different delays crossed left and right, with the bass filtered out) for width without lopsided panning. Parse errors give the line and channel, and `go test ./music -run Theme` checks the song.
 
 ### Song rotation and procedural composer
-The first song is picked at random among enabled tracks at launch. Then the next enabled track plays when a run starts, every 5 minutes during a run, and on the main menu after every full cycle of the attract-mode sequences, with a 3-second crossfade and a small banner: the hand-written theme first, then five songs composed procedurally at each launch from the styles in `composer.go`:
+The first song is picked at random among enabled tracks at launch. Then the next enabled track plays when a run starts, every 5 minutes during a run, and on the main menu after every full cycle of the attract-mode sequences, with a 3-second crossfade and a small banner: the hand-written theme first, then five songs composed procedurally at each launch by the ajkurig composer from the styles in `music/music.go`:
 
 | Style | Mood | Key / mode | Tempo |
 |-------|------|------------|-------|
@@ -58,16 +60,16 @@ The first song is picked at random among enabled tracks at launch. Then the next
 | Skyline Rush | bright, heroic | F major | 155 |
 | Grey Transmission | post-punk: driving melodic bass, overdriven chorused guitars | B minor | 160 |
 
-A style sets the scale, tonic, chord progression, tempo, drum, bass, chord and melody rhythms, and timbres. The composer derives arpeggios from the scale chords and writes the melody as a random walk on the scale, anchored on chord tones on downbeats, so melodies differ at every launch. All songs share the same adaptive layers. Add a style by adding an entry to `musicStyles`.
+A style sets the scale, tonic, chord progression, tempo, drum, bass, chord and melody rhythms, and timbres. The composer derives arpeggios from the scale chords and writes the melody as a random walk on the scale, anchored on chord tones on downbeats, so melodies differ at every launch. All songs share the same adaptive layers. Add a style by adding an entry to `music.Styles`.
 
 Preview all songs as 30-second WAV files:
 
 ```powershell
-$env:HORDEFALL_WAV_DIR = "./music/previews"; go test ./internal/audio -run ExportSongPreviews
+$env:HORDEFALL_WAV_DIR = "./music/previews"; go test ./music -run ExportSongPreviews
 ```
 
 ### Procedural sound effects
-Every sound effect is synthesized on the fly from layered voices with a random pitch variation, so no two pops are identical: enemy pops, thuds and splashes, weapon pews, zaps and novas, reaction explosions, shatters, hisses and electrocutions, spider stomps, beam charge and fire, dash, hurt, level-up arpeggio, gem pickup and menu blips. Each sound has a minimum interval, so a hundred kills in a frame never saturate the mix. Sounds are declared in `sounds.go`; enemies, reactions and weapons reference them from their own tables.
+Every sound effect is synthesized on the fly from layered voices with a random pitch variation, so no two pops are identical: enemy pops, thuds and splashes, weapon pews, zaps and novas, reaction explosions, shatters, hisses and electrocutions, spider stomps, beam charge and fire, dash, hurt, level-up arpeggio, gem pickup and menu blips. Each sound has a minimum interval, so a hundred kills in a frame never saturate the mix. Sounds are declared in `internal/game/sounds.go`; enemies, reactions and weapons reference them from their own tables.
 
 ## Controls
 
@@ -92,7 +94,7 @@ Every control can be remapped, separately for the keyboard and the gamepad: the 
 - The first time for a device, it asks for Fire, Aim lock and Dash in turn (Start / Esc cancels).
 - Then it lists every action with its key or button: Fire, Aim lock, Dash, Pause, Select, plus Up, Down, Left and Right on the keyboard. Choose a line with Up / Down and press Fire: the line listens for 5 seconds and takes the next key or button. A key already used by another action swaps places with it. Reset to defaults restores the device.
 - Arrows, Enter, F1, M and F11 stay reserved so the menus always work; the gamepad D-pad and sticks always move. A gamepad button that still holds another action's default (Start, Select, A, B, X) is refused until that action is remapped.
-- The mapping is saved to `%AppData%\hordefall\controls.json` (`keys` and `buttons`, -1 meaning the default) and loaded on startup; the old Fire / Aim lock / Dash file is imported. Button names shown in the game follow the last device used.
+- The mapping is saved to `%AppData%\hordefall\controls.json` (`keys` and `buttons`, -1 meaning the default) and loaded on startup; a controls file of an earlier version is converted once at launch. Button names shown in the game follow the last device used.
 
 ## The systems
 
@@ -191,93 +193,59 @@ Ember Bolt (fire), Frost Nova (frost, freezes water), Arc Lightning (shock chain
 
 ```
 main.go                   entry point
+release.json              name, binary and bundle id for the ajkurig release tool
 internal/
-  game/                   the game: state machine, simulation, entities, bosses, UI, rendering
-  audio/                  synth, tracker, composer, arranger, sound effects, music/theme.trk
-  config/                 settings, controls and high score files
-  spatial/                neighbor-query grid
-  rng/                    random generator
+  game/                   the game: simulation, entities, bosses, HUD, rendering, saves
+  game/lang/              the game's texts in nine languages
+music/                    theme.trk, the music styles, the signal names
 ```
 
-Go builds one package per folder and a type's methods must live in its own package. The `Game` type and its methods therefore stay together in `internal/game`; subsystems with a clean boundary live in their own packages and expose a small API (`audio.Engine`, `config.Load` / `config.Save`, `spatial.Grid`, `rng.Random`).
+Hordefall runs on [ajkurig](https://github.com/ajkula/ajkurig), the framework extracted from it: the app and its screens (intro, menus over the attract demo, options, controls, pause, level up, initials entry, game over, ranking), input with remapping, audio (synth, tracker, composer, arranger, mixer), text and menus, sprite batches, bloom and CRT, particles, the living ground, statuses and weather, procedural animation, high scores and saves. The game supplies what makes it Hordefall and mounts it on the framework's rack: `Game.Modules` (`modules.go`) lists one module per system (player, weapons, mines, projectiles, enemies, spiders, worm, director, ground, weather, chatter, effects, gems, heal orbs, HUD, level up); each one updates, draws and reports its time to the live benchmark under its own name.
 
 ### internal/game
 
 | File | Role |
 |------|------|
-| `audio_menu.go` | Audio submenu: music toggle, volume gauges, playlist entry |
+| `app.go` | Builds the ajkurig app: songs, sounds, theme, intro, shell options, legacy save conversion |
+| `modules.go` | The rack modules, in simulation then drawing order |
+| `shell_game.go` | What the shell asks the game: start a run or a demo clip, autopilot, run status, level-up cards |
+| `game.go` | Game state, run reset, graphics settings |
+| `controls.go` | Game actions, default keys and buttons, mouse bindings |
+| `saves.go` | One-time conversion of the saves of earlier versions |
 | `attract_art.go` | Lo-res artwork rasterized each frame: shaded ellipsoids and capsules, outlines, coloured rim lights |
-| `bindings.go` | Remappable actions, defaults, swaps and persistence |
-| `remap.go` | Controls screen: essential sequence, list, listening, reset |
 | `chatter.go` | Talkative Tachikoma: topics, cooldowns, teletext strip |
 | `combat.go` | Hits, reactions, area bursts, deaths |
 | `demo.go` | Attract-mode benchmark sequences |
-| `effects.go` | Particles, rings, lightning, popups, screen shake |
 | `enemies.go` | Enemy table and struct-of-arrays store |
-| `game.go` | Game loop, state machine table |
 | `game_audio.go` | Music signals and sound triggers |
 | `gems.go` | Experience gems |
-| `graphics.go` | Graphics options, render scale, scaled text and rectangles |
-| `ground.go` | Living terrain cellular automaton |
+| `ground.go` | Ground materials and rules for the ajkurig ground |
 | `horde.go` | Enemy movement, separation, contagion, spawn director |
 | `horde_event.go` | Horde boss event: spawning, tracking, bar |
-| `input.go` | Keyboard and gamepad bindings, raw button capture |
-| `mathutil.go` | Small math helpers |
-| `menus.go` | Main menu, pause, game over and remap states |
-| `menus_test.go` | Menus, settings, playlist and song rotation tests |
 | `heal_orbs.go` | Heal bubbles: 2% drop, pickup, +20 health, drawing |
+| `i18n_helpers.go` | Translated names and descriptions of weapons and passives |
+| `mathutil.go` | Small math helpers |
 | `mines.go` | Static mines: drop, arming, trigger, rendering |
 | `player.go` | Player movement, dash, damage, experience |
-| `playlist.go` | Playlist menu and enabled tracks |
-| `postfx.go` | Kage shaders: bloom (bright pass, blur) and CRT filter |
 | `projectiles.go` | Bolts and lobbed flasks |
-| `render.go` | Batched circle sprites with `DrawTriangles32`, additive glow |
-| `score.go` | Score, high score persistence |
-| `settings.go` | Persisted settings (music on/off, playlist) |
-| `simulation_test.go` | Simulation, balance, bosses and demo tests |
+| `render.go` | World drawing queued into the ajkurig sprite batches, additive glow |
+| `score.go` | Score |
 | `skids.go` | Wheel skid trails |
+| `sounds.go` | Procedural sound effect table |
 | `spider.go` | Spider tank boss: spawn, procedural legs, gait, stomps |
 | `spider_charge.go` | Beam charge visuals: drawn-in motes, sphere, discharge |
+| `spider_render.go` | Spider tank drawing |
 | `boss_beam.go` | Boss beams (spider tank, drill-worm): charge, lock, fire state machine driven by a `BeamProfile` |
 | `worm.go`, `worm_render.go`, `worm_sprites.go` | Drill-Worm boss: burrowing, chain body, frost beam, destructible links, rolling head, pixel sprites |
-| `spider_render.go` | Spider tank drawing |
 | `status.go` | Statuses, elements, reaction table |
 | `tachikoma.go` | Player rig: wheel springs, abdomen sway, gaze, recoil |
 | `tachikoma_render.go` | Player drawing |
-| `ui.go` | HUD, menus, overlays |
+| `ui.go` | HUD: bars, score, weapon list, weather label, level-up banner |
 | `upgrades.go` | Passives and level-up offers |
 | `weapons.go` | Weapon table and behaviors |
-| `intro.go`, `intro_logo.go`, `intro_glass.go` | Studio intro: voxel GREG's logo, tumbling fall, shattered glass |
-| `language.go` | Language row with its drum, first launch page, i18n loading |
-| `gameplay_menu.go` | Gameplay submenu, high score reset confirmation, scrolling RANKING board |
-| `name_entry.go` | Arcade initials entry after a ranked run |
-| `pixel_font.go` | Blocky 5x7 pixel font drawn as batched square pixels |
 | `weather.go` | Weather cycle, enemy and ground effects, lightning, precipitation, color grading |
 
-### internal/audio
-
-| File | Role |
-|------|------|
-| `arranger.go` | Arranges channels 11-16 from each pattern's chords |
-| `audio_test.go` | Tracker, composer, arranger, stereo and sound effect tests |
-| `composer.go` | Procedural song composer and music styles |
-| `engine.go` | Audio engine and mixer |
-| `mathutil.go` | Small math helpers |
-| `sounds.go` | Procedural sound effect table |
-| `stereo_room.go` | Stereo room on the music bus: crossed delays, no bass |
-| `synth.go` | Oscillators, envelopes, filter |
-| `tracker.go` | Tracker song parser and adaptive sequencer |
-
-### Other packages
-
-| Package | File | Role |
-|---------|------|------|
-| `config` | `store.go` | JSON files in %AppData%\hordefall: path, load, save |
-| `spatial` | `grid.go` | Uniform grid with counting sort for neighbor queries |
-| `rng` | `random.go` | Xorshift random generator |
-| `i18n` | `i18n.go`, `locale*.go`, `lang/*.json` | Language files, English fallback, external `lang` folder, system language detection |
-
-Entities are stored as struct of arrays with swap-remove, the spatial grid is rebuilt every tick with a counting sort, and every entity type is drawn in a single batched draw call.
+Entities are stored as struct of arrays with swap-remove, the spatial grid is rebuilt every tick with a counting sort, and every entity type is drawn through batched draw calls.
 
 ## Extending
 
@@ -298,7 +266,7 @@ The long test runs 8 simulated minutes with every weapon maxed. `BenchmarkSimula
 
 ## Release builds
 
-Double-click `build.bat` on Windows, or run `./build.sh` (or `go run ./tools/release`) anywhere. Each platform is compiled and streamed straight into its own archive in `dist/`, named after the git version:
+Double-click `build.bat` on Windows, or run `./build.sh` (or `go run github.com/ajkula/ajkurig/cmd/release`) anywhere; `release.json` names the game. Each platform is compiled and streamed straight into its own archive in `dist/`, named after the git version:
 
 | Target | Archive | Built from |
 |--------|---------|------------|
@@ -311,13 +279,13 @@ Ebitengine needs cgo and the system graphics libraries on Linux and FreeBSD, so 
 
 ## Fonts
 
-The interface uses Rajdhani (Medium for text, Bold for titles and menus), by the Indian Type Foundry, under the SIL Open Font License (`internal/game/fonts/OFL.txt`). It covers Latin and Devanagari. Other scripts fall back, glyph by glyph, to Exo 2 for Cyrillic and to Noto Sans KR, JP and SC for Korean, Japanese and Chinese (both under the SIL Open Font License, `OFL-Exo2.txt` and `OFL-NotoSansCJK.txt`), then to the Go fonts (the music note). The order of the three CJK fonts follows the language, so Japanese and Chinese characters take their own shapes.
+The interface uses the fonts of ajkurig: Rajdhani (Medium for text, Bold for titles and menus), by the Indian Type Foundry, under the SIL Open Font License. It covers Latin and Devanagari. Other scripts fall back, glyph by glyph, to Exo 2 for Cyrillic and to Noto Sans KR, JP and SC for Korean, Japanese and Chinese (both under the SIL Open Font License), then to the Go fonts (the music note). The order of the three CJK fonts follows the language, so Japanese and Chinese characters take their own shapes.
 
-The fallback fonts are subsets holding only the characters of the language files, about 1.1 MB in all. After editing a language file, rebuild them with `py -3 tools/fonts/subset.py` (Python with fontTools; the full fonts are downloaded once into `tools/fonts/cache`, which git ignores).
+The fallback fonts are subsets holding only the characters of the language files. After editing a language file, rebuild them from the ajkurig folder with `py -3 tools/fonts/subset.py ../hordefall/internal/game/lang` (Python with fontTools).
 
 ## Languages
 
-English, French, Spanish, Russian, Serbian (Cyrillic), Korean, Japanese, Simplified Chinese and Hindi, in `internal/i18n/lang/<code>.json`: `{"code", "name", "script", "strings": {key: text}}`. Texts that arcade games keep in English stay in English: the title, RANKING and its columns, HI and SCORE, LEVEL UP, NEW HIGH SCORE!, the initials entry, reaction and demo clip names, FPS and TPS, button names.
+English, French, Spanish, Russian, Serbian (Cyrillic), Korean, Japanese, Simplified Chinese and Hindi, in `internal/game/lang/<code>.json` for the game's texts (the menus come with ajkurig): `{"code", "name", "script", "strings": {key: text}}`. Texts that arcade games keep in English stay in English: the title, RANKING and its columns, HI and SCORE, LEVEL UP, NEW HIGH SCORE!, the initials entry, reaction and demo clip names, FPS and TPS, button names.
 
 - The game opens on a short studio intro: the word GREG's, built from chunky orange pixels in 3D, tumbles out of the dark toward the screen to a falling-bomb whistle, lands flat and shatters the screen into smooth glass cracks with a boom; it fades to the menu after a pause, and three presses of Fire skip it.
 - On the first launch the game reads the system language (Windows, macOS, Linux), preselects it when it is available, or English otherwise, and waits for the player to confirm. The choice lives in `settings.json` as `language` (`default` until confirmed, which means English); it can be changed in Options > Gameplay on the Language line: Fire turns its value into a small drum that rolls with Up / Down (it wraps, and scrolls by itself after 2 seconds held), previews each language live, and Fire confirms or Back cancels.
