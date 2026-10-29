@@ -30,7 +30,7 @@ var languageFiles embed.FS
 const (
 	gameTitle           = "HORDEFALL"
 	windowTitle         = "Hordefall"
-	saveFolder          = "hordefall-ajkurig"
+	saveFolder          = "hordefall"
 	gameOverTitle       = "YOU FELL"
 	controlsHintKey     = "main.controls"
 	gameOverIdleSeconds = 20
