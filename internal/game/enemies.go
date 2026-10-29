@@ -62,6 +62,8 @@ const (
 
 const maximumEnemies = 12000
 
+var enemySourceNames, hordeSourceNames = sourceNamesOf(&enemyTable)
+
 var enemyTable = [enemyKindCount]EnemyDefinition{
 	EnemySwarmer: {
 		Name: "Swarmer", Color: [3]float32{0.85, 0.25, 0.3}, Radius: 8, Speed: 72, Health: 10,
@@ -195,4 +197,11 @@ func mixColor(from, to [3]float32, weight float32) [3]float32 {
 		from[1] + (to[1]-from[1])*weight,
 		from[2] + (to[2]-from[2])*weight,
 	}
+}
+
+func sourceNamesOf(table *[enemyKindCount]EnemyDefinition) (plain, horde [enemyKindCount]string) {
+	for kind, definition := range table {
+		plain[kind], horde[kind] = definition.Name, "Horde "+definition.Name
+	}
+	return plain, horde
 }

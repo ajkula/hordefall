@@ -126,6 +126,9 @@ const (
 	wormEruptionRadius       = 110
 	wormEruptionDamage       = 60
 	wormEruptionPlayerHurt   = 30
+	wormEruptionSource       = "Drill-Worm Eruption"
+	wormRollSource           = "Drill-Worm Head"
+	wormBlastSource          = "Drill-Worm Blast"
 	wormDustInterval         = 0.07
 	wormCraterSeconds        = 8
 	wormCraterFadeSeconds    = 2
@@ -677,7 +680,7 @@ func (g *Game) crushUnderWormHead(worm *DrillWorm, deltaSeconds float32) {
 	reach := float32(wormRollRadius + playerRadius)
 	isPlayerHit := !worm.HasRollHit && distanceSquared(worm.HeadX, worm.HeadY, g.player.X, g.player.Y) < reach*reach
 	worm.HasRollHit = worm.HasRollHit || isPlayerHit
-	g.DamagePlayer(wormRollPlayerHurt * worm.Power * boolToFloat(isPlayerHit))
+	g.DamagePlayer(wormRollPlayerHurt*worm.Power*boolToFloat(isPlayerHit), wormRollSource)
 	g.effects.AddShake(6 * boolToFloat(isPlayerHit))
 }
 
@@ -686,7 +689,7 @@ func (g *Game) crushUnderWormHead(worm *DrillWorm, deltaSeconds float32) {
 func (g *Game) slamWorm(worm *DrillWorm, x, y float32) {
 	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical})
 	isPlayerHit := distanceSquared(x, y, g.player.X, g.player.Y) < wormEruptionRadius*wormEruptionRadius
-	g.DamagePlayer(wormEruptionPlayerHurt * worm.Power * boolToFloat(isPlayerHit))
+	g.DamagePlayer(wormEruptionPlayerHurt*worm.Power*boolToFloat(isPlayerHit), wormEruptionSource)
 	g.effects.SpawnSparks(x, y, 18, wormDirtColor, 220)
 	g.effects.AddRing(x, y, wormEruptionRadius, wormDirtColor)
 	g.effects.AddShake(7)
@@ -736,7 +739,9 @@ func (g *Game) updateWormBlast(worm *DrillWorm, deltaSeconds float32) {
 	worm.BlastSeconds += wormBlastInterval
 	worm.BlastHits--
 	player := g.player
+	healthBefore := player.Health
 	player.Health = max(min(player.Health, 1), player.Health-wormBlastDamage*worm.Power)
+	g.damageLog.RecordHit(g.elapsedSeconds, wormBlastSource, healthBefore-player.Health)
 	player.DamageFlashSeconds = 0.2
 	g.effects.SpawnSparks(player.X, player.Y, 6, wormDirtColor, 180)
 	g.effects.AddDust(player.X, player.Y, 10)

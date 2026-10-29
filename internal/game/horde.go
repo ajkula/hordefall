@@ -126,7 +126,8 @@ func (g *Game) damagePlayerOnContact(index int, definition *EnemyDefinition) {
 	if !isTouching || isFrozen {
 		return
 	}
-	g.DamagePlayer(definition.ContactDamage * enemies.Power[index])
+	sources := [2]*[enemyKindCount]string{&enemySourceNames, &hordeSourceNames}
+	g.DamagePlayer(definition.ContactDamage*enemies.Power[index], sources[boolToIndex(enemies.IsHordeEvent[index])][enemies.Kind[index]])
 }
 
 func (g *Game) updateSpawning(deltaSeconds float32) {

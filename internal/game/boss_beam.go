@@ -5,6 +5,7 @@ package game
 type LaserPhase uint8
 
 type BeamProfile struct {
+	Source                string
 	Durations             [laserPhaseCount]float32
 	FirstShotDelay        float32
 	CooldownMinimum       float32
@@ -54,6 +55,7 @@ const (
 )
 
 var spiderBeamProfile = BeamProfile{
+	Source:         "Spider Tank Beam",
 	Durations:      [laserPhaseCount]float32{LaserCharging: 2.2, LaserLocked: 0.4, LaserFiring: 0.35},
 	FirstShotDelay: 1, CooldownMinimum: 6, CooldownMaximum: 9,
 	HalfWidth: 20, Range: 1700, WidthScale: 1,
@@ -65,6 +67,7 @@ var spiderBeamProfile = BeamProfile{
 }
 
 var frostBeamProfile = BeamProfile{
+	Source:         "Drill-Worm Frost Beam",
 	Durations:      [laserPhaseCount]float32{LaserCharging: 3.4, LaserLocked: 1, LaserFiring: 0.35},
 	FirstShotDelay: 0.6, CooldownMinimum: 1.6, CooldownMaximum: 1.6,
 	HalfWidth: 40, Range: 1700, WidthScale: 2,
@@ -165,7 +168,9 @@ func (g *Game) burnPlayerInBeam(beam *BossBeam, power, directionX, directionY, d
 	if !isHit {
 		return
 	}
-	player.Health -= profile.PlayerDamagePerSecond * sqrt(power) * deltaSeconds
+	burn := profile.PlayerDamagePerSecond * sqrt(power) * deltaSeconds
+	player.Health -= burn
+	g.damageLog.RecordContinuous(g.elapsedSeconds, deltaSeconds, profile.Source, burn)
 	player.DamageFlashSeconds = 0.25
 	g.effects.AddShake(1)
 }

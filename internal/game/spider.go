@@ -29,6 +29,7 @@ const (
 	spiderStompRadius      = 52
 	spiderStompDamage      = 22
 	spiderStompPlayerHurt  = 18
+	spiderStompSource      = "Spider Tank Stomp"
 	spiderSpawnDistance    = 840
 	bossKillsBase          = 300
 	bossKillsGrowthSeconds = 120
@@ -184,5 +185,5 @@ func (g *Game) stomp(x, y, power float32) {
 	g.playSound(SoundStomp)
 	g.QueueBurst(Burst{X: x, Y: y, Radius: spiderStompRadius, Damage: spiderStompDamage * power, Element: ElementPhysical})
 	isPlayerCrushed := distanceSquared(x, y, g.player.X, g.player.Y) < spiderStompRadius*spiderStompRadius
-	g.DamagePlayer(spiderStompPlayerHurt * power * boolToFloat(isPlayerCrushed))
+	g.DamagePlayer(spiderStompPlayerHurt*power*boolToFloat(isPlayerCrushed), spiderStompSource)
 }

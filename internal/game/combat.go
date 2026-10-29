@@ -10,6 +10,7 @@ type Burst struct {
 	Element       Element
 	Requires      StatusFlags
 	DamagesPlayer bool
+	Source        string
 }
 
 // ===== Constants =====
@@ -80,7 +81,7 @@ func (g *Game) triggerReaction(reaction ReactionKind, x, y float32) {
 	g.ground.StimulateArea(x, y, definition.GroundRadiusCells, definition.GroundStimulus)
 	g.QueueBurst(Burst{
 		X: x, Y: y, Radius: definition.AreaRadius, Damage: definition.AreaDamage * g.player.DamageMultiplier,
-		Element: definition.AreaElement, Requires: definition.AreaRequires, DamagesPlayer: definition.DamagesPlayer,
+		Element: definition.AreaElement, Requires: definition.AreaRequires, DamagesPlayer: definition.DamagesPlayer, Source: definition.Name,
 	})
 }
 
@@ -107,7 +108,7 @@ func (g *Game) burstHitPlayerIfInside(burst Burst, radiusSquared float32) {
 	if !burst.DamagesPlayer || !isInside {
 		return
 	}
-	g.DamagePlayer(burst.Damage * playerBurstDamageRate)
+	g.DamagePlayer(burst.Damage*playerBurstDamageRate, burst.Source)
 }
 
 func (g *Game) removeDeadEnemies() {

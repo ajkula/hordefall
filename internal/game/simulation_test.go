@@ -874,3 +874,43 @@ func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
 		t.Fatalf("the player was not shoved away (moved %.0f px) or no crater was left", startX-game.player.X)
 	}
 }
+
+func TestAHordeBruteAtFiveMinutesIsReportedAsTheKiller(t *testing.T) {
+	app, game := newRunningApp(t)
+	game.elapsedSeconds = 300
+	game.spawnEnemyAt(EnemyBrute, game.player.X, game.player.Y)
+	game.empowerHordeMember(game.enemies.Count - 1)
+	for tick := 0; app.CurrentScreen() == shell.ScreenPlay && tick < 10; tick++ {
+		app.Step(input.Controls{})
+	}
+	killers := game.shell.RunStatus.KilledBy
+	if app.CurrentScreen() != shell.ScreenNameEntry || len(killers) == 0 {
+		t.Fatalf("screen %q, killers %+v: one horde brute should kill a full-health player at 5 minutes", app.CurrentScreen(), killers)
+	}
+	if killers[0].Source != "Horde Brute" || killers[0].Hits != 1 || killers[0].Damage < 107 || killers[0].Damage > 109 {
+		t.Fatalf("killers = %+v, want Horde Brute once for about 108", killers)
+	}
+}
+
+func TestEveryDamageSourceIsNamed(t *testing.T) {
+	game := newHeadlessGame(t)
+	for kind := range enemyKindCount {
+		if enemySourceNames[kind] == "" || hordeSourceNames[kind] != "Horde "+enemySourceNames[kind] {
+			t.Fatalf("enemy %d is named %q / %q", kind, enemySourceNames[kind], hordeSourceNames[kind])
+		}
+	}
+	for _, profile := range []*BeamProfile{&spiderBeamProfile, &frostBeamProfile} {
+		if profile.Source == "" {
+			t.Fatal("a boss beam has no source name")
+		}
+	}
+	for _, definition := range reactionTable {
+		if definition.DamagesPlayer && definition.Name == "" {
+			t.Fatal("a reaction that hurts the player has no name")
+		}
+	}
+	game.DamagePlayer(5, "Swarmer")
+	if causes := game.damageLog.Causes(game.elapsedSeconds); len(causes) != 1 || causes[0].Source != "Swarmer" {
+		t.Fatalf("causes = %+v", causes)
+	}
+}

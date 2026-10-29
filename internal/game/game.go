@@ -37,6 +37,7 @@ type Game struct {
 	previousReactions     int
 	ui                    *UI
 	director              SpawnDirector
+	damageLog             shell.DamageLog
 	bursts                []Burst
 	candidates            []int32
 	separationCandidates  []int32
@@ -138,6 +139,7 @@ func (g *Game) resetRun() {
 	g.runCount++
 	g.player = NewPlayer()
 	g.enemies.Count, g.projectiles.Count, g.gems.Count = 0, 0, 0
+	g.damageLog.Clear()
 	g.effects.Clear()
 	regenerateGround(g.ground, groundSeedBase+g.runCount*7919)
 	g.director = NewSpawnDirector()

@@ -59,6 +59,7 @@ const (
 	dashSpeedMultiplier        = 3.6
 	hurtInvulnerabilitySeconds = 0.55
 	groundFireDamagePerSecond  = 14
+	burningGroundSource        = "Burning Ground"
 	maximumKillHealPerSecond   = 0.12
 )
 
@@ -112,12 +113,13 @@ func (p *Player) GainExperience(amount int) {
 	}
 }
 
-func (g *Game) DamagePlayer(amount float32) {
+func (g *Game) DamagePlayer(amount float32, source string) {
 	player := g.player
 	if player.InvulnerableSeconds > 0 || amount <= 0 {
 		return
 	}
 	player.Health -= amount
+	g.damageLog.RecordHit(g.elapsedSeconds, source, amount)
 	player.InvulnerableSeconds = hurtInvulnerabilitySeconds
 	player.DamageFlashSeconds = 0.25
 	g.effects.AddShake(4)
@@ -169,7 +171,9 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.Y = clamp(player.Y+player.ShoveY*deltaSeconds, playerRadius, arenaSize-playerRadius)
 	player.ShoveX, player.ShoveY = player.ShoveX*playerShoveDamping, player.ShoveY*playerShoveDamping
 	player.VelocityX, player.VelocityY = (player.X-previousX)/deltaSeconds, (player.Y-previousY)/deltaSeconds
-	player.Health -= groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing)
+	groundBurn := groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing)
+	player.Health -= groundBurn
+	g.damageLog.RecordContinuous(g.elapsedSeconds, deltaSeconds, burningGroundSource, groundBurn)
 	g.spawnDashTrail(isDashing)
 	collected := g.gems.Collect(player.X, player.Y, player.MagnetRadius, deltaSeconds)
 	player.GainExperience(collected)

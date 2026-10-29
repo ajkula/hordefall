@@ -36,6 +36,7 @@ func (g *Game) Status() shell.RunStatus {
 	}
 	status.Summary = i18n.F("gameover.summary", scores.FormatClock(g.elapsedSeconds), g.player.Level, g.kills)
 	status.Details = describeReactionCounts(g.reactionCounts)
+	status.KilledBy = g.damageLog.Causes(g.elapsedSeconds)
 	return status
 }
 
