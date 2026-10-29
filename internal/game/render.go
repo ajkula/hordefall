@@ -154,6 +154,7 @@ func (r *Renderer) queuePlayer(g *Game) {
 	screenX, screenY := r.camera.ToScreen(player.X, player.Y)
 	r.batches.Glow.AddCircle(screenX, screenY, playerRadius*4, [3]float32{0.4, 0.7, 1}, 0.14)
 	r.queueTachikoma(g)
+	r.queueSteamPuffs(player)
 	r.queueAimReticle(player, screenX, screenY)
 	for blade := range player.BladeCount {
 		bladeX, bladeY := r.camera.ToScreen(player.BladePosition(blade))

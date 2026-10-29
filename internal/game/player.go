@@ -28,6 +28,7 @@ type Player struct {
 	PendingLevelUps     int
 	InvulnerableSeconds float32
 	DamageFlashSeconds  float32
+	LifeGate            LifeGate
 	DashSeconds         float32
 	DashCooldown        float32
 	DashDirectionX      float32
@@ -76,7 +77,8 @@ func NewPlayer() *Player {
 		Level: 1, ExperienceToNext: experienceForLevel(1),
 		MoveSpeed: playerStartSpeed, MagnetRadius: playerStartMagnet,
 		CooldownMultiplier: 1, DamageMultiplier: 1, AreaMultiplier: 1,
-		Weapons: []WeaponState{{Kind: WeaponPulseShot, Level: 1}},
+		Weapons:  []WeaponState{{Kind: WeaponPulseShot, Level: 1}},
+		LifeGate: NewLifeGate(),
 	}
 }
 
@@ -118,9 +120,12 @@ func (g *Game) DamagePlayer(amount float32, source string) {
 	if player.InvulnerableSeconds > 0 || amount <= 0 {
 		return
 	}
-	player.Health -= amount
-	g.damageLog.RecordHit(g.elapsedSeconds, source, amount)
-	player.InvulnerableSeconds = hurtInvulnerabilitySeconds
+	isGated := player.IsLifeGated(amount)
+	dealt := amount - (amount-player.Health+lifeGateHealth)*boolToFloat(isGated)
+	player.Health -= dealt
+	g.damageLog.RecordHit(g.elapsedSeconds, source, dealt)
+	player.InvulnerableSeconds = hurtInvulnerabilitySeconds + (lifeGateInvulnerableSeconds-hurtInvulnerabilitySeconds)*boolToFloat(isGated)
+	g.openLifeGateIf(isGated)
 	player.DamageFlashSeconds = 0.25
 	g.effects.AddShake(4)
 	g.playSound(SoundHurt)
@@ -148,6 +153,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player := g.player
 	player.InvulnerableSeconds = max(0, player.InvulnerableSeconds-deltaSeconds)
 	player.DamageFlashSeconds = max(0, player.DamageFlashSeconds-deltaSeconds)
+	g.updateLifeGate(deltaSeconds)
 	player.DashCooldown = max(0, player.DashCooldown-deltaSeconds)
 	healBudgetCap := maximumKillHealPerSecond * player.MaximumHealth
 	player.KillHealBudget = min(healBudgetCap, player.KillHealBudget+healBudgetCap*deltaSeconds)

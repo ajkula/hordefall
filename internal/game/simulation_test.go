@@ -878,6 +878,7 @@ func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
 func TestAHordeBruteAtFiveMinutesIsReportedAsTheKiller(t *testing.T) {
 	app, game := newRunningApp(t)
 	game.elapsedSeconds = 300
+	game.player.Health = 60
 	game.spawnEnemyAt(EnemyBrute, game.player.X, game.player.Y)
 	game.empowerHordeMember(game.enemies.Count - 1)
 	for tick := 0; app.CurrentScreen() == shell.ScreenPlay && tick < 10; tick++ {
@@ -885,7 +886,7 @@ func TestAHordeBruteAtFiveMinutesIsReportedAsTheKiller(t *testing.T) {
 	}
 	killers := game.shell.RunStatus.KilledBy
 	if app.CurrentScreen() != shell.ScreenNameEntry || len(killers) == 0 {
-		t.Fatalf("screen %q, killers %+v: one horde brute should kill a full-health player at 5 minutes", app.CurrentScreen(), killers)
+		t.Fatalf("screen %q, killers %+v: one horde brute should kill a player at 60 HP at 5 minutes", app.CurrentScreen(), killers)
 	}
 	if killers[0].Source != "Horde Brute" || killers[0].Hits != 1 || killers[0].Damage < 107 || killers[0].Damage > 109 {
 		t.Fatalf("killers = %+v, want Horde Brute once for about 108", killers)
@@ -913,4 +914,63 @@ func TestEveryDamageSourceIsNamed(t *testing.T) {
 	if causes := game.damageLog.Causes(game.elapsedSeconds); len(causes) != 1 || causes[0].Source != "Swarmer" {
 		t.Fatalf("causes = %+v", causes)
 	}
+}
+
+func TestAOneShotFromHighHealthLeavesOneHealthPoint(t *testing.T) {
+	_, game := newRunningApp(t)
+	player := game.player
+	game.DamagePlayer(108, "Horde Brute")
+	if player.Health != lifeGateHealth || player.InvulnerableSeconds != lifeGateInvulnerableSeconds || player.LifeGate.Seconds != lifeGateInvulnerableSeconds {
+		t.Fatalf("health %v, invulnerable %v, gate %v: a one-shot from full health should leave 1 HP and 1 s of safety", player.Health, player.InvulnerableSeconds, player.LifeGate.Seconds)
+	}
+	if causes := game.damageLog.Causes(game.elapsedSeconds); len(causes) != 1 || causes[0].Damage != 99 {
+		t.Fatalf("causes = %+v, want the 99 damage actually taken", causes)
+	}
+}
+
+func TestAKillingHitAtSeventyPercentOrLessStillKills(t *testing.T) {
+	_, game := newRunningApp(t)
+	player := game.player
+	player.Health = lifeGateHealthFraction * player.MaximumHealth
+	game.DamagePlayer(108, "Horde Brute")
+	if player.Health > 0 || player.LifeGate.Seconds != 0 {
+		t.Fatalf("health %v, gate %v: at 70%% health a killing hit should kill", player.Health, player.LifeGate.Seconds)
+	}
+}
+
+func TestAHitThatDoesNotKillIsNotGated(t *testing.T) {
+	_, game := newRunningApp(t)
+	game.DamagePlayer(36, "Horde Swarmer")
+	if game.player.Health != 64 || game.player.InvulnerableSeconds != hurtInvulnerabilitySeconds || game.player.LifeGate.Seconds != 0 {
+		t.Fatalf("health %v, invulnerable %v, gate %v", game.player.Health, game.player.InvulnerableSeconds, game.player.LifeGate.Seconds)
+	}
+}
+
+func TestSteamPuffsAreEmittedOnlyWhileGatedAndNeverMoreThanThree(t *testing.T) {
+	_, game := newRunningApp(t)
+	gate := &game.player.LifeGate
+	game.DamagePlayer(108, "Horde Brute")
+	emitted := 0
+	for range int(lifeGateInvulnerableSeconds / deltaSeconds) {
+		previous := liveSteamPuffs(gate)
+		gate.update(deltaSeconds)
+		emitted += max(0, liveSteamPuffs(gate)-previous)
+	}
+	if emitted < 4 {
+		t.Fatalf("%d puffs over the gate, want a quick stream", emitted)
+	}
+	for range int(steamPuffSeconds/deltaSeconds) + 1 {
+		gate.update(deltaSeconds)
+	}
+	if live := liveSteamPuffs(gate); live != 0 {
+		t.Fatalf("%d puffs still alive after the gate closed", live)
+	}
+}
+
+func liveSteamPuffs(gate *LifeGate) int {
+	live := 0
+	for _, puff := range gate.Puffs {
+		live += boolToIndex(puff.Remaining > 0)
+	}
+	return live
 }
