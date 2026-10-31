@@ -51,7 +51,9 @@ type Game struct {
 	bossEventCount        int
 	hordeEvent            HordeEvent
 	weather               world.Weather
-	offers                []UpgradeOffer
+	volleys               [maximumVolleys]Volley
+	volleyCount           int
+	pendingVolleys        int
 	offerPool             []UpgradeOffer
 	lastRotatedPassive    PassiveKind
 	levelUpBanner         string
@@ -157,6 +159,7 @@ func (g *Game) resetRun() {
 	g.resetChatter()
 	g.isDemo = false
 	g.levelUpBannerSeconds = 0
+	g.volleyCount, g.pendingVolleys = 0, 0
 	g.lastRotatedPassive = passiveKindCount - 1
 }
 

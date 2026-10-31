@@ -164,7 +164,7 @@ func (g *Game) burnPlayerInBeam(beam *BossBeam, power, directionX, directionY, d
 	player := g.player
 	profile := beam.Profile
 	distance := distanceToRay(player.X, player.Y, beam.OriginX, beam.OriginY, directionX, directionY, profile.Range)
-	isHit := distance < profile.HalfWidth+playerRadius && player.DashSeconds == 0
+	isHit := distance < profile.HalfWidth+playerRadius && player.DashSeconds == 0 && player.InvincibleSeconds == 0
 	if !isHit {
 		return
 	}

@@ -1,9 +1,13 @@
 package game
 
 import (
+	"bytes"
+
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"github.com/ajkula/ajkurig/draw"
+	"github.com/ajkula/ajkurig/ui"
 )
 
 // ===== Types =====
@@ -13,6 +17,7 @@ type Renderer struct {
 	camera      *draw.Camera
 	groundImage *ebiten.Image
 	wormSprites *WormSprites
+	badgeFace   *text.GoTextFaceSource
 }
 
 // ===== Constants =====
@@ -42,10 +47,16 @@ func NewRenderer(batches *draw.Batches, camera *draw.Camera, groundColumns, grou
 		camera:      camera,
 		groundImage: ebiten.NewImage(groundColumns, groundRows),
 		wormSprites: NewWormSprites(),
+		badgeFace:   loadBadgeFace(),
 	}
 }
 
 // ===== Internal =====
+
+func loadBadgeFace() *text.GoTextFaceSource {
+	source, _ := text.NewGoTextFaceSource(bytes.NewReader(ui.DefaultFontFiles().Bold))
+	return source
+}
 
 func (r *Renderer) updateCamera(g *Game) {
 	r.camera.Center(g.player.X, g.player.Y, arenaSize, arenaSize)

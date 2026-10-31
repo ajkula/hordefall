@@ -740,7 +740,7 @@ func (g *Game) updateWormBlast(worm *DrillWorm, deltaSeconds float32) {
 	worm.BlastHits--
 	player := g.player
 	healthBefore := player.Health
-	player.Health = max(min(player.Health, 1), player.Health-wormBlastDamage*worm.Power)
+	player.Health = max(min(player.Health, 1), player.Health-wormBlastDamage*worm.Power*boolToFloat(player.InvincibleSeconds == 0))
 	g.damageLog.RecordHit(g.elapsedSeconds, wormBlastSource, healthBefore-player.Health)
 	player.DamageFlashSeconds = 0.2
 	g.effects.SpawnSparks(player.X, player.Y, 6, wormDirtColor, 180)

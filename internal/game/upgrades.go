@@ -1,8 +1,6 @@
 package game
 
-import (
-	"github.com/ajkula/ajkurig/i18n"
-)
+import ()
 
 // ===== Types =====
 
@@ -23,8 +21,6 @@ type UpgradeOffer struct {
 	NextLevel   int
 	IsEvolution bool
 }
-
-type upgradeApplier func(game *Game, offer UpgradeOffer)
 
 // ===== Constants =====
 
@@ -67,84 +63,9 @@ var passiveTable = [passiveKindCount]PassiveDefinition{
 	}},
 }
 
-var offerDrawers = [2]func(game *Game){(*Game).drawRandomOffers, (*Game).drawRotatingPassiveOffer}
-
-var upgradeAppliers = [upgradeKindCount]upgradeApplier{
-	UpgradeWeapon:  (*Game).applyWeaponUpgrade,
-	UpgradePassive: (*Game).applyPassiveUpgrade,
-	UpgradeHeal:    (*Game).applyHealUpgrade,
-}
-
 // ===== Public API =====
 
-func (offer UpgradeOffer) Title() string {
-	titles := [upgradeKindCount]string{
-		UpgradeWeapon:  weaponTable[offer.Weapon].DisplayName(),
-		UpgradePassive: passiveTable[offer.Passive].DisplayName(),
-		UpgradeHeal:    i18n.T("upgrade.second_wind"),
-	}
-	return titles[offer.Kind]
-}
-
-func (offer UpgradeOffer) Subtitle() string {
-	isNew := offer.NextLevel == 1 && offer.Kind != UpgradeHeal && !offer.IsEvolution
-	levelLabels := [2]string{i18n.F("upgrade.level", offer.NextLevel), i18n.T("upgrade.new")}
-	weaponLabels := [2]string{levelLabels[boolToIndex(isNew)], i18n.T("upgrade.evolve")}
-	kindLabels := [2]string{weaponLabels[boolToIndex(offer.IsEvolution)], i18n.F("upgrade.health", healUpgradeAmount)}
-	return kindLabels[boolToIndex(offer.Kind == UpgradeHeal)]
-}
-
-func (offer UpgradeOffer) Description() string {
-	descriptions := [upgradeKindCount]string{
-		UpgradeWeapon:  weaponTable[offer.Weapon].DisplayDescription(),
-		UpgradePassive: passiveTable[offer.Passive].DisplayDescription(),
-		UpgradeHeal:    i18n.F("upgrade.restore", healUpgradeAmount),
-	}
-	return descriptions[offer.Kind]
-}
-
-func (offer UpgradeOffer) Color() [3]float32 {
-	colors := [upgradeKindCount][3]float32{
-		UpgradeWeapon:  weaponTable[offer.Weapon].Color,
-		UpgradePassive: {0.75, 0.75, 0.85},
-		UpgradeHeal:    {0.4, 1, 0.5},
-	}
-	return colors[offer.Kind]
-}
-
 // ===== Internal =====
-
-func (g *Game) buildUpgradeOffers() {
-	g.offerPool = g.offerPool[:0]
-	for kind := range weaponKindCount {
-		g.offerPool = g.appendWeaponOffer(g.offerPool, kind)
-	}
-	isOnlyPassivesLeft := len(g.offerPool) == 0
-	for kind := range passiveKindCount {
-		g.offerPool = g.appendPassiveOffer(g.offerPool, kind)
-	}
-	g.offers = g.offers[:0]
-	offerDrawers[boolToIndex(isOnlyPassivesLeft)](g)
-	g.offers = appendHealIfEmpty(g.offers)
-}
-
-func (g *Game) drawRandomOffers() {
-	for len(g.offers) < offersPerLevel && len(g.offerPool) > 0 {
-		pick := g.random.Below(len(g.offerPool))
-		g.offers = append(g.offers, g.offerPool[pick])
-		g.offerPool[pick] = g.offerPool[len(g.offerPool)-1]
-		g.offerPool = g.offerPool[:len(g.offerPool)-1]
-	}
-}
-
-func (g *Game) drawRotatingPassiveOffer() {
-	if len(g.offerPool) == 0 {
-		return
-	}
-	kind := g.nextRotatingPassive()
-	g.lastRotatedPassive = kind
-	g.offers = append(g.offers, UpgradeOffer{Kind: UpgradePassive, Passive: kind, NextLevel: g.player.PassiveLevels[kind] + 1})
-}
 
 func (g *Game) nextRotatingPassive() PassiveKind {
 	for step := PassiveKind(1); step <= passiveKindCount; step++ {
@@ -156,39 +77,19 @@ func (g *Game) nextRotatingPassive() PassiveKind {
 	return g.lastRotatedPassive
 }
 
-func appendHealIfEmpty(offers []UpgradeOffer) []UpgradeOffer {
-	if len(offers) > 0 {
-		return offers
-	}
-	return append(offers, UpgradeOffer{Kind: UpgradeHeal})
-}
-
 func (g *Game) appendWeaponOffer(pool []UpgradeOffer, kind WeaponKind) []UpgradeOffer {
 	definition := &weaponTable[kind]
 	level := g.player.WeaponLevel(kind)
 	familyKind, familyLevel := g.player.FamilyWeapon(definition.Family)
 	isFamilyTaken := familyLevel > 0 && familyKind != kind
 	isEvolution := isFamilyTaken && weaponTable[familyKind].IsFamilyBase && !definition.IsFamilyBase
-	isUpgradable := level > 0 && level < maximumWeaponLevel
+	isUpgradable := level > 0 && level < definition.MaximumLevel
 	isAcquirable := level == 0 && !isFamilyTaken && len(g.player.Weapons) < maximumWeaponSlots
 	if !isUpgradable && !isAcquirable && !isEvolution {
 		return pool
 	}
 	nextLevels := [2]int{level + 1, familyLevel}
 	return append(pool, UpgradeOffer{Kind: UpgradeWeapon, Weapon: kind, NextLevel: nextLevels[boolToIndex(isEvolution)], IsEvolution: isEvolution})
-}
-
-func (g *Game) appendPassiveOffer(pool []UpgradeOffer, kind PassiveKind) []UpgradeOffer {
-	level := g.player.PassiveLevels[kind]
-	if level >= passiveTable[kind].MaximumLevel {
-		return pool
-	}
-	return append(pool, UpgradeOffer{Kind: UpgradePassive, Passive: kind, NextLevel: level + 1})
-}
-
-func (g *Game) applyOffer(offer UpgradeOffer) {
-	upgradeAppliers[offer.Kind](g, offer)
-	g.player.PendingLevelUps--
 }
 
 func (g *Game) applyWeaponUpgrade(offer UpgradeOffer) {

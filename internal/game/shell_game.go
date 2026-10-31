@@ -6,7 +6,6 @@ import (
 	"github.com/ajkula/ajkurig/rig"
 	"github.com/ajkula/ajkurig/scores"
 	"github.com/ajkula/ajkurig/shell"
-	"github.com/ajkula/ajkurig/ui"
 )
 
 // ===== Public API =====
@@ -29,7 +28,7 @@ func (g *Game) Autopilot(frame *rig.Frame) input.Controls {
 func (g *Game) Status() shell.RunStatus {
 	status := shell.RunStatus{
 		IsOver: g.player.Health <= 0, Score: g.CurrentScore(), Seconds: g.elapsedSeconds,
-		PendingLevelUps: g.player.PendingLevelUps, Stats: g.runStats(),
+		Stats: g.runStats(),
 	}
 	if !status.IsOver {
 		return status
@@ -38,27 +37,6 @@ func (g *Game) Status() shell.RunStatus {
 	status.Details = describeReactionCounts(g.reactionCounts)
 	status.KilledBy = g.damageLog.Causes(g.elapsedSeconds)
 	return status
-}
-
-func (g *Game) OfferCards() []ui.Card {
-	g.buildUpgradeOffers()
-	g.playSound(SoundLevelUp)
-	g.say(ChatterLevelUp)
-	cards := make([]ui.Card, len(g.offers))
-	for index, offer := range g.offers {
-		cards[index] = ui.Card{Title: offer.Title(), Subtitle: offer.Subtitle(), Description: offer.Description(), Color: offer.Color()}
-	}
-	return cards
-}
-
-func (g *Game) ChooseOffer(index int) {
-	offer := g.offers[index]
-	g.applyOffer(offer)
-	if len(g.offers) > 1 {
-		return
-	}
-	g.levelUpBanner = "LEVEL UP!   " + offer.Title() + "  " + offer.Subtitle()
-	g.levelUpBannerSeconds = levelUpBannerDuration
 }
 
 // ===== Internal =====

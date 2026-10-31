@@ -3,7 +3,8 @@ package game
 // ===== Constants =====
 
 const (
-	dropletSteps = 4
+	dropletSteps          = 4
+	invincibleColorFrames = 4
 )
 
 var (
@@ -16,6 +17,8 @@ var (
 	tachikomaWheel     = [3]float32{0.14, 0.15, 0.18}
 )
 
+var invincibleColors = [5][3]float32{{1, 0.8, 0.25}, {0.99, 0.96, 0}, {0.1, 0.77, 0.69}, {1, 0.8, 0.25}, {0.89, 0.33, 0.68}}
+
 var tachikomaEyes = [3][2]float32{{10, 0}, {6.2, -4.6}, {6.2, 4.6}}
 
 // ===== Internal =====
@@ -23,10 +26,13 @@ var tachikomaEyes = [3][2]float32{{10, 0}, {6.2, -4.6}, {6.2, 4.6}}
 func (r *Renderer) queueTachikoma(g *Game) {
 	player := g.player
 	rig := &player.Rig
-	isBlinking := player.InvulnerableSeconds > 0 && (g.frame/4)%2 == 0
+	isBlinking := player.InvulnerableSeconds > 0 && player.InvincibleSeconds == 0 && (g.frame/4)%2 == 0
 	alpha := 1 - 0.5*boolToFloat(isBlinking)
 	hurt := clamp(player.DamageFlashSeconds*4, 0, 1)
-	body := mixColor(tachikomaBlue, hurtColor, hurt)
+	isInvincible := player.InvincibleSeconds > 0
+	invincibleColor := invincibleColors[(g.frame/invincibleColorFrames)%uint32(len(invincibleColors))]
+	normal := mixColor(mixColor(tachikomaBlue, hurtColor, hurt), tachikomaWhite, clamp(player.LevelFlashSeconds/volleyBurstFlashSeconds, 0, 1))
+	body := [2][3]float32{normal, invincibleColor}[boolToIndex(isInvincible)]
 	breath := 1 + 0.045*sine(rig.BobPhase*3.14159265)
 	r.queueTachikomaShadow(player, rig)
 	for leg := range tachikomaLegCount {

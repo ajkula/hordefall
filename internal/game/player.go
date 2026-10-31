@@ -29,6 +29,8 @@ type Player struct {
 	InvulnerableSeconds float32
 	DamageFlashSeconds  float32
 	LifeGate            LifeGate
+	LevelFlashSeconds   float32
+	InvincibleSeconds   float32
 	DashSeconds         float32
 	DashCooldown        float32
 	DashDirectionX      float32
@@ -153,6 +155,8 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player := g.player
 	player.InvulnerableSeconds = max(0, player.InvulnerableSeconds-deltaSeconds)
 	player.DamageFlashSeconds = max(0, player.DamageFlashSeconds-deltaSeconds)
+	player.LevelFlashSeconds = max(0, player.LevelFlashSeconds-deltaSeconds)
+	player.InvincibleSeconds = max(0, player.InvincibleSeconds-deltaSeconds)
 	g.updateLifeGate(deltaSeconds)
 	player.DashCooldown = max(0, player.DashCooldown-deltaSeconds)
 	healBudgetCap := maximumKillHealPerSecond * player.MaximumHealth
@@ -177,7 +181,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.Y = clamp(player.Y+player.ShoveY*deltaSeconds, playerRadius, arenaSize-playerRadius)
 	player.ShoveX, player.ShoveY = player.ShoveX*playerShoveDamping, player.ShoveY*playerShoveDamping
 	player.VelocityX, player.VelocityY = (player.X-previousX)/deltaSeconds, (player.Y-previousY)/deltaSeconds
-	groundBurn := groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing)
+	groundBurn := groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing && player.InvincibleSeconds == 0)
 	player.Health -= groundBurn
 	g.damageLog.RecordContinuous(g.elapsedSeconds, deltaSeconds, burningGroundSource, groundBurn)
 	g.spawnDashTrail(isDashing)

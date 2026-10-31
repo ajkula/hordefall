@@ -30,7 +30,7 @@ const (
 
 var demoPreludes = [2]func(g *Game){func(*Game) {}, (*Game).prepareDemoTick}
 
-var demoEpilogues = [2]func(g *Game){func(*Game) {}, (*Game).finishDemoTick}
+var demoEpilogues = [2]func(g *Game){(*Game).resolveLevelUps, (*Game).finishDemoTick}
 
 // ===== Public API =====
 
@@ -62,6 +62,7 @@ func (g *Game) simulationModules() []rig.Module {
 		simulationStep(moduleWeather, func() { g.updateWeather(deltaSeconds) }),
 		simulationStep(moduleChatter, func() { g.updateChatter(deltaSeconds) }),
 		simulationStep(moduleEffects, func() { g.effects.Update(deltaSeconds) }),
+		simulationStep(moduleLevelUp, func() { g.updateVolleys(deltaSeconds) }),
 		&rig.Func{ID: moduleWorld, OnUpdate: g.endTick},
 	}
 }
@@ -81,6 +82,7 @@ func (g *Game) renderModules() []rig.Module {
 			r.drawWormGroundSprites(g, screen)
 			r.queueDrillWormGround(g)
 		}),
+		renderStep(moduleLevelUp, func(screen *ebiten.Image) { r.drawUpgradeLogos(g, screen) }),
 		renderStep(moduleEnemies, func(*ebiten.Image) { r.queueEnemies(g) }),
 		renderStep(modulePlayer, func(*ebiten.Image) { r.queuePlayer(g) }),
 		renderStep(moduleSpiders, func(*ebiten.Image) { r.queueSpiders(g) }),

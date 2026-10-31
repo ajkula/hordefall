@@ -88,11 +88,11 @@ func BenchmarkGroundRefreshAndTick(b *testing.B) {
 func TestLifestealIsOneTimeAndCapped(t *testing.T) {
 	game := newHeadlessGame(t)
 	player := game.player
-	game.applyOffer(UpgradeOffer{Kind: UpgradePassive, Passive: PassiveLifesteal, NextLevel: 1})
+	game.applyPassiveUpgrade(UpgradeOffer{Kind: UpgradePassive, Passive: PassiveLifesteal, NextLevel: 1})
 	if abs(player.KillHealFraction-0.01) > 1e-6 {
 		t.Fatalf("lifesteal fraction %.3f, want 0.01", player.KillHealFraction)
 	}
-	if offers := game.appendPassiveOffer(nil, PassiveLifesteal); len(offers) != 0 {
+	if game.player.PassiveLevels[PassiveLifesteal] < passiveTable[PassiveLifesteal].MaximumLevel {
 		t.Fatalf("lifesteal offered again after being taken")
 	}
 	player.Health = 10
@@ -431,36 +431,6 @@ func TestDrillWormLosesItsBodyThenRollsItsHead(t *testing.T) {
 	stepHeadlessIdle(game)
 	if game.worm.IsActive {
 		t.Fatalf("the drill-worm survived losing its head")
-	}
-}
-
-func TestSoleOfferIsAppliedWithoutPausing(t *testing.T) {
-	app, game := newRunningApp(t)
-	game.player.Weapons = game.player.Weapons[:0]
-	for kind := range weaponKindCount {
-		game.player.Weapons = append(game.player.Weapons, WeaponState{Kind: kind, Level: maximumWeaponLevel})
-	}
-	for kind := range passiveKindCount {
-		game.player.PassiveLevels[kind] = passiveTable[kind].MaximumLevel
-	}
-	game.player.Health = 10
-	game.player.PendingLevelUps = 1
-	app.Step(input.Controls{RawJustPressed: input.NoInput})
-	if app.CurrentScreen() != shell.ScreenPlay || game.player.PendingLevelUps != 0 || game.player.Health <= 10 {
-		t.Fatalf("sole offer: screen %q, pending %d, health %.0f", app.CurrentScreen(), game.player.PendingLevelUps, game.player.Health)
-	}
-	if game.levelUpBannerSeconds <= 0 || game.levelUpBanner == "" {
-		t.Fatalf("no level up banner shown")
-	}
-	t.Logf("banner: %q", game.levelUpBanner)
-}
-
-func TestSeveralOffersStillOpenTheMenu(t *testing.T) {
-	app, game := newRunningApp(t)
-	game.player.PendingLevelUps = 1
-	app.Step(input.Controls{RawJustPressed: input.NoInput})
-	if app.CurrentScreen() != shell.ScreenLevelUp {
-		t.Fatalf("with several offers the level up menu should open, screen %q", app.CurrentScreen())
 	}
 }
 
