@@ -82,7 +82,7 @@ func (g *Game) renderModules() []rig.Module {
 			r.drawWormGroundSprites(g, screen)
 			r.queueDrillWormGround(g)
 		}),
-		renderStep(moduleLevelUp, func(screen *ebiten.Image) { r.drawUpgradeLogos(g, screen) }),
+		renderStep(moduleLevelUp, func(*ebiten.Image) { r.queueUpgradeHalos(g) }),
 		renderStep(moduleEnemies, func(*ebiten.Image) { r.queueEnemies(g) }),
 		renderStep(modulePlayer, func(*ebiten.Image) { r.queuePlayer(g) }),
 		renderStep(moduleSpiders, func(*ebiten.Image) { r.queueSpiders(g) }),
@@ -103,6 +103,7 @@ func (g *Game) renderModules() []rig.Module {
 func (g *Game) hudModules() []rig.Module {
 	u := g.ui
 	return []rig.Module{
+		hudStep(moduleLevelUp, func(screen *ebiten.Image) { g.renderer.drawUpgradeLogos(g, screen) }),
 		hudStep(moduleHud, func(screen *ebiten.Image) { u.drawStatus(g, screen) }),
 		hudStep(moduleChatter, func(screen *ebiten.Image) { u.drawChatter(g, screen) }),
 		hudStep(moduleLevelUp, func(screen *ebiten.Image) { u.drawLevelUpBanner(g, screen) }),

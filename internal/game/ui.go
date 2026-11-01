@@ -116,14 +116,12 @@ func (u *UI) drawSpiderBars(g *Game, screen *ebiten.Image) {
 	for slot, rig := range g.spiders {
 		u.drawSpiderBar(g, screen, &rig, float32(spiderBarTop+slot*(spiderBarHeight+spiderBarGap)))
 	}
-	u.drawWormBar(g, screen, float32(spiderBarTop+len(g.spiders)*(spiderBarHeight+spiderBarGap)))
+	for slot := range g.worms {
+		u.drawWormBar(screen, &g.worms[slot], float32(spiderBarTop+(len(g.spiders)+slot)*(spiderBarHeight+spiderBarGap)))
+	}
 }
 
-func (u *UI) drawWormBar(g *Game, screen *ebiten.Image, y float32) {
-	worm := &g.worm
-	if !worm.IsActive {
-		return
-	}
+func (u *UI) drawWormBar(screen *ebiten.Image, worm *DrillWorm, y float32) {
 	drawBossBar(screen, y, worm.HealthFraction(), wormArmorColor)
 	u.kit.Text.Draw(screen, "DRILL-WORM", ui.FaceSmall, screenWidth/2, y, textColor, 1, text.AlignCenter)
 }

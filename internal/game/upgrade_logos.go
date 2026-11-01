@@ -30,7 +30,6 @@ type logoPictogram func(pen *logoPen, tint colorx.RGB)
 const (
 	RollHeal RollBonus = iota
 	RollNuke
-	RollInvincibility
 	rollBonusCount
 )
 
@@ -109,12 +108,11 @@ var elementPictograms = [elementCount]logoPictogram{
 }
 
 var rollPictograms = [rollBonusCount]logoPictogram{
-	RollHeal:          drawHealPictogram,
-	RollNuke:          drawNukePictogram,
-	RollInvincibility: drawInvincibilityPictogram,
+	RollHeal: drawHealPictogram,
+	RollNuke: drawNukePictogram,
 }
 
-var rollColors = [rollBonusCount]colorx.RGB{RollHeal: logoHealColor, RollNuke: logoNukeColor, RollInvincibility: logoGold}
+var rollColors = [rollBonusCount]colorx.RGB{RollHeal: logoHealColor, RollNuke: logoNukeColor}
 
 // ===== Public API =====
 
@@ -470,11 +468,4 @@ func drawNukePictogram(pen *logoPen, tint colorx.RGB) {
 		pen.path.Close()
 	}
 	pen.fill(tint, 1)
-}
-
-func drawInvincibilityPictogram(pen *logoPen, tint colorx.RGB) {
-	pen.polygon([2]float32{0, -0.56}, [2]float32{0.44, -0.38}, [2]float32{0.38, 0.16}, [2]float32{0, 0.58}, [2]float32{-0.38, 0.16}, [2]float32{-0.44, -0.38})
-	pen.fill(tint, 1)
-	pen.polyline([2]float32{0, -0.42}, [2]float32{0, 0.42})
-	pen.stroke(logoWhite, 0.55, 0.06)
 }

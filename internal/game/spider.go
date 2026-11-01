@@ -21,23 +21,26 @@ type SpiderRig struct {
 // ===== Constants =====
 
 const (
-	spiderLegCount         = 4
-	spiderScale            = 1.6
-	spiderTurnRate         = 2.2
-	spiderMinimumSpeed     = 5
-	spiderSpacingFactor    = 1.5
-	spiderStompRadius      = 52
-	spiderStompDamage      = 22
-	spiderStompPlayerHurt  = 18
-	spiderStompSource      = "Spider Tank Stomp"
-	spiderSpawnDistance    = 840
-	bossKillsBase          = 300
-	bossKillsGrowthSeconds = 120
-	spiderTurretPivot      = 8
-	maximumBossesAlive     = 3
-	spiderTurretLimit      = 2.3
-	spiderTurretStiffness  = 34
-	spiderTurretDamping    = 8
+	spiderLegCount          = 4
+	spiderScale             = 1.6
+	spiderTurnRate          = 2.2
+	spiderMinimumSpeed      = 5
+	spiderSpacingFactor     = 1.5
+	spiderStompRadius       = 52
+	spiderStompDamage       = 22
+	spiderStompPlayerHurt   = 18
+	spiderStompSource       = "Spider Tank Stomp"
+	spiderSpawnDistance     = 840
+	bossKillsBase           = 300
+	bossKillsPerRank        = 120
+	bossKillsPerRankSquared = 3
+	bossStackKillsFactor    = 0.85
+	bossPaceSeconds         = 120
+	spiderTurretPivot       = 8
+	maximumBossesAlive      = 3
+	spiderTurretLimit       = 2.3
+	spiderTurretStiffness   = 34
+	spiderTurretDamping     = 8
 )
 
 var spiderLegLayouts = []procanim.LegLayout{
@@ -80,23 +83,31 @@ func (rig *SpiderRig) KneePosition(leg int) (float32, float32) {
 // ===== Internal =====
 
 func (g *Game) startBossEventIfDue() {
-	next := g.nextBossEvent()
-	isBossCapped := isBossCreature[next] && g.livingBossCount() >= maximumBossesAlive
-	isWormCapped := next == BossWorm && g.worm.IsActive
-	if g.bossProgressKills < g.bossKillsRequired || isBossCapped || isWormCapped {
+	if g.isDemo {
+		return
+	}
+	if g.isBossCounterFrozen() {
+		g.bossKillsRequired = computeBossKillsRequired(g.bossEventCount, g.elapsedSeconds)
+		return
+	}
+	if g.bossProgressKills < g.bossKillsRequired {
 		return
 	}
 	g.bossProgressKills = 0
-	g.bossKillsRequired = bossKillsRequiredAt(g.elapsedSeconds)
 	g.startBossEvent()
+	g.bossKillsRequired = computeBossKillsRequired(g.bossEventCount, g.elapsedSeconds)
 }
 
 func (g *Game) livingBossCount() int {
-	return len(g.spiders) + boolToIndex(g.worm.IsActive)
+	return len(g.spiders) + len(g.worms) + boolToIndex(g.hordeEvent.IsActive)
 }
 
-func bossKillsRequiredAt(seconds float32) int {
-	return int(bossKillsBase * (1 + seconds/bossKillsGrowthSeconds))
+func computeBossKillsRequired(bossesSpawned int, seconds float32) int {
+	rank := float32(bossesSpawned)
+	base := bossKillsBase + bossKillsPerRank*rank + bossKillsPerRankSquared*rank*rank
+	phaseFactors := [2]float32{1, bossStackKillsFactor}
+	phaseFactor := phaseFactors[boolToIndex(bossesSpawned >= len(bossDiscoveryList))]
+	return int(base * phaseFactor * max(1, seconds/(bossPaceSeconds*(rank+1))))
 }
 
 func (g *Game) spawnSpiderAt(angle, distance float32) {

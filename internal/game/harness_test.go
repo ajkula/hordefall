@@ -13,7 +13,7 @@ import (
 
 // ===== Constants =====
 
-var firstHordeSlot = slices.Index(bossEventCycle, BossHorde)
+var firstHordeSlot = slices.Index(bossDiscoveryList, BossHorde)
 
 // ===== Internal =====
 

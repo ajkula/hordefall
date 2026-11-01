@@ -2,6 +2,7 @@ package game
 
 import (
 	"math"
+	"slices"
 
 	"github.com/ajkula/ajkurig/i18n"
 	"github.com/ajkula/ajkurig/mathx"
@@ -101,6 +102,8 @@ const (
 const (
 	wormSpawnDistance        = 760
 	wormBurrowSpeed          = 250
+	wormMinimumSpacing       = 300
+	wormSpacingPasses        = 2
 	wormStrikeDistance       = 50
 	wormMinimumBurrowSeconds = 1.6
 	wormMaximumBurrowSeconds = 3.5
@@ -201,6 +204,10 @@ func (w *DrillWorm) IsBodyOut() bool {
 	return w.IsActive && wormBodyPhases[w.Phase]
 }
 
+func (w *DrillWorm) HasFixedHole() bool {
+	return w.IsActive && (w.Phase == WormWarning || w.IsBodyOut())
+}
+
 func (w *DrillWorm) IsHeadAlone() bool {
 	return w.IsActive && wormHeadPhases[w.Phase]
 }
@@ -266,14 +273,14 @@ func (p *WormPath) At(along float32) (Point3, Point3) {
 func (g *Game) spawnWormEvent() {
 	angle := g.random.Angle()
 	power := 1 + g.elapsedSeconds/wormPowerGrowthSeconds
-	g.worm = DrillWorm{
+	g.worms = append(g.worms, DrillWorm{
 		IsActive: true, Phase: WormBurrowing, Power: power,
 		X:                    clampToArena(g.player.X + cosine(angle)*wormSpawnDistance),
 		Y:                    clampToArena(g.player.Y + sine(angle)*wormSpawnDistance),
 		SegmentMaximumHealth: enemyTable[EnemyDrillWormSegment].Health * power,
 		HeadMaximumHealth:    enemyTable[EnemyDrillWorm].Health * power,
-	}
-	worm := &g.worm
+	})
+	worm := &g.worms[len(g.worms)-1]
 	worm.HeadHealth = worm.HeadMaximumHealth
 	for index := range worm.Segments {
 		worm.Segments[index] = WormSegment{IsAlive: true, Health: worm.SegmentMaximumHealth}
@@ -286,10 +293,13 @@ func (g *Game) spawnWormEvent() {
 
 func (g *Game) updateWorm(deltaSeconds float32) {
 	g.ageWormCraters(deltaSeconds)
-	worm := &g.worm
-	if !worm.IsActive {
-		return
+	for index := range g.worms {
+		g.updateLivingWorm(&g.worms[index], deltaSeconds)
 	}
+	g.worms = slices.DeleteFunc(g.worms, func(worm DrillWorm) bool { return !worm.IsActive })
+}
+
+func (g *Game) updateLivingWorm(worm *DrillWorm, deltaSeconds float32) {
 	worm.PhaseSeconds += deltaSeconds
 	g.updateWormBlast(worm, deltaSeconds)
 	g.collectWormLosses(worm)
@@ -319,8 +329,32 @@ func (g *Game) updateWormBurrowing(worm *DrillWorm, deltaSeconds float32) {
 		return
 	}
 	worm.X, worm.Y = clampToArena(g.player.X), clampToArena(g.player.Y)
+	g.spaceWormFromOthers(worm)
+	worm.HoleX, worm.HoleY = worm.X, worm.Y
 	g.enterWormPhase(worm, WormWarning)
 	g.playSound(SoundWormRumble)
+}
+
+func (g *Game) spaceWormFromOthers(worm *DrillWorm) {
+	for range wormSpacingPasses {
+		for index := range g.worms {
+			worm.pushAwayFrom(&g.worms[index])
+		}
+	}
+}
+
+func (w *DrillWorm) pushAwayFrom(other *DrillWorm) {
+	isTooClose := distanceSquared(w.X, w.Y, other.HoleX, other.HoleY) < wormMinimumSpacing*wormMinimumSpacing
+	if w == other || !other.HasFixedHole() || !isTooClose {
+		return
+	}
+	angle := atan2(w.Y-other.HoleY, w.X-other.HoleX)
+	x := clampToArena(other.HoleX + cosine(angle)*wormMinimumSpacing)
+	y := clampToArena(other.HoleY + sine(angle)*wormMinimumSpacing)
+	isBlockedByWall := distanceSquared(x, y, other.HoleX, other.HoleY) < wormMinimumSpacing*wormMinimumSpacing
+	wallFlip := 1 - 2*boolToFloat(isBlockedByWall)
+	w.X = clampToArena(other.HoleX + wallFlip*cosine(angle)*wormMinimumSpacing)
+	w.Y = clampToArena(other.HoleY + wallFlip*sine(angle)*wormMinimumSpacing)
 }
 
 func (g *Game) updateWormWarning(worm *DrillWorm, deltaSeconds float32) {
@@ -740,7 +774,7 @@ func (g *Game) updateWormBlast(worm *DrillWorm, deltaSeconds float32) {
 	worm.BlastHits--
 	player := g.player
 	healthBefore := player.Health
-	player.Health = max(min(player.Health, 1), player.Health-wormBlastDamage*worm.Power*boolToFloat(player.InvincibleSeconds == 0))
+	player.Health = max(min(player.Health, 1), player.Health-wormBlastDamage*worm.Power)
 	g.damageLog.RecordHit(g.elapsedSeconds, wormBlastSource, healthBefore-player.Health)
 	player.DamageFlashSeconds = 0.2
 	g.effects.SpawnSparks(player.X, player.Y, 6, wormDirtColor, 180)

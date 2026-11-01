@@ -37,23 +37,23 @@ const (
 	volleyArenaMargin       = 40
 	volleyFlightSeconds     = 0.7
 	volleyHopHeight         = 34
-	volleyColorSeconds      = 0.6
+	volleyColorSeconds      = 0.3
 	volleyPickupOverlap     = 2
-	volleyHaloAlpha         = 0.85
+	volleyHaloAlpha         = 0.4
 	volleyBurstFlashSeconds = 0.25
 	rollBonusSeconds        = 5
 	nukeRadius              = screenWidth / 2
 	nukeBossDamageFraction  = 0.3
-	invincibilitySeconds    = 5
-	logoImageMargin         = 2
+	logoImageMargin         = 6
+	logoOutlineWidth        = 1.2
+	logoOutlineAlphaGain    = 2
 )
 
-var logoRenderers = [2]func(r *Renderer, logo *UpgradeLogo, center, radius float32){(*Renderer).renderWeaponLogo, (*Renderer).renderRollLogo}
+var logoRenderers = [2]func(r *Renderer, target *ebiten.Image, logo *UpgradeLogo, center, radius float32){(*Renderer).renderWeaponLogo, (*Renderer).renderRollLogo}
 
 var rollAppliers = [rollBonusCount]func(g *Game){
-	RollHeal:          (*Game).applyRollHeal,
-	RollNuke:          (*Game).detonateNuke,
-	RollInvincibility: (*Game).grantInvincibility,
+	RollHeal: (*Game).applyRollHeal,
+	RollNuke: (*Game).detonateNuke,
 }
 
 // ===== Public API =====
@@ -295,12 +295,6 @@ func (g *Game) detonateNuke() {
 	g.playSound(SoundExplosion)
 }
 
-func (g *Game) grantInvincibility() {
-	player := g.player
-	player.InvincibleSeconds = invincibilitySeconds
-	player.InvulnerableSeconds = max(player.InvulnerableSeconds, invincibilitySeconds)
-}
-
 func logoColorOf(logo *UpgradeLogo) [3]float32 {
 	if logo.IsRoll {
 		bonus, _ := logo.RollBonus()
@@ -331,7 +325,22 @@ func (r *Renderer) drawUpgradeLogo(screen *ebiten.Image, logo *UpgradeLogo) {
 	options.GeoM.Translate(-size/2, -size/2)
 	options.GeoM.Translate(float64(screenX*draw.Scale), float64(screenY*draw.Scale))
 	colorm.DrawImage(screen, logo.image, colorMatrix, options)
-	r.batches.Glow.AddCircle(screenX, screenY, upgradeLogoRadius, logoColorOf(logo), volleyHaloAlpha*(1-whiteness))
+}
+
+func (r *Renderer) queueUpgradeHalos(g *Game) {
+	for index := range g.volleyCount {
+		volley := &g.volleys[index]
+		for slot := range volley.Count {
+			r.queueUpgradeHalo(&volley.Logos[slot])
+		}
+	}
+}
+
+func (r *Renderer) queueUpgradeHalo(logo *UpgradeLogo) {
+	x, y, hop := logo.Position()
+	screenX, screenY := r.camera.ToScreen(x, y-hop)
+	colorProgress := clamp((logo.Seconds-volleyFlightSeconds)/volleyColorSeconds, 0, 1)
+	r.batches.Glow.AddCircle(screenX, screenY, upgradeLogoRadius, logoColorOf(logo), volleyHaloAlpha*colorProgress)
 }
 
 func (r *Renderer) renderLogoIfNeeded(logo *UpgradeLogo) {
@@ -344,18 +353,41 @@ func (r *Renderer) renderLogoIfNeeded(logo *UpgradeLogo) {
 	if logo.image == nil || isRescaled {
 		logo.image = ebiten.NewImage(size, size)
 	}
-	logo.image.Clear()
+	art := r.logoArtCanvas(size)
+	art.Clear()
 	center := float32(size) / 2
-	logoRenderers[boolToIndex(logo.IsRoll)](r, logo, center, radius)
+	logoRenderers[boolToIndex(logo.IsRoll)](r, art, logo, center, radius)
+	logo.image.Clear()
+	drawOutlinedLogoArt(logo.image, art)
 	logo.renderedAt, logo.isRenderDirt = draw.Scale, false
 }
 
-func (r *Renderer) renderWeaponLogo(logo *UpgradeLogo, center, radius float32) {
-	DrawWeaponLogo(logo.image, center, center, radius, logo.Offer.Weapon)
-	DrawLogoBadge(logo.image, center, center, radius, logo.Offer, r.badgeFace)
+func (r *Renderer) logoArtCanvas(size int) *ebiten.Image {
+	if r.logoArt == nil || r.logoArt.Bounds().Dx() != size {
+		r.logoArt = ebiten.NewImage(size, size)
+	}
+	return r.logoArt
 }
 
-func (r *Renderer) renderRollLogo(logo *UpgradeLogo, center, radius float32) {
+func drawOutlinedLogoArt(target, art *ebiten.Image) {
+	var silhouette colorm.ColorM
+	silhouette.Scale(0, 0, 0, logoOutlineAlphaGain)
+	silhouette.Translate(float64(logoBackground[0]), float64(logoBackground[1]), float64(logoBackground[2]), 1-logoOutlineAlphaGain)
+	width := float64(logoOutlineWidth * draw.Scale)
+	for _, offset := range badgeOutlineOffsets {
+		options := &colorm.DrawImageOptions{}
+		options.GeoM.Translate(float64(offset[0])*width, float64(offset[1])*width)
+		colorm.DrawImage(target, art, silhouette, options)
+	}
+	target.DrawImage(art, nil)
+}
+
+func (r *Renderer) renderWeaponLogo(target *ebiten.Image, logo *UpgradeLogo, center, radius float32) {
+	DrawWeaponLogo(target, center, center, radius, logo.Offer.Weapon)
+	DrawLogoBadge(target, center, center, radius, logo.Offer, r.badgeFace)
+}
+
+func (r *Renderer) renderRollLogo(target *ebiten.Image, logo *UpgradeLogo, center, radius float32) {
 	bonus, remaining := logo.RollBonus()
-	DrawRollLogo(logo.image, center, center, radius, bonus, remaining)
+	DrawRollLogo(target, center, center, radius, bonus, remaining)
 }

@@ -18,6 +18,7 @@ type Renderer struct {
 	groundImage *ebiten.Image
 	wormSprites *WormSprites
 	badgeFace   *text.GoTextFaceSource
+	logoArt     *ebiten.Image
 }
 
 // ===== Constants =====

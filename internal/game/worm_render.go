@@ -111,11 +111,10 @@ func (r *Renderer) queueDrillWorm(g *Game) {
 }
 
 func (r *Renderer) queueDrillWormLayer(g *Game, drawers *[wormPhaseCount]wormPhaseDrawer) {
-	worm := &g.worm
-	if !worm.IsActive {
-		return
+	for index := range g.worms {
+		worm := &g.worms[index]
+		drawers[worm.Phase](r, g, worm)
 	}
-	drawers[worm.Phase](r, g, worm)
 }
 
 // ===== Internal: underground =====
@@ -126,11 +125,11 @@ func (r *Renderer) drawWormGroundSprites(g *Game, screen *ebiten.Image) {
 		fade := clamp(crater.Life/wormCraterFadeSeconds, 0, 1)
 		r.drawWormDecal(screen, r.wormSprites.Craters[crater.Variant], crater.X, crater.Y, wormSpritePixel, [4]float32{fade, fade, fade, fade})
 	}
-	worm := &g.worm
-	isBurrowing := worm.IsActive && worm.Phase == WormBurrowing
-	isWarning := worm.IsActive && worm.Phase == WormWarning
-	r.drawWormBurrowIf(g, screen, worm, isBurrowing)
-	r.drawWormWarningIf(screen, worm, isWarning)
+	for index := range g.worms {
+		worm := &g.worms[index]
+		r.drawWormBurrowIf(g, screen, worm, worm.Phase == WormBurrowing)
+		r.drawWormWarningIf(screen, worm, worm.Phase == WormWarning)
+	}
 }
 
 func (r *Renderer) drawWormBurrowIf(g *Game, screen *ebiten.Image, worm *DrillWorm, shouldDraw bool) {
@@ -213,7 +212,12 @@ func (r *Renderer) queueWormBody(g *Game, worm *DrillWorm) {
 }
 
 func (r *Renderer) drawDrillWormSprites(g *Game, screen *ebiten.Image) {
-	worm := &g.worm
+	for index := range g.worms {
+		r.drawDrillWormSprite(g, screen, &g.worms[index])
+	}
+}
+
+func (r *Renderer) drawDrillWormSprite(g *Game, screen *ebiten.Image, worm *DrillWorm) {
 	isShown := worm.IsBodyOut() || worm.IsHeadAlone()
 	if !isShown {
 		return

@@ -137,16 +137,6 @@ func TestNukeKillsHordeAndHurtsBosses(t *testing.T) {
 	}
 }
 
-func TestInvincibilityBlocksDamage(t *testing.T) {
-	game := newHeadlessGame(t)
-	game.grantInvincibility()
-	healthBefore := game.player.Health
-	game.DamagePlayer(50, "test")
-	if game.player.Health != healthBefore {
-		t.Fatalf("invincible tachikoma took damage")
-	}
-}
-
 // ===== Helpers =====
 
 func pickUpLogo(game *Game, logo *UpgradeLogo) {

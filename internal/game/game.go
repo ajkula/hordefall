@@ -68,7 +68,7 @@ type Game struct {
 	currentDemo           DemoSequence
 	randomDemo            DemoSequence
 	chatter               Chatter
-	worm                  DrillWorm
+	worms                 []DrillWorm
 	wormCraters           []WormCrater
 	hordeWaveCount        int
 }
@@ -82,7 +82,7 @@ const (
 	ticksPerSecond        = 60
 	deltaSeconds          = 1.0 / ticksPerSecond
 	spatialCellSize       = 32
-	levelUpBannerDuration = 2.2
+	levelUpBannerDuration = 3.2
 	groundSeedBase        = 0x5EED
 	gameRandomSeed        = 0xA11CE
 	effectsRandomSeed     = 0xBEEF
@@ -151,10 +151,10 @@ func (g *Game) resetRun() {
 	g.spiders = g.spiders[:0]
 	g.mines = g.mines[:0]
 	g.healOrbs = g.healOrbs[:0]
-	g.bossKillsRequired = bossKillsRequiredAt(0)
+	g.bossKillsRequired = computeBossKillsRequired(0, 0)
 	g.bossProgressKills, g.bossEventCount = 0, 0
 	g.hordeEvent = HordeEvent{}
-	g.worm, g.hordeWaveCount, g.wormCraters = DrillWorm{}, 0, g.wormCraters[:0]
+	g.worms, g.hordeWaveCount, g.wormCraters = g.worms[:0], 0, g.wormCraters[:0]
 	g.resetWeather()
 	g.resetChatter()
 	g.isDemo = false

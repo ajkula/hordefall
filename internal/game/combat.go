@@ -142,6 +142,6 @@ func (g *Game) grantKillRewardsIf(x, y float32, definition *EnemyDefinition, isP
 	g.dropHealOrbIf(x, y)
 	g.awardKillScore(definition.Experience)
 	g.kills++
-	g.bossProgressKills += 1 - boolToIndex(isHordeEnemy)
+	g.bossProgressKills += boolToIndex(!isHordeEnemy && !g.isBossCounterFrozen())
 	g.HealFromKill()
 }

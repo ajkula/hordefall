@@ -1,6 +1,8 @@
 package game
 
 import (
+	"slices"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
@@ -30,10 +32,11 @@ const (
 )
 
 const (
-	hordeEventBaseSize    = 500
-	hordeShellPeriod      = 8
-	hordePowerBonus       = 2
-	hordeClearBonusPerFoe = 20
+	hordeEventBaseSize      = 500
+	hordeShellPeriod        = 8
+	hordePowerBonus         = 2
+	hordeClearBonusPerFoe   = 20
+	bossStackOpeningRepeats = 3
 )
 
 var hordeCoreKinds = []EnemyKind{
@@ -55,9 +58,11 @@ var bossEventStarters = [bossEventKindCount]bossEventStarter{
 	BossWorm:   (*Game).spawnWormEvent,
 }
 
-var bossEventCycle = []BossEventKind{BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde}
+var bossDiscoveryList = []BossEventKind{BossSpider, BossHorde, BossWorm}
 
-var isBossCreature = [bossEventKindCount]bool{BossSpider: true, BossWorm: true}
+var bossStack = buildBossStack(bossDiscoveryList)
+
+var bossCapacities = [2]int{1, maximumBossesAlive}
 
 var hordeBarColor = [3]float32{0.75, 0.35, 0.95}
 
@@ -70,7 +75,20 @@ func (g *Game) startBossEvent() {
 }
 
 func (g *Game) nextBossEvent() BossEventKind {
-	return bossEventCycle[g.bossEventCount%len(bossEventCycle)]
+	stackPosition := g.bossEventCount - len(bossDiscoveryList)
+	if stackPosition < 0 {
+		return bossDiscoveryList[g.bossEventCount]
+	}
+	return bossStack[stackPosition%len(bossStack)]
+}
+
+func buildBossStack(discoveryList []BossEventKind) []BossEventKind {
+	return append(slices.Repeat(discoveryList[:1], bossStackOpeningRepeats), discoveryList[1:]...)
+}
+
+func (g *Game) isBossCounterFrozen() bool {
+	isStackPhase := g.bossEventCount > len(bossDiscoveryList)
+	return g.livingBossCount() >= bossCapacities[boolToIndex(isStackPhase)]
 }
 
 func (g *Game) spawnSpiderEvent() {
@@ -138,7 +156,7 @@ func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {
 	if !g.hordeEvent.IsActive {
 		return
 	}
-	y := float32(spiderBarTop + (len(g.spiders)+boolToIndex(g.worm.IsActive))*(spiderBarHeight+spiderBarGap))
+	y := float32(spiderBarTop + (len(g.spiders)+len(g.worms))*(spiderBarHeight+spiderBarGap))
 	fraction := float32(g.hordeEvent.Remaining) / float32(max(1, g.hordeEvent.Total))
 	drawBossBar(screen, y, fraction, hordeBarColor)
 	label := i18n.F("horde.bar", g.hordeEvent.Remaining, g.hordeEvent.Total)

@@ -63,7 +63,7 @@ func (g *Game) computeMusicSignals() [music.SignalCount]float32 {
 	signals[music.SignalAlways] = 1
 	hordeSignal := clamp(float32(g.countEnemiesNear(hordeSignalRadius))/hordeSignalFullCount, 0, 1)
 	signals[music.SignalHorde] = hordeSignal
-	signals[music.SignalBoss] = float32(len(g.spiders) + boolToIndex(g.hordeEvent.IsActive) + boolToIndex(g.worm.IsActive))
+	signals[music.SignalBoss] = float32(g.livingBossCount())
 	signals[music.SignalReactions] = g.reactionSignal()
 	signals[music.SignalDanger] = max(g.lowHealthSignal(), g.laserDangerSignal())
 	return signals

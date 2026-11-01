@@ -114,18 +114,6 @@ func TestExperienceCostAlwaysGrows(t *testing.T) {
 	t.Logf("cost at level 1=%d 10=%d 30=%d", experienceForLevel(1), experienceForLevel(10), experienceForLevel(30))
 }
 
-func TestNoMoreThanThreeSpiderTanks(t *testing.T) {
-	game := newHeadlessGame(t)
-	for range 10 {
-		game.bossProgressKills = game.bossKillsRequired
-		game.bossEventCount = 0
-		game.startBossEventIfDue()
-	}
-	if len(game.spiders) != maximumBossesAlive {
-		t.Fatalf("%d spider tanks alive, want %d", len(game.spiders), maximumBossesAlive)
-	}
-}
-
 func TestBoltStopsOnToughTarget(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.enemies.Spawn(EnemyBrute, game.player.X+40, game.player.Y, 1)
@@ -252,25 +240,6 @@ func TestDemoSequencesLoopCleanly(t *testing.T) {
 	}
 }
 
-func TestBossCycleIsThreeSpidersHordeWormHorde(t *testing.T) {
-	game := newHeadlessGame(t)
-	expected := []BossEventKind{BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde, BossSpider, BossSpider, BossSpider, BossHorde, BossWorm, BossHorde}
-	expectedHordeSizes := []int{500, 1000, 1500, 2000}
-	hordesSeen := 0
-	for event, kind := range expected {
-		game.spiders, game.enemies.Count, game.hordeEvent, game.worm = game.spiders[:0], 0, HordeEvent{}, DrillWorm{}
-		game.startBossEvent()
-		seen := [bossEventKindCount]bool{BossSpider: len(game.spiders) == 1, BossHorde: game.hordeEvent.IsActive, BossWorm: game.worm.IsActive}
-		if seen != [bossEventKindCount]bool{kind == BossSpider, kind == BossHorde, kind == BossWorm} {
-			t.Fatalf("event %d: want %d, got spider %v horde %v worm %v", event+1, kind, seen[BossSpider], seen[BossHorde], seen[BossWorm])
-		}
-		if kind == BossHorde && game.hordeEvent.Total != expectedHordeSizes[hordesSeen] {
-			t.Fatalf("horde %d has %d enemies, want %d", hordesSeen+1, game.hordeEvent.Total, expectedHordeSizes[hordesSeen])
-		}
-		hordesSeen += boolToIndex(kind == BossHorde)
-	}
-}
-
 func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.bossEventCount = firstHordeSlot
@@ -288,82 +257,8 @@ func TestHordeKillsDoNotSummonBossesAndClearingEndsEvent(t *testing.T) {
 	}
 	game.bossProgressKills = game.bossKillsRequired
 	game.startBossEventIfDue()
-	if !game.worm.IsActive {
+	if len(game.worms) != 1 {
 		t.Fatalf("no drill-worm after the horde was cleared")
-	}
-}
-
-func TestBossesKeepComingDuringAHorde(t *testing.T) {
-	game := newHeadlessGame(t)
-	game.bossEventCount = firstHordeSlot
-	game.startBossEvent()
-	game.bossEventCount = 0
-	game.bossProgressKills = game.bossKillsRequired
-	game.startBossEventIfDue()
-	if len(game.spiders) != 1 || !game.hordeEvent.IsActive {
-		t.Fatalf("no spider tank while the horde was alive: spiders %d, horde %v", len(game.spiders), game.hordeEvent.IsActive)
-	}
-}
-
-func TestBossesKeepComingWhileTheWormLives(t *testing.T) {
-	game := newHeadlessGame(t)
-	game.bossEventCount = firstHordeSlot + 1
-	game.startBossEvent()
-	game.bossProgressKills = game.bossKillsRequired
-	game.startBossEventIfDue()
-	if !game.worm.IsActive || !game.hordeEvent.IsActive {
-		t.Fatalf("the horde did not follow the living drill-worm")
-	}
-	for range len(bossEventCycle) - 1 {
-		game.bossProgressKills = game.bossKillsRequired
-		game.spiders = game.spiders[:0]
-		game.startBossEventIfDue()
-	}
-	if game.nextBossEvent() != BossWorm || !game.worm.IsActive {
-		t.Fatalf("the cycle did not stop in front of the next drill-worm: next %d", game.nextBossEvent())
-	}
-}
-
-func TestOnlyOneWormAtATimeEvenAmongSpiders(t *testing.T) {
-	game := newHeadlessGame(t)
-	game.bossEventCount = firstHordeSlot + 1
-	game.startBossEvent()
-	game.bossEventCount = firstHordeSlot + 1
-	game.bossProgressKills = game.bossKillsRequired
-	game.startBossEventIfDue()
-	if game.bossEventCount != firstHordeSlot+1 {
-		t.Fatalf("a second drill-worm event started while one was alive")
-	}
-	game.worm.IsActive = false
-	for range maximumBossesAlive - 1 {
-		game.spawnSpiderEvent()
-	}
-	game.startBossEventIfDue()
-	if !game.worm.IsActive {
-		t.Fatalf("the drill-worm was held back by the spider tanks")
-	}
-}
-
-func TestNoMoreThanThreeBossesAtOnce(t *testing.T) {
-	game := newHeadlessGame(t)
-	game.bossEventCount = firstHordeSlot + 1
-	game.startBossEvent()
-	for range maximumBossesAlive {
-		game.bossEventCount = 0
-		game.bossProgressKills = game.bossKillsRequired
-		game.startBossEventIfDue()
-	}
-	if game.livingBossCount() != maximumBossesAlive {
-		t.Fatalf("%d bosses alive with the drill-worm, want %d", game.livingBossCount(), maximumBossesAlive)
-	}
-	game.spiders = game.spiders[:maximumBossesAlive-1]
-	game.worm.IsActive = false
-	game.bossEventCount = firstHordeSlot + 1
-	game.bossProgressKills = game.bossKillsRequired
-	game.spawnSpiderEvent()
-	game.startBossEventIfDue()
-	if game.worm.IsActive {
-		t.Fatalf("the drill-worm joined three spider tanks")
 	}
 }
 
@@ -372,8 +267,7 @@ func TestOverlappingHordesMerge(t *testing.T) {
 	game.bossEventCount = firstHordeSlot
 	game.startBossEvent()
 	first := game.hordeEvent.Total
-	game.bossEventCount = firstHordeSlot + 2
-	game.startBossEvent()
+	game.startHordeEvent()
 	if game.hordeEvent.Total != first+2*first || game.hordeEvent.Remaining != game.hordeEvent.Total {
 		t.Fatalf("merged horde %d / %d, first wave %d", game.hordeEvent.Remaining, game.hordeEvent.Total, first)
 	}
@@ -386,7 +280,7 @@ func TestDrillWormEmergesFiresAFrostBeamThenDives(t *testing.T) {
 	hasFired, hasHittableSegmentUnderground := false, false
 	for range 20 * ticksPerSecond {
 		stepHeadlessIdle(game)
-		worm := &game.worm
+		worm := &game.worms[0]
 		phasesSeen[worm.Phase] = true
 		hasFired = hasFired || worm.Beam.Phase == LaserFiring && worm.Beam.Profile == &frostBeamProfile
 		for index := range worm.Segments {
@@ -399,37 +293,37 @@ func TestDrillWormEmergesFiresAFrostBeamThenDives(t *testing.T) {
 			t.Fatalf("the drill-worm never reached phase %d", phase)
 		}
 	}
-	if !hasFired || hasHittableSegmentUnderground || game.worm.AliveSegmentCount() != wormSegmentCount {
-		t.Fatalf("fired %v, hittable underground %v, segments %d", hasFired, hasHittableSegmentUnderground, game.worm.AliveSegmentCount())
+	if !hasFired || hasHittableSegmentUnderground || game.worms[0].AliveSegmentCount() != wormSegmentCount {
+		t.Fatalf("fired %v, hittable underground %v, segments %d", hasFired, hasHittableSegmentUnderground, game.worms[0].AliveSegmentCount())
 	}
 }
 
 func TestDrillWormLosesItsBodyThenRollsItsHead(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.spawnWormEvent()
-	for game.worm.Phase != WormAiming {
+	for game.worms[0].Phase != WormAiming {
 		stepHeadlessIdle(game)
 	}
-	for index := range game.worm.Segments {
-		game.enemies.Health[game.enemies.IndexOfID(game.worm.Segments[index].EnemyID)] = 0
+	for index := range game.worms[0].Segments {
+		game.enemies.Health[game.enemies.IndexOfID(game.worms[0].Segments[index].EnemyID)] = 0
 	}
 	stepHeadlessIdle(game)
 	stepHeadlessIdle(game)
-	if !game.worm.IsHeadAlone() || game.enemies.IndexOfID(game.worm.HeadEnemyID) < 0 {
-		t.Fatalf("the head did not break free once every segment was destroyed: phase %d", game.worm.Phase)
+	if !game.worms[0].IsHeadAlone() || game.enemies.IndexOfID(game.worms[0].HeadEnemyID) < 0 {
+		t.Fatalf("the head did not break free once every segment was destroyed: phase %d", game.worms[0].Phase)
 	}
-	startX, startY := game.worm.HeadX, game.worm.HeadY
+	startX, startY := game.worms[0].HeadX, game.worms[0].HeadY
 	rolled := false
 	for range (wormHeadCycleSeconds + 1) * ticksPerSecond {
 		stepHeadlessIdle(game)
-		rolled = rolled || length(game.worm.HeadX-startX, game.worm.HeadY-startY) > wormRollDistance/2
+		rolled = rolled || length(game.worms[0].HeadX-startX, game.worms[0].HeadY-startY) > wormRollDistance/2
 	}
 	if !rolled {
 		t.Fatalf("the lone head never rolled")
 	}
-	game.enemies.Health[game.enemies.IndexOfID(game.worm.HeadEnemyID)] = 0
+	game.enemies.Health[game.enemies.IndexOfID(game.worms[0].HeadEnemyID)] = 0
 	stepHeadlessIdle(game)
-	if game.worm.IsActive {
+	if len(game.worms) != 0 {
 		t.Fatalf("the drill-worm survived losing its head")
 	}
 }
@@ -465,26 +359,6 @@ func TestRightStickFiresAutomatically(t *testing.T) {
 			t.Fatalf("controls %+v: firing %v, want %v", expectation.controls, game.player.IsFiring, expectation.isExpected)
 		}
 	}
-}
-
-func TestBossKillsDoNotCarryOverAndRequirementGrows(t *testing.T) {
-	game := newHeadlessGame(t)
-	firstRequirement := game.bossKillsRequired
-	game.elapsedSeconds = 600
-	game.bossProgressKills = firstRequirement * 5
-	game.startBossEventIfDue()
-	if len(game.spiders) != 1 || game.bossProgressKills != 0 {
-		t.Fatalf("spiders %d, leftover progress %d (want 1, 0)", len(game.spiders), game.bossProgressKills)
-	}
-	if game.bossKillsRequired <= firstRequirement {
-		t.Fatalf("requirement after ten minutes is %d, not above the opening %d", game.bossKillsRequired, firstRequirement)
-	}
-	game.bossProgressKills = game.bossKillsRequired - 1
-	game.startBossEventIfDue()
-	if len(game.spiders) != 1 {
-		t.Fatalf("a second boss arrived one kill short of its own requirement")
-	}
-	t.Logf("kills required at 0, 5, 10, 20 minutes: %d %d %d %d", bossKillsRequiredAt(0), bossKillsRequiredAt(300), bossKillsRequiredAt(600), bossKillsRequiredAt(1200))
 }
 
 func TestHordeIsVariedWithExplosivesOnTheOutside(t *testing.T) {
@@ -828,17 +702,17 @@ func TestEveryDrillWormPhaseIsUpdatedAndDrawn(t *testing.T) {
 func TestWormEruptionShovesThePlayerWithoutKilling(t *testing.T) {
 	game := newHeadlessGame(t)
 	game.spawnWormEvent()
-	game.worm.HoleX, game.worm.HoleY = game.player.X+10, game.player.Y
+	game.worms[0].HoleX, game.worms[0].HoleY = game.player.X+10, game.player.Y
 	startX := game.player.X
 	game.player.Health = 6
-	game.eruptWorm(&game.worm)
+	game.eruptWorm(&game.worms[0])
 	for range ticksPerSecond {
 		game.frame++
 		game.controls = input.Controls{}
 		simulateWorld(game)
 	}
-	if game.player.Health < 1 || game.worm.BlastHits != 0 {
-		t.Fatalf("the eruption blast killed or never finished: health %.1f, hits left %d", game.player.Health, game.worm.BlastHits)
+	if game.player.Health < 1 || game.worms[0].BlastHits != 0 {
+		t.Fatalf("the eruption blast killed or never finished: health %.1f, hits left %d", game.player.Health, game.worms[0].BlastHits)
 	}
 	if startX-game.player.X < 60 || len(game.wormCraters) == 0 {
 		t.Fatalf("the player was not shoved away (moved %.0f px) or no crater was left", startX-game.player.X)

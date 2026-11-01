@@ -30,7 +30,6 @@ type Player struct {
 	DamageFlashSeconds  float32
 	LifeGate            LifeGate
 	LevelFlashSeconds   float32
-	InvincibleSeconds   float32
 	DashSeconds         float32
 	DashCooldown        float32
 	DashDirectionX      float32
@@ -52,6 +51,8 @@ type Player struct {
 // ===== Constants =====
 
 const (
+	experienceEndgameLevel     = 30
+	experienceEndgameGrowth    = 2
 	playerRadius               = 11
 	playerStartHealth          = 100
 	playerStartSpeed           = 175
@@ -148,7 +149,8 @@ func (g *Game) HealFromKill() {
 // ===== Internal =====
 
 func experienceForLevel(level int) int {
-	return 8 + 7*level + level*level/2
+	endgameLevels := max(0, level-experienceEndgameLevel)
+	return 8 + 7*level + level*level/2 + experienceEndgameGrowth*endgameLevels*endgameLevels
 }
 
 func (g *Game) updatePlayer(deltaSeconds float32) {
@@ -156,7 +158,6 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.InvulnerableSeconds = max(0, player.InvulnerableSeconds-deltaSeconds)
 	player.DamageFlashSeconds = max(0, player.DamageFlashSeconds-deltaSeconds)
 	player.LevelFlashSeconds = max(0, player.LevelFlashSeconds-deltaSeconds)
-	player.InvincibleSeconds = max(0, player.InvincibleSeconds-deltaSeconds)
 	g.updateLifeGate(deltaSeconds)
 	player.DashCooldown = max(0, player.DashCooldown-deltaSeconds)
 	healBudgetCap := maximumKillHealPerSecond * player.MaximumHealth
@@ -181,7 +182,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.Y = clamp(player.Y+player.ShoveY*deltaSeconds, playerRadius, arenaSize-playerRadius)
 	player.ShoveX, player.ShoveY = player.ShoveX*playerShoveDamping, player.ShoveY*playerShoveDamping
 	player.VelocityX, player.VelocityY = (player.X-previousX)/deltaSeconds, (player.Y-previousY)/deltaSeconds
-	groundBurn := groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing && player.InvincibleSeconds == 0)
+	groundBurn := groundFireDamagePerSecond * deltaSeconds * boolToFloat(groundKind == GroundFire && !isDashing)
 	player.Health -= groundBurn
 	g.damageLog.RecordContinuous(g.elapsedSeconds, deltaSeconds, burningGroundSource, groundBurn)
 	g.spawnDashTrail(isDashing)
