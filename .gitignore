@@ -26,3 +26,7 @@ internal/audio/music/previews/
 
 # Release builds
 dist/
+
+# Local workspace
+go.work
+go.work.sum
