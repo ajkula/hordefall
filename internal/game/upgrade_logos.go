@@ -65,6 +65,7 @@ var (
 	logoGold        = colorx.RGB{1, 0.8, 0.25}
 	logoHealColor   = colorx.RGB{0.4, 1, 0.5}
 	logoNukeColor   = colorx.RGB{1, 0.85, 0.2}
+	logoBloodColor  = colorx.RGB{0.85, 0.06, 0.09}
 	cannonDark      = colorx.RGB{0.16, 0.17, 0.2}
 	cannonMetal     = colorx.RGB{0.42, 0.45, 0.52}
 	cannonHighlight = colorx.RGB{0.72, 0.76, 0.84}
@@ -114,10 +115,38 @@ var rollPictograms = [rollBonusCount]logoPictogram{
 
 var rollColors = [rollBonusCount]colorx.RGB{RollHeal: logoHealColor, RollNuke: logoNukeColor}
 
+var offerLogoDrawers = [upgradeKindCount]func(pen *logoPen, offer UpgradeOffer){
+	UpgradeWeapon:  drawWeaponOfferLogo,
+	UpgradePassive: drawLifestealLogo,
+}
+
+var offerLogoColors = [upgradeKindCount]func(offer UpgradeOffer) colorx.RGB{
+	UpgradeWeapon:  weaponOfferColor,
+	UpgradePassive: lifestealOfferColor,
+}
+
+var upperJawShape = []([2]float32){
+	{-0.74, -0.3}, {-0.42, -0.54}, {0, -0.62}, {0.42, -0.54}, {0.74, -0.3}, {0.56, -0.14}, {0.42, 0.24}, {0.28, -0.14},
+	{0.16, 0.02}, {0.05, -0.14}, {-0.05, -0.14}, {-0.16, 0.02}, {-0.28, -0.14}, {-0.42, 0.24}, {-0.56, -0.14},
+}
+
+var lowerJawShape = []([2]float32){
+	{-0.62, 0.34}, {-0.3, 0.6}, {0, 0.66}, {0.3, 0.6}, {0.62, 0.34}, {0.46, 0.36}, {0.32, 0.18}, {0.2, 0.38},
+	{0.08, 0.22}, {0, 0.4}, {-0.08, 0.22}, {-0.2, 0.38}, {-0.32, 0.18}, {-0.46, 0.36},
+}
+
 // ===== Public API =====
 
 func DrawWeaponLogo(target *ebiten.Image, centerX, centerY, radius float32, kind WeaponKind) {
 	weaponLogoLayouts[kind](newLogoPen(target, centerX, centerY, radius), kind)
+}
+
+func DrawOfferLogo(target *ebiten.Image, centerX, centerY, radius float32, offer UpgradeOffer) {
+	offerLogoDrawers[offer.Kind](newLogoPen(target, centerX, centerY, radius), offer)
+}
+
+func OfferLogoColor(offer UpgradeOffer) colorx.RGB {
+	return offerLogoColors[offer.Kind](offer)
 }
 
 func DrawRollLogo(target *ebiten.Image, centerX, centerY, radius float32, bonus RollBonus, remaining float32) {
@@ -187,15 +216,34 @@ func drawBadgeArrow(target *ebiten.Image, left, top, height float32, tint colorx
 	pen.fill(tint, 1)
 }
 
+func drawWeaponOfferLogo(pen *logoPen, offer UpgradeOffer) {
+	weaponLogoLayouts[offer.Weapon](pen, offer.Weapon)
+}
+
+func drawLifestealLogo(pen *logoPen, _ UpgradeOffer) {
+	drawShotArt(pen, logoBloodColor, drawVampireJawsPictogram)
+}
+
+func weaponOfferColor(offer UpgradeOffer) colorx.RGB {
+	return liftedLogoColor(weaponTable[offer.Weapon].Color)
+}
+
+func lifestealOfferColor(UpgradeOffer) colorx.RGB {
+	return logoBloodColor
+}
+
 func drawShotLogo(pen *logoPen, kind WeaponKind) {
 	definition := &weaponTable[kind]
-	tint := liftedLogoColor(definition.Color)
+	drawShotArt(pen, liftedLogoColor(definition.Color), elementPictograms[definition.Element])
+}
+
+func drawShotArt(pen *logoPen, tint colorx.RGB, pictogram logoPictogram) {
 	directionX, directionY := cosine(shotDirectionAngle), sine(shotDirectionAngle)
 	for _, placement := range cannonPlacements {
 		drawSalvo(pen, placement, directionX, directionY, tint)
 		drawCannon(pen, placement, directionX, directionY, tint)
 	}
-	elementPictograms[definition.Element](pen.within(0, shotElementY, shotElementScale), tint)
+	pictogram(pen.within(0, shotElementY, shotElementScale), tint)
 }
 
 func drawCannon(pen *logoPen, placement [3]float32, directionX, directionY float32, tint colorx.RGB) {
@@ -455,6 +503,15 @@ func drawHealPictogram(pen *logoPen, tint colorx.RGB) {
 	pen.segment(0, -0.42, 0, 0.42)
 	pen.segment(-0.42, 0, 0.42, 0)
 	pen.stroke(tint, 1, 0.26)
+}
+
+func drawVampireJawsPictogram(pen *logoPen, tint colorx.RGB) {
+	pen.circle(0, 0, 1)
+	pen.fill(tint, 1)
+	pen.polygon(upperJawShape...)
+	pen.fill(logoWhite, 1)
+	pen.polygon(lowerJawShape...)
+	pen.fill(logoWhite, 1)
 }
 
 func drawNukePictogram(pen *logoPen, tint colorx.RGB) {

@@ -15,6 +15,7 @@
   "demo.arsenal": "6 armes au niveau max, 2500 ennemis trempés",
   "demo.siege": "et une horde de 2000",
   "gameover.summary": "Survie %s    Niveau %d    Kills %d",
+  "gameplay.system_clock": "Afficher l'heure système : %s",
   "horde.approaches": "LA HORDE APPROCHE  x%d",
   "horde.bar": "HORDE  %d / %d",
   "horde.vanquished": "HORDE ANÉANTIE",

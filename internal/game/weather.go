@@ -40,7 +40,7 @@ const (
 	weatherGroundRadiusCells  = 50
 	strikeFlashSeconds        = 0.35
 	weatherParticleMargin     = 40
-	weatherLabelTop           = 44
+	weatherLabelTop           = spiderBarTop + maximumBossesAlive*(spiderBarHeight+spiderBarGap)
 	strikeMinimumDistance     = 140
 	strikeMaximumDistance     = 520
 	strikeRadius              = 60

@@ -15,6 +15,7 @@
   "demo.arsenal": "अधिकतम स्तर के 6 हथियार, 2500 भीगे दुश्मन",
   "demo.siege": "और 2000 की भीड़",
   "gameover.summary": "जीवित रहे %s    स्तर %d    मारे %d",
+  "gameplay.system_clock": "सिस्टम घड़ी दिखाएँ: %s",
   "horde.approaches": "भीड़ आ रही है  x%d",
   "horde.bar": "भीड़  %d / %d",
   "horde.vanquished": "भीड़ का सफ़ाया",

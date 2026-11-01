@@ -15,6 +15,7 @@
   "demo.arsenal": "最大レベルの武器6種、濡れた敵2500体",
   "demo.siege": "そして2000体の大群",
   "gameover.summary": "生存 %s    レベル %d    撃破 %d",
+  "gameplay.system_clock": "クロック表示: %s",
   "horde.approaches": "大群が迫る  x%d",
   "horde.bar": "大群  %d / %d",
   "horde.vanquished": "大群殲滅",

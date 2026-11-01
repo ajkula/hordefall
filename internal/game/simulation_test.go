@@ -657,7 +657,7 @@ func TestSpiderTanksDoNotOverlap(t *testing.T) {
 
 func TestBenchListsEachGameplayModuleOnce(t *testing.T) {
 	app, _ := newRunningApp(t)
-	expected := []string{moduleWorld, modulePlayer, moduleWeapons, moduleMines, moduleProjectiles, moduleEnemies, moduleSpiders, moduleWorm, moduleDirector, moduleGround, moduleWeather, moduleChatter, moduleEffects, moduleGems, moduleHealOrbs, moduleHud, moduleLevelUp}
+	expected := []string{moduleNuke, moduleWorld, modulePlayer, moduleWeapons, moduleMines, moduleProjectiles, moduleEnemies, moduleSpiders, moduleWorm, moduleDirector, moduleGround, moduleWeather, moduleChatter, moduleEffects, moduleGems, moduleHealOrbs, moduleHud, moduleLevelUp}
 	listed := []string{}
 	for _, timing := range app.World.Timings(nil) {
 		listed = append(listed, timing.Name)

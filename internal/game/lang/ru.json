@@ -15,6 +15,7 @@
   "demo.arsenal": "6 видов оружия на максимуме, 2500 промокших врагов",
   "demo.siege": "и орда из 2000",
   "gameover.summary": "Выживание %s    Уровень %d    Убийства %d",
+  "gameplay.system_clock": "Показывать системные часы: %s",
   "horde.approaches": "ОРДА ПРИБЛИЖАЕТСЯ  x%d",
   "horde.bar": "ОРДА  %d / %d",
   "horde.vanquished": "ОРДА УНИЧТОЖЕНА",

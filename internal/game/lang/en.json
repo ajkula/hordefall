@@ -15,6 +15,7 @@
   "demo.arsenal": "6 weapons at max level, 2500 soaked foes",
   "demo.siege": "and a horde of 2000",
   "gameover.summary": "Survived %s    Level %d    Kills %d",
+  "gameplay.system_clock": "Display system clock: %s",
   "horde.approaches": "THE HORDE APPROACHES  x%d",
   "horde.bar": "HORDE  %d / %d",
   "horde.vanquished": "HORDE VANQUISHED",

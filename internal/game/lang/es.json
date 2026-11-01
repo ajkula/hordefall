@@ -15,6 +15,7 @@
   "demo.arsenal": "6 armas al nivel máximo, 2500 enemigos empapados",
   "demo.siege": "y una horda de 2000",
   "gameover.summary": "Sobreviviste %s    Nivel %d    Bajas %d",
+  "gameplay.system_clock": "Mostrar la hora del sistema: %s",
   "horde.approaches": "SE ACERCA LA HORDA  x%d",
   "horde.bar": "HORDA  %d / %d",
   "horde.vanquished": "HORDA ANIQUILADA",

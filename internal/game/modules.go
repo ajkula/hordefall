@@ -26,6 +26,7 @@ const (
 	moduleHealOrbs    = "heal orbs"
 	moduleHud         = "hud"
 	moduleLevelUp     = "level up"
+	moduleNuke        = "nuke"
 )
 
 var demoPreludes = [2]func(g *Game){func(*Game) {}, (*Game).prepareDemoTick}
@@ -63,6 +64,7 @@ func (g *Game) simulationModules() []rig.Module {
 		simulationStep(moduleChatter, func() { g.updateChatter(deltaSeconds) }),
 		simulationStep(moduleEffects, func() { g.effects.Update(deltaSeconds) }),
 		simulationStep(moduleLevelUp, func() { g.updateVolleys(deltaSeconds) }),
+		simulationStep(moduleNuke, func() { g.updateNukeBlasts(deltaSeconds) }),
 		&rig.Func{ID: moduleWorld, OnUpdate: g.endTick},
 	}
 }
@@ -88,6 +90,7 @@ func (g *Game) renderModules() []rig.Module {
 		renderStep(moduleSpiders, func(*ebiten.Image) { r.queueSpiders(g) }),
 		renderStep(moduleWorm, func(*ebiten.Image) { r.queueDrillWorm(g) }),
 		renderStep(moduleProjectiles, func(*ebiten.Image) { r.queueProjectiles(g) }),
+		renderStep(moduleNuke, func(screen *ebiten.Image) { r.drawNukeBlasts(g, screen) }),
 		renderStep(moduleEffects, func(*ebiten.Image) { g.effects.Queue(r.batches, r.camera) }),
 		renderStep(moduleSpiders, func(*ebiten.Image) { r.queueSpiderBeams(g) }),
 		renderStep(moduleWeather, func(*ebiten.Image) { r.queuePrecipitation(g) }),

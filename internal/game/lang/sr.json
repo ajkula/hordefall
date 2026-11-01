@@ -15,6 +15,7 @@
   "demo.arsenal": "6 оружја на максимуму, 2500 покислих непријатеља",
   "demo.siege": "и хорда од 2000",
   "gameover.summary": "Преживео %s    Ниво %d    Убиства %d",
+  "gameplay.system_clock": "Прикажи системски сат: %s",
   "horde.approaches": "ХОРДА СЕ ПРИБЛИЖАВА  x%d",
   "horde.bar": "ХОРДА  %d / %d",
   "horde.vanquished": "ХОРДА ПОРАЖЕНА",

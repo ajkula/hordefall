@@ -35,6 +35,8 @@ const (
 	passiveKindCount
 )
 
+const rotatingPassiveCount = PassiveLifesteal
+
 const (
 	UpgradeWeapon UpgradeKind = iota
 	UpgradePassive
@@ -63,18 +65,35 @@ var passiveTable = [passiveKindCount]PassiveDefinition{
 	}},
 }
 
+var offerAppliers = [upgradeKindCount]func(g *Game, offer UpgradeOffer){
+	UpgradeWeapon:  (*Game).applyWeaponUpgrade,
+	UpgradePassive: (*Game).applyPassiveUpgrade,
+	UpgradeHeal:    (*Game).applyHealUpgrade,
+}
+
 // ===== Public API =====
 
 // ===== Internal =====
 
 func (g *Game) nextRotatingPassive() PassiveKind {
-	for step := PassiveKind(1); step <= passiveKindCount; step++ {
-		candidate := (g.lastRotatedPassive + step) % passiveKindCount
+	for step := PassiveKind(1); step <= rotatingPassiveCount; step++ {
+		candidate := (g.lastRotatedPassive + step) % rotatingPassiveCount
 		if g.player.PassiveLevels[candidate] < passiveTable[candidate].MaximumLevel {
 			return candidate
 		}
 	}
 	return g.lastRotatedPassive
+}
+
+func (offer UpgradeOffer) isSameChoice(other UpgradeOffer) bool {
+	return offer.Kind == other.Kind && offer.Weapon == other.Weapon && offer.Passive == other.Passive
+}
+
+func (g *Game) appendLifestealOffer(pool []UpgradeOffer) []UpgradeOffer {
+	if g.player.PassiveLevels[PassiveLifesteal] >= passiveTable[PassiveLifesteal].MaximumLevel {
+		return pool
+	}
+	return append(pool, UpgradeOffer{Kind: UpgradePassive, Passive: PassiveLifesteal, NextLevel: 1})
 }
 
 func (g *Game) appendWeaponOffer(pool []UpgradeOffer, kind WeaponKind) []UpgradeOffer {

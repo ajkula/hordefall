@@ -54,6 +54,10 @@ type Game struct {
 	volleys               [maximumVolleys]Volley
 	volleyCount           int
 	pendingVolleys        int
+	nukeBlasts            []NukeBlast
+	nukeStamp             uint32
+	puddleMarks           []uint32
+	puddleQueue           []int32
 	offerPool             []UpgradeOffer
 	lastRotatedPassive    PassiveKind
 	levelUpBanner         string
@@ -108,6 +112,7 @@ func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 	}
 	game.resetRun()
 	game.renderer = NewRenderer(app.Batches, app.Camera, game.ground.Columns, game.ground.Rows)
+	game.puddleMarks = make([]uint32, game.ground.Columns*game.ground.Rows)
 	game.attachAudio(app.Audio, soundIDs)
 	return game
 }
@@ -160,7 +165,8 @@ func (g *Game) resetRun() {
 	g.isDemo = false
 	g.levelUpBannerSeconds = 0
 	g.volleyCount, g.pendingVolleys = 0, 0
-	g.lastRotatedPassive = passiveKindCount - 1
+	g.nukeBlasts = g.nukeBlasts[:0]
+	g.lastRotatedPassive = rotatingPassiveCount - 1
 }
 
 func (g *Game) applyGraphicsSettings() {

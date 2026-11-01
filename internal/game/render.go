@@ -13,12 +13,15 @@ import (
 // ===== Types =====
 
 type Renderer struct {
-	batches     *draw.Batches
-	camera      *draw.Camera
-	groundImage *ebiten.Image
-	wormSprites *WormSprites
-	badgeFace   *text.GoTextFaceSource
-	logoArt     *ebiten.Image
+	batches        *draw.Batches
+	camera         *draw.Camera
+	groundImage    *ebiten.Image
+	wormSprites    *WormSprites
+	badgeFace      *text.GoTextFaceSource
+	logoArt        *ebiten.Image
+	fireballShader *ebiten.Shader
+	fireballValues map[string]any
+	isFireballWarm bool
 }
 
 // ===== Constants =====
@@ -44,11 +47,13 @@ var (
 
 func NewRenderer(batches *draw.Batches, camera *draw.Camera, groundColumns, groundRows int) *Renderer {
 	return &Renderer{
-		batches:     batches,
-		camera:      camera,
-		groundImage: ebiten.NewImage(groundColumns, groundRows),
-		wormSprites: NewWormSprites(),
-		badgeFace:   loadBadgeFace(),
+		batches:        batches,
+		camera:         camera,
+		groundImage:    ebiten.NewImage(groundColumns, groundRows),
+		wormSprites:    NewWormSprites(),
+		badgeFace:      loadBadgeFace(),
+		fireballShader: mustCompileFireball(),
+		fireballValues: map[string]any{},
 	}
 }
 

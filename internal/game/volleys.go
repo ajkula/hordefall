@@ -42,8 +42,6 @@ const (
 	volleyHaloAlpha         = 0.4
 	volleyBurstFlashSeconds = 0.25
 	rollBonusSeconds        = 5
-	nukeRadius              = screenWidth / 2
-	nukeBossDamageFraction  = 0.3
 	logoImageMargin         = 6
 	logoOutlineWidth        = 1.2
 	logoOutlineAlphaGain    = 2
@@ -107,7 +105,7 @@ func (g *Game) burstVolley() {
 	volley := &g.volleys[g.volleyCount]
 	g.volleyCount++
 	*volley = Volley{}
-	pool := g.weaponOfferPool()
+	pool := g.upgradeOfferPool()
 	for volley.Count < offersPerLevel && len(pool) > 0 {
 		pick := g.random.Below(len(pool))
 		volley.Logos[volley.Count] = UpgradeLogo{Offer: pool[pick]}
@@ -143,11 +141,12 @@ func (g *Game) launchLogos(volley *Volley) {
 	}
 }
 
-func (g *Game) weaponOfferPool() []UpgradeOffer {
+func (g *Game) upgradeOfferPool() []UpgradeOffer {
 	g.offerPool = g.offerPool[:0]
 	for kind := range weaponKindCount {
 		g.offerPool = g.appendWeaponOffer(g.offerPool, kind)
 	}
+	g.offerPool = g.appendLifestealOffer(g.offerPool)
 	return g.offerPool
 }
 
@@ -193,7 +192,7 @@ func (g *Game) applyLogo(logo *UpgradeLogo) {
 		rollAppliers[bonus](g)
 		return
 	}
-	g.applyWeaponUpgrade(logo.Offer)
+	offerAppliers[logo.Offer.Kind](g, logo.Offer)
 }
 
 func (g *Game) removeVolley(index int) {
@@ -211,7 +210,7 @@ func (g *Game) refreshVolleys() {
 }
 
 func (g *Game) refreshVolley(volley *Volley) {
-	pool := g.weaponOfferPool()
+	pool := g.upgradeOfferPool()
 	for slot := volley.Count - 1; slot >= 0; slot-- {
 		logo := &volley.Logos[slot]
 		if logo.IsRoll {
@@ -223,7 +222,7 @@ func (g *Game) refreshVolley(volley *Volley) {
 
 func (g *Game) refreshLogo(volley *Volley, slot int, pool []UpgradeOffer) {
 	logo := &volley.Logos[slot]
-	current, isStillOffered := findOffer(pool, logo.Offer.Weapon)
+	current, isStillOffered := findOffer(pool, logo.Offer)
 	replacement, hasReplacement := g.unusedOffer(pool)
 	logo.isRenderDirt = true
 	if isStillOffered {
@@ -241,9 +240,9 @@ func (g *Game) refreshLogo(volley *Volley, slot int, pool []UpgradeOffer) {
 	volley.Logos[slot], volley.Logos[volley.Count] = volley.Logos[volley.Count], volley.Logos[slot]
 }
 
-func findOffer(pool []UpgradeOffer, kind WeaponKind) (UpgradeOffer, bool) {
+func findOffer(pool []UpgradeOffer, wanted UpgradeOffer) (UpgradeOffer, bool) {
 	for _, offer := range pool {
-		if offer.Weapon == kind {
+		if offer.isSameChoice(wanted) {
 			return offer, true
 		}
 	}
@@ -252,19 +251,19 @@ func findOffer(pool []UpgradeOffer, kind WeaponKind) (UpgradeOffer, bool) {
 
 func (g *Game) unusedOffer(pool []UpgradeOffer) (UpgradeOffer, bool) {
 	for _, offer := range pool {
-		if !g.isOfferOnGround(offer.Weapon) {
+		if !g.isOfferOnGround(offer) {
 			return offer, true
 		}
 	}
 	return UpgradeOffer{}, false
 }
 
-func (g *Game) isOfferOnGround(kind WeaponKind) bool {
+func (g *Game) isOfferOnGround(offer UpgradeOffer) bool {
 	for index := range g.volleyCount {
 		volley := &g.volleys[index]
 		for slot := range volley.Count {
 			logo := &volley.Logos[slot]
-			if !logo.IsRoll && logo.Offer.Weapon == kind {
+			if !logo.IsRoll && logo.Offer.isSameChoice(offer) {
 				return true
 			}
 		}
@@ -276,31 +275,12 @@ func (g *Game) applyRollHeal() {
 	g.applyHealUpgrade(UpgradeOffer{Kind: UpgradeHeal})
 }
 
-func (g *Game) detonateNuke() {
-	player := g.player
-	enemies := g.enemies
-	for index := range enemies.Count {
-		isInside := distanceSquared(enemies.PositionX[index], enemies.PositionY[index], player.X, player.Y) < nukeRadius*nukeRadius
-		if !isInside {
-			continue
-		}
-		kind := enemies.Kind[index]
-		isBoss := kind >= EnemySpiderTank
-		bossDamage := nukeBossDamageFraction * enemyTable[kind].Health * enemies.Power[index]
-		g.HitEnemy(index, bossDamage+(enemies.Health[index]-bossDamage)*boolToFloat(!isBoss), ElementNone)
-	}
-	g.effects.AddRing(player.X, player.Y, nukeRadius, logoNukeColor)
-	g.effects.AddShake(14)
-	g.effects.SpawnSparks(player.X, player.Y, 40, logoNukeColor, 420)
-	g.playSound(SoundExplosion)
-}
-
 func logoColorOf(logo *UpgradeLogo) [3]float32 {
 	if logo.IsRoll {
 		bonus, _ := logo.RollBonus()
 		return rollColors[bonus]
 	}
-	return liftedLogoColor(weaponTable[logo.Offer.Weapon].Color)
+	return OfferLogoColor(logo.Offer)
 }
 
 func (r *Renderer) drawUpgradeLogos(g *Game, screen *ebiten.Image) {
@@ -383,7 +363,7 @@ func drawOutlinedLogoArt(target, art *ebiten.Image) {
 }
 
 func (r *Renderer) renderWeaponLogo(target *ebiten.Image, logo *UpgradeLogo, center, radius float32) {
-	DrawWeaponLogo(target, center, center, radius, logo.Offer.Weapon)
+	DrawOfferLogo(target, center, center, radius, logo.Offer)
 	DrawLogoBadge(target, center, center, radius, logo.Offer, r.badgeFace)
 }
 

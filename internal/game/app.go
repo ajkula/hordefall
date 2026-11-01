@@ -81,7 +81,7 @@ func NewApp(isSilent bool) (*rig.App, *Game, error) {
 	game.shell = shell.Mount(app, game, shell.Options{
 		Title: gameTitle, GameOverTitle: gameOverTitle, DemoClipSeconds: demoSequenceSeconds, ClipsPerBoard: 2 * len(demoSequences),
 		GameOverIdle: gameOverIdleSeconds, Intro: introSettings(), AttractArt: game.ui.drawAttractArt,
-		HighScoreLine: describeHighScore, ControlsHint: controlsHintKey,
+		HighScoreLine: describeHighScore, ControlsHint: controlsHintKey, GameplayOptions: game.gameplayOptions(),
 	})
 	return app, game, nil
 }

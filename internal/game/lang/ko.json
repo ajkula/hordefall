@@ -15,6 +15,7 @@
   "demo.arsenal": "최대 레벨 무기 6종, 젖은 적 2500",
   "demo.siege": "그리고 2000의 무리",
   "gameover.summary": "생존 %s    레벨 %d    처치 %d",
+  "gameplay.system_clock": "시계 표시: %s",
   "horde.approaches": "무리가 다가온다  x%d",
   "horde.bar": "무리  %d / %d",
   "horde.vanquished": "무리 섬멸",

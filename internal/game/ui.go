@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -11,6 +12,7 @@ import (
 	"github.com/ajkula/ajkurig/draw"
 	"github.com/ajkula/ajkurig/i18n"
 	"github.com/ajkula/ajkurig/scores"
+	"github.com/ajkula/ajkurig/shell"
 	"github.com/ajkula/ajkurig/ui"
 )
 
@@ -34,13 +36,24 @@ const (
 )
 
 var (
-	panelColor     = [3]float32{0.04, 0.05, 0.08}
-	textColor      = [3]float32{1, 1, 1}
-	healthColor    = [3]float32{0.9, 0.22, 0.25}
-	experienceBlue = [3]float32{0.35, 0.65, 1}
-	accentColor    = [3]float32{1, 0.75, 0.3}
-	outlineColor   = [3]float32{0, 0, 0}
-	highScoreColor = [3]float32{0.8, 0.42, 0.08}
+	panelColor       = [3]float32{0.04, 0.05, 0.08}
+	textColor        = [3]float32{1, 1, 1}
+	healthColor      = [3]float32{0.9, 0.22, 0.25}
+	systemClockColor = [3]float32{0.992, 0.961, 0}
+	systemClockRim   = [3]float32{0.443, 0, 0}
+	experienceBlue   = [3]float32{0.35, 0.65, 1}
+	accentColor      = [3]float32{1, 0.75, 0.3}
+	outlineColor     = [3]float32{0, 0, 0}
+	highScoreColor   = [3]float32{0.8, 0.42, 0.08}
+)
+
+const (
+	systemClockSetting = "systemClock"
+	systemClockOn      = "on"
+	systemClockOff     = "off"
+	systemClockLayout  = "15:04"
+	systemClockCenter  = 146
+	systemClockTop     = 46
 )
 
 // ===== Public API =====
@@ -63,6 +76,7 @@ func (u *UI) drawStatus(g *Game, screen *ebiten.Image) {
 	highScoreWidth := u.kit.Text.Width(highScoreText, ui.FaceBold)
 	u.kit.Text.Draw(screen, highScoreText, ui.FaceBold, screenWidth-16, 44, highScoreColor, 1, text.AlignEnd)
 	u.kit.Text.Draw(screen, "SCORE "+scores.FormatThousands(g.CurrentScore()), ui.FaceBold, screenWidth-16-highScoreWidth-24, 44, accentColor, 1, text.AlignEnd)
+	u.drawSystemClock(g, screen)
 	u.drawWeaponList(g, screen)
 	u.drawSpiderBars(g, screen)
 	u.drawHordeEventBar(g, screen)
@@ -77,6 +91,26 @@ func (u *UI) drawLevelUpBanner(g *Game, screen *ebiten.Image) {
 	}
 	fade := clamp(g.levelUpBannerSeconds/levelUpBannerFade, 0, 1)
 	u.kit.Text.Draw(screen, g.levelUpBanner, ui.FaceBold, screenWidth/2, levelUpBannerTop, accentColor, fade, text.AlignCenter)
+}
+
+func (u *UI) drawSystemClock(g *Game, screen *ebiten.Image) {
+	if !g.isSystemClockShown() {
+		return
+	}
+	u.kit.Text.DrawOutlined(screen, time.Now().Format(systemClockLayout), ui.FaceBold, systemClockCenter, systemClockTop, systemClockColor, systemClockRim, text.AlignCenter)
+}
+
+func (g *Game) isSystemClockShown() bool {
+	return g.app.Settings.Custom[systemClockSetting] == systemClockOn
+}
+
+func (g *Game) toggleSystemClock() {
+	g.app.Settings.Custom[systemClockSetting] = [2]string{systemClockOn, systemClockOff}[boolToIndex(g.isSystemClockShown())]
+	g.app.SaveSettings()
+}
+
+func (g *Game) gameplayOptions() []ui.Option {
+	return []ui.Option{{Label: shell.OnOffLabel("gameplay.system_clock", g.isSystemClockShown), Activate: g.toggleSystemClock}}
 }
 
 func (u *UI) drawWeatherLabel(g *Game, screen *ebiten.Image) {

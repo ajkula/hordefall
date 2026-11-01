@@ -15,6 +15,7 @@
   "demo.arsenal": "6 件满级武器，2500 个湿透的敌人",
   "demo.siege": "以及 2000 只的尸潮",
   "gameover.summary": "存活 %s    等级 %d    击杀 %d",
+  "gameplay.system_clock": "显示时间：%s",
   "horde.approaches": "尸潮来袭  x%d",
   "horde.bar": "尸潮  %d / %d",
   "horde.vanquished": "尸潮已歼灭",
