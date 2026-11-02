@@ -187,6 +187,7 @@ func (g *Game) isTouchingLogo(logo *UpgradeLogo) bool {
 
 func (g *Game) applyLogo(logo *UpgradeLogo) {
 	g.effects.AddRing(logo.ToX, logo.ToY, upgradeLogoRadius*2, logoColorOf(logo))
+	g.playSound(SoundLogoPickup)
 	if logo.IsRoll {
 		bonus, _ := logo.RollBonus()
 		rollAppliers[bonus](g)

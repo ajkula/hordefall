@@ -46,6 +46,7 @@ const (
 	SoundFrostCharge
 	SoundFrostFire
 	SoundWormRoll
+	SoundLogoPickup
 	soundKindCount
 )
 
@@ -116,6 +117,11 @@ var soundTable = map[SoundKind]audio.SoundDefinition{
 		{Settings: audio.VoiceSettings{Waveform: audio.WaveTriangle, Frequency: 659, Volume: 0.25, Delay: 0.08, Envelope: audio.Envelope{Attack: 0.002, Decay: 0.15}}},
 		{Settings: audio.VoiceSettings{Waveform: audio.WaveTriangle, Frequency: 784, Volume: 0.25, Delay: 0.16, Envelope: audio.Envelope{Attack: 0.002, Decay: 0.15}}},
 		{Settings: audio.VoiceSettings{Waveform: audio.WaveSquare, Frequency: 1046, Duty: 0.25, Volume: 0.18, Delay: 0.24, Envelope: audio.Envelope{Attack: 0.002, Decay: 0.35}}},
+	}},
+	SoundLogoPickup: {Name: "logo_pickup", MinimumInterval: 0.2, Layers: []audio.SoundLayer{
+		{Settings: audio.VoiceSettings{Waveform: audio.WaveSine, Frequency: 110, SlideOctaves: 1, Volume: 0.3, Envelope: audio.Envelope{Attack: 0.012, Decay: 0.22}}, PitchJitter: 0.03},
+		{Settings: audio.VoiceSettings{Waveform: audio.WaveTriangle, Frequency: 220, SlideOctaves: 1, Volume: 0.12, Envelope: audio.Envelope{Attack: 0.012, Decay: 0.18}}, PitchJitter: 0.03},
+		{Settings: audio.VoiceSettings{Waveform: audio.WaveNoise, Frequency: 1200, SlideOctaves: 1, Volume: 0.04, Filter: 0.6, Envelope: audio.Envelope{Attack: 0.02, Decay: 0.14}}},
 	}},
 	SoundGem: {Name: "gem", MinimumInterval: 0.03, Layers: []audio.SoundLayer{
 		{Settings: audio.VoiceSettings{Waveform: audio.WaveSine, Frequency: 1300, SlideOctaves: 2, Volume: 0.07, Envelope: audio.Envelope{Attack: 0.001, Decay: 0.04}}, PitchJitter: 0.15},
