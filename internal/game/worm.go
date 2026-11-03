@@ -62,6 +62,7 @@ type DrillWorm struct {
 	Segments             [wormSegmentCount]WormSegment
 	SegmentMaximumHealth float32
 	HeadEnemyID          uint32
+	BodyID               uint32
 	HeadHealth           float32
 	HeadMaximumHealth    float32
 	Power                float32
@@ -273,8 +274,9 @@ func (p *WormPath) At(along float32) (Point3, Point3) {
 func (g *Game) spawnWormEvent() {
 	angle := g.random.Angle()
 	power := 1 + g.elapsedSeconds/wormPowerGrowthSeconds
+	g.nextBodyID++
 	g.worms = append(g.worms, DrillWorm{
-		IsActive: true, Phase: WormBurrowing, Power: power,
+		IsActive: true, Phase: WormBurrowing, Power: power, BodyID: g.nextBodyID,
 		X:                    clampToArena(g.player.X + cosine(angle)*wormSpawnDistance),
 		Y:                    clampToArena(g.player.Y + sine(angle)*wormSpawnDistance),
 		SegmentMaximumHealth: enemyTable[EnemyDrillWormSegment].Health * power,
@@ -566,7 +568,7 @@ func (g *Game) surfaceWormSegmentIf(worm *DrillWorm, segment *WormSegment, shoul
 		return
 	}
 	segment.EnemyID = g.enemies.Spawn(EnemyDrillWormSegment, segment.X, segment.Y-segment.Z, worm.Power)
-	g.setEnemyHealthIfPresent(segment.EnemyID, segment.Health)
+	g.adoptWormPart(worm, segment.EnemyID, segment.Health)
 }
 
 func (g *Game) buryWormSegmentIf(segment *WormSegment, shouldBury bool) {
@@ -640,7 +642,7 @@ func (g *Game) detachWormHeadIf(worm *DrillWorm, shouldDetach bool) {
 	worm.HeadX, worm.HeadY, worm.HeadZ = clampToArena(worm.HeadX), clampToArena(worm.HeadY), 0
 	worm.Angle = atan2(worm.Aim.Y, worm.Aim.X)
 	worm.HeadEnemyID = g.enemies.Spawn(EnemyDrillWorm, worm.HeadX, worm.HeadY, worm.Power)
-	g.setEnemyHealthIfPresent(worm.HeadEnemyID, worm.HeadHealth)
+	g.adoptWormPart(worm, worm.HeadEnemyID, worm.HeadHealth)
 	g.slamWorm(worm, worm.HeadX, worm.HeadY)
 	g.playSound(SoundWormRoar)
 	g.say(ChatterWormHead)
@@ -710,7 +712,7 @@ func (g *Game) followWormHead(worm *DrillWorm) {
 }
 
 func (g *Game) crushUnderWormHead(worm *DrillWorm, deltaSeconds float32) {
-	g.ApplyBurst(Burst{X: worm.HeadX, Y: worm.HeadY, Radius: wormRollRadius, Damage: wormRollEnemyDamage * worm.Power * deltaSeconds, Element: ElementPhysical})
+	g.ApplyBurst(Burst{X: worm.HeadX, Y: worm.HeadY, Radius: wormRollRadius, Damage: wormRollEnemyDamage * worm.Power * deltaSeconds, Element: ElementPhysical, SparesBodies: true})
 	reach := float32(wormRollRadius + playerRadius)
 	isPlayerHit := !worm.HasRollHit && distanceSquared(worm.HeadX, worm.HeadY, g.player.X, g.player.Y) < reach*reach
 	worm.HasRollHit = worm.HasRollHit || isPlayerHit
@@ -721,7 +723,7 @@ func (g *Game) crushUnderWormHead(worm *DrillWorm, deltaSeconds float32) {
 // ===== Internal: shared =====
 
 func (g *Game) slamWorm(worm *DrillWorm, x, y float32) {
-	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical})
+	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical, SparesBodies: true})
 	isPlayerHit := distanceSquared(x, y, g.player.X, g.player.Y) < wormEruptionRadius*wormEruptionRadius
 	g.DamagePlayer(wormEruptionPlayerHurt*worm.Power*boolToFloat(isPlayerHit), wormEruptionSource)
 	g.effects.SpawnSparks(x, y, 18, wormDirtColor, 220)
@@ -742,7 +744,7 @@ func (g *Game) kickUpWormDust(worm *DrillWorm, x, y, deltaSeconds float32) {
 
 func (g *Game) eruptWorm(worm *DrillWorm) {
 	x, y := worm.HoleX, worm.HoleY
-	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical})
+	g.ApplyBurst(Burst{X: x, Y: y, Radius: wormEruptionRadius, Damage: wormEruptionDamage * worm.Power, Element: ElementPhysical, SparesBodies: true})
 	g.addWormCrater(x, y)
 	g.raiseWormDust(x, y, wormEruptionDust)
 	g.effects.SpawnSparks(x, y, 30, wormDirtColor, 320)
@@ -799,12 +801,13 @@ func (g *Game) ageWormCraters(deltaSeconds float32) {
 	g.wormCraters = filterAlive(g.wormCraters, deltaSeconds, func(crater *WormCrater) *float32 { return &crater.Life })
 }
 
-func (g *Game) setEnemyHealthIfPresent(id uint32, health float32) {
+func (g *Game) adoptWormPart(worm *DrillWorm, id uint32, health float32) {
 	index := g.enemies.IndexOfID(id)
 	if index < 0 || id == 0 {
 		return
 	}
 	g.enemies.Health[index] = health
+	g.enemies.BodyID[index] = worm.BodyID
 }
 
 func clampToArena(value float32) float32 {

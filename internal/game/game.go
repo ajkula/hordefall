@@ -42,6 +42,10 @@ type Game struct {
 	candidates            []int32
 	separationCandidates  []int32
 	chainedEnemies        []int32
+	bodyPartHits          []bodyPartHit
+	nextBodyID            uint32
+	isBodySpreadSpent     bool
+	conductionHop         int
 	spiders               []SpiderRig
 	demoReinforceCooldown float32
 	mines                 []StaticMine

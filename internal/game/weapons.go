@@ -248,8 +248,9 @@ func (g *Game) castArcLightning(weapon *WeaponState, definition *WeaponDefinitio
 	for hop := 0; hop < definition.CountAt(weapon.Level) && current >= 0; hop++ {
 		toX, toY := g.enemies.PositionX[current], g.enemies.PositionY[current]
 		g.effects.AddLightning(fromX, fromY, toX, toY)
+		rank := g.countChainedPartsOfBody(g.enemies.BodyID[current])
 		g.chainedEnemies = append(g.chainedEnemies, int32(current))
-		g.HitEnemy(current, damage, definition.Element)
+		g.hitBodyPartAtRank(current, rank, damage, definition.Element)
 		fromX, fromY = toX, toY
 		current = g.nearestEnemyWithin(toX, toY, chainSearchRadius, true)
 	}
@@ -338,7 +339,7 @@ func (g *Game) nearestEnemyWithin(x, y, radius float32, shouldSkipChained bool) 
 	for _, candidate := range g.candidates {
 		index := int(candidate)
 		distance := distanceSquared(x, y, g.enemies.PositionX[index], g.enemies.PositionY[index])
-		isEligible := g.enemies.Health[index] > 0 && !(shouldSkipChained && g.isChained(candidate))
+		isEligible := g.enemies.Health[index] > 0 && !(shouldSkipChained && (g.isChained(candidate) || g.isBodySpreadExhausted(index)))
 		if isEligible && distance < nearestDistance {
 			nearest, nearestDistance = index, distance
 		}
@@ -363,6 +364,21 @@ func (g *Game) nearestEnemyInAim(x, y, radius float32) int {
 func (g *Game) isInsideAimCone(index int, x, y float32) bool {
 	directionX, directionY := normalize(g.enemies.PositionX[index]-x, g.enemies.PositionY[index]-y)
 	return directionX*g.player.AimX+directionY*g.player.AimY >= aimConeMinimumDot
+}
+
+func (g *Game) countChainedPartsOfBody(bodyID uint32) int {
+	if bodyID == 0 {
+		return 0
+	}
+	count := 0
+	for _, chained := range g.chainedEnemies {
+		count += boolToIndex(g.enemies.BodyID[chained] == bodyID)
+	}
+	return count
+}
+
+func (g *Game) isBodySpreadExhausted(index int) bool {
+	return g.countChainedPartsOfBody(g.enemies.BodyID[index]) >= len(bodySpreadDamageShares)
 }
 
 func (g *Game) isChained(index int32) bool {

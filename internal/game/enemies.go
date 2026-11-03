@@ -37,6 +37,7 @@ type EnemyStore struct {
 	KnockbackY    []float32
 	Health        []float32
 	Power         []float32
+	BodyID        []uint32
 	LastHitByBoss []bool
 	IsHordeEvent  []bool
 	Kind          []EnemyKind
@@ -121,6 +122,7 @@ func NewEnemyStore(capacity int) *EnemyStore {
 		KnockbackY:    make([]float32, capacity),
 		Health:        make([]float32, capacity),
 		Power:         make([]float32, capacity),
+		BodyID:        make([]uint32, capacity),
 		LastHitByBoss: make([]bool, capacity),
 		IsHordeEvent:  make([]bool, capacity),
 		Kind:          make([]EnemyKind, capacity),
@@ -143,6 +145,7 @@ func (s *EnemyStore) Spawn(kind EnemyKind, x, y, healthScale float32) uint32 {
 	s.KnockbackX[index], s.KnockbackY[index] = 0, 0
 	s.Health[index] = enemyTable[kind].Health * healthScale
 	s.Power[index] = healthScale
+	s.BodyID[index] = 0
 	s.LastHitByBoss[index] = false
 	s.IsHordeEvent[index] = false
 	s.Kind[index] = kind
@@ -168,6 +171,7 @@ func (s *EnemyStore) Remove(index int) {
 	s.KnockbackX[index], s.KnockbackY[index] = s.KnockbackX[last], s.KnockbackY[last]
 	s.Health[index] = s.Health[last]
 	s.Power[index] = s.Power[last]
+	s.BodyID[index] = s.BodyID[last]
 	s.LastHitByBoss[index] = s.LastHitByBoss[last]
 	s.IsHordeEvent[index] = s.IsHordeEvent[last]
 	s.Kind[index] = s.Kind[last]

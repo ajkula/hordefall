@@ -1,6 +1,8 @@
 package game
 
 import (
+	"image/color"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 
@@ -24,8 +26,9 @@ type UpgradeLogo struct {
 }
 
 type Volley struct {
-	Logos [offersPerLevel]UpgradeLogo
-	Count int
+	Logos       [offersPerLevel]UpgradeLogo
+	Count       int
+	HasBeenLost bool
 }
 
 // ===== Constants =====
@@ -45,6 +48,27 @@ const (
 	logoImageMargin         = 6
 	logoOutlineWidth        = 1.2
 	logoOutlineAlphaGain    = 2
+	beaconPeriodSeconds     = 1.6
+	beaconRingCount         = 1
+	beaconStartRadius       = upgradeLogoRadius
+	beaconEndRadius         = 61
+	beaconAlpha             = 0.9
+	beaconStrokeWidth       = 10
+	beaconSegments          = 72
+	beaconEdgeSoftness      = 1
+	beaconPixelSize         = 3
+	pointerEdgeMargin       = 30
+	pointerLength           = 22
+	pointerHalfWidth        = 13
+	pointerRimWidth         = 3
+)
+
+var (
+	beaconLayerOffsets = [...]float32{-1, -1, 1, 1}
+	beaconLayerInset   = [...]float32{0, -1, 1, 0}
+	beaconLayerAlphas  = [...]float32{0, 1, 1, 0}
+	pointerColor       = [3]float32{0.992, 0.961, 0}
+	pointerRimColor    = [3]float32{0.443, 0, 0}
 )
 
 var logoRenderers = [2]func(r *Renderer, target *ebiten.Image, logo *UpgradeLogo, center, radius float32){(*Renderer).renderWeaponLogo, (*Renderer).renderRollLogo}
@@ -81,10 +105,23 @@ func (g *Game) resolveLevelUps() {
 		g.grantNextPassive()
 		g.pendingVolleys++
 	}
-	for g.volleyCount < maximumVolleys && g.pendingVolleys > 0 {
+	for g.volleyCount < maximumVolleys && g.pendingVolleys > 0 && !g.isNextVolleyARollInWaiting() {
 		g.pendingVolleys--
 		g.burstVolley()
 	}
+}
+
+func (g *Game) isNextVolleyARollInWaiting() bool {
+	return len(g.upgradeOfferPool()) == 0 && g.hasRollOnGround()
+}
+
+func (g *Game) hasRollOnGround() bool {
+	for index := range g.volleyCount {
+		if g.volleys[index].Logos[0].IsRoll {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *Game) grantNextPassive() {
@@ -153,6 +190,7 @@ func (g *Game) upgradeOfferPool() []UpgradeOffer {
 func (g *Game) updateVolleys(deltaSeconds float32) {
 	for index := range g.volleyCount {
 		volley := &g.volleys[index]
+		volley.HasBeenLost = volley.HasBeenLost || !g.renderer.isVolleyInSight(volley)
 		for logo := range volley.Count {
 			volley.Logos[logo].Seconds += deltaSeconds
 		}
@@ -284,12 +322,59 @@ func logoColorOf(logo *UpgradeLogo) [3]float32 {
 	return OfferLogoColor(logo.Offer)
 }
 
+func (r *Renderer) isVolleyInSight(volley *Volley) bool {
+	for slot := range volley.Count {
+		screenX, screenY := r.camera.ToScreen(volley.Logos[slot].ToX, volley.Logos[slot].ToY)
+		if screenX >= 0 && screenY >= 0 && screenX <= screenWidth && screenY <= screenHeight {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Renderer) drawUpgradeLogos(g *Game, screen *ebiten.Image) {
+	r.drawLogoBeacons(g, screen)
 	for index := range g.volleyCount {
 		volley := &g.volleys[index]
 		for slot := range volley.Count {
 			r.drawUpgradeLogo(screen, &volley.Logos[slot])
 		}
+		r.drawVolleyPointerIf(g, screen, volley, !r.isVolleyInSight(volley))
+	}
+}
+
+func (r *Renderer) drawVolleyPointerIf(g *Game, screen *ebiten.Image, volley *Volley, shouldDraw bool) {
+	if !shouldDraw {
+		return
+	}
+	targetX, targetY := nearestLogoTarget(volley, g.player.X, g.player.Y)
+	directionX, directionY := normalize(targetX-g.player.X, targetY-g.player.Y)
+	screenX, screenY := r.camera.ToScreen(targetX, targetY)
+	tipX := clamp(screenX, pointerEdgeMargin, screenWidth-pointerEdgeMargin)
+	tipY := clamp(screenY, pointerEdgeMargin, screenHeight-pointerEdgeMargin)
+	draw.FillTriangle(screen, pointerTriangle(tipX, tipY, directionX, directionY, pointerRimWidth), pointerRimColor, 1)
+	draw.FillTriangle(screen, pointerTriangle(tipX, tipY, directionX, directionY, 0), pointerColor, 1)
+}
+
+func nearestLogoTarget(volley *Volley, x, y float32) (float32, float32) {
+	nearest := &volley.Logos[0]
+	for slot := 1; slot < volley.Count; slot++ {
+		logo := &volley.Logos[slot]
+		if distanceSquared(logo.ToX, logo.ToY, x, y) < distanceSquared(nearest.ToX, nearest.ToY, x, y) {
+			nearest = logo
+		}
+	}
+	return nearest.ToX, nearest.ToY
+}
+
+func pointerTriangle(tipX, tipY, directionX, directionY, growth float32) [3][2]float32 {
+	length := float32(pointerLength + 2*growth)
+	halfWidth := float32(pointerHalfWidth + growth)
+	baseX, baseY := tipX-directionX*(length-growth), tipY-directionY*(length-growth)
+	return [3][2]float32{
+		{tipX + directionX*growth, tipY + directionY*growth},
+		{baseX - directionY*halfWidth, baseY + directionX*halfWidth},
+		{baseX + directionY*halfWidth, baseY - directionX*halfWidth},
 	}
 }
 
@@ -322,6 +407,61 @@ func (r *Renderer) queueUpgradeHalo(logo *UpgradeLogo) {
 	screenX, screenY := r.camera.ToScreen(x, y-hop)
 	colorProgress := clamp((logo.Seconds-volleyFlightSeconds)/volleyColorSeconds, 0, 1)
 	r.batches.Glow.AddCircle(screenX, screenY, upgradeLogoRadius, logoColorOf(logo), volleyHaloAlpha*colorProgress)
+}
+
+func (r *Renderer) drawLogoBeacons(g *Game, screen *ebiten.Image) {
+	r.beaconVertices, r.beaconIndices = r.beaconVertices[:0], r.beaconIndices[:0]
+	for index := range g.volleyCount {
+		volley := &g.volleys[index]
+		for slot := range volley.Count * boolToIndex(volley.HasBeenLost) {
+			r.appendLogoBeacon(&volley.Logos[slot])
+		}
+	}
+	if len(r.beaconIndices) == 0 {
+		return
+	}
+	if r.beaconPixel == nil {
+		r.beaconPixel = ebiten.NewImage(beaconPixelSize, beaconPixelSize)
+		r.beaconPixel.Fill(color.White)
+	}
+	screen.DrawTriangles32(r.beaconVertices, r.beaconIndices, r.beaconPixel, &ebiten.DrawTrianglesOptions{})
+}
+
+func (r *Renderer) appendLogoBeacon(logo *UpgradeLogo) {
+	screenX, screenY := r.camera.ToScreen(logo.ToX, logo.ToY)
+	for ring := range beaconRingCount {
+		cycles := logo.Seconds/beaconPeriodSeconds + float32(ring)/beaconRingCount
+		progress := cycles - float32(int(cycles))
+		radius := beaconStartRadius + (beaconEndRadius-beaconStartRadius)*progress
+		r.appendBeaconRing(screenX*draw.Scale, screenY*draw.Scale, radius*draw.Scale, beaconAlpha*(1-progress))
+	}
+}
+
+func (r *Renderer) appendBeaconRing(x, y, radius, alpha float32) {
+	base := uint32(len(r.beaconVertices))
+	halfWidth := beaconStrokeWidth * draw.Scale / 2
+	for segment := range beaconSegments {
+		angle := float32(segment) * fullTurn / beaconSegments
+		directionX, directionY := cosine(angle), sine(angle)
+		for layer, offset := range beaconLayerOffsets {
+			reach := radius + offset*(halfWidth+beaconEdgeSoftness) - beaconLayerInset[layer]*beaconEdgeSoftness
+			r.beaconVertices = append(r.beaconVertices, beaconVertex(x+directionX*reach, y+directionY*reach, alpha*beaconLayerAlphas[layer]))
+		}
+		r.appendBeaconBands(base, uint32(segment))
+	}
+}
+
+func beaconVertex(x, y, alpha float32) ebiten.Vertex {
+	return ebiten.Vertex{DstX: x, DstY: y, SrcX: beaconPixelSize / 2, SrcY: beaconPixelSize / 2, ColorR: 1, ColorA: alpha}
+}
+
+func (r *Renderer) appendBeaconBands(base, segment uint32) {
+	layers := uint32(len(beaconLayerOffsets))
+	current := base + segment*layers
+	next := base + (segment+1)%beaconSegments*layers
+	for band := range layers - 1 {
+		r.beaconIndices = append(r.beaconIndices, current+band, next+band, current+band+1, next+band, next+band+1, current+band+1)
+	}
 }
 
 func (r *Renderer) renderLogoIfNeeded(logo *UpgradeLogo) {

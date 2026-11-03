@@ -172,6 +172,42 @@ func TestLifestealLogoIsTakenOnceAndThenLeavesTheGround(t *testing.T) {
 	}
 }
 
+func TestOnlyOneRollSitsOnTheGround(t *testing.T) {
+	game := newHeadlessGame(t)
+	maximizeEveryWeapon(game)
+	game.volleyCount = 0
+	game.pendingVolleys = 3
+	game.resolveLevelUps()
+	if game.volleyCount != 1 || game.pendingVolleys != 2 {
+		t.Fatalf("%d rolls on the ground and %d waiting, want 1 and 2", game.volleyCount, game.pendingVolleys)
+	}
+	game.volleys[0].Logos[0].Seconds = volleyFlightSeconds
+	game.volleys[0].Logos[0].ToX, game.volleys[0].Logos[0].ToY = game.player.X, game.player.Y
+	game.updateVolleys(0)
+	if game.volleyCount != 1 || game.pendingVolleys != 1 {
+		t.Fatalf("picking a roll left %d on the ground and %d waiting, want 1 and 1", game.volleyCount, game.pendingVolleys)
+	}
+}
+
+func TestAVolleyStaysMarkedOnceLostFromSight(t *testing.T) {
+	game := newHeadlessGame(t)
+	game.volleyCount = 1
+	game.volleys[0] = Volley{Count: 1, Logos: [offersPerLevel]UpgradeLogo{{IsRoll: true, ToX: game.player.X + 100, ToY: game.player.Y}}}
+	camera := game.renderer.camera
+	camera.Center(game.player.X, game.player.Y, arenaSize, arenaSize)
+	game.updateVolleys(0)
+	if game.volleys[0].HasBeenLost {
+		t.Fatalf("a volley in sight was marked as lost")
+	}
+	camera.Center(game.player.X+screenWidth, game.player.Y, arenaSize, arenaSize)
+	game.updateVolleys(0)
+	camera.Center(game.player.X, game.player.Y, arenaSize, arenaSize)
+	game.updateVolleys(0)
+	if !game.volleys[0].HasBeenLost {
+		t.Fatalf("a volley that left the screen was not marked as lost")
+	}
+}
+
 func TestNukeFrontReachesFarEnemiesLater(t *testing.T) {
 	game := newHeadlessGame(t)
 	x, y := game.player.X, game.player.Y

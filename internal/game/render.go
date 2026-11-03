@@ -15,6 +15,9 @@ import (
 type Renderer struct {
 	batches        *draw.Batches
 	camera         *draw.Camera
+	beaconVertices []ebiten.Vertex
+	beaconIndices  []uint32
+	beaconPixel    *ebiten.Image
 	groundImage    *ebiten.Image
 	wormSprites    *WormSprites
 	badgeFace      *text.GoTextFaceSource
