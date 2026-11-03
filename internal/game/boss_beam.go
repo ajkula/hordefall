@@ -68,7 +68,7 @@ var spiderBeamProfile = BeamProfile{
 
 var frostBeamProfile = BeamProfile{
 	Source:         "Drill-Worm Frost Beam",
-	Durations:      [laserPhaseCount]float32{LaserCharging: 3.4, LaserLocked: 1, LaserFiring: 0.35},
+	Durations:      [laserPhaseCount]float32{LaserCharging: 1.7, LaserLocked: 1, LaserFiring: 0.35},
 	FirstShotDelay: 0.6, CooldownMinimum: 1.6, CooldownMaximum: 1.6,
 	HalfWidth: 40, Range: 1700, WidthScale: 2,
 	PlayerDamagePerSecond: 140, EnemyDamagePerSecond: 420,

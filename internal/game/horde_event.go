@@ -37,6 +37,11 @@ const (
 	hordePowerBonus         = 2
 	hordeClearBonusPerFoe   = 20
 	bossStackOpeningRepeats = 3
+	hordeHuntNearDistance   = 300
+	hordeHuntDistanceRange  = screenWidth
+	hordeHuntDistanceBoost  = 2.5
+	hordeHuntDwindleBoost   = 1.5
+	hordeHuntPlayerShare    = 0.9
 )
 
 var hordeCoreKinds = []EnemyKind{
@@ -150,6 +155,16 @@ func (g *Game) finishHordeEvent() {
 	g.say(ChatterHordeCleared)
 	g.effects.AddShake(6)
 	g.playSound(SoundLevelUp)
+}
+
+func (g *Game) hordeHuntSpeed(index int, speed, distanceToPlayer float32) float32 {
+	if !g.enemies.IsHordeEvent[index] {
+		return speed
+	}
+	distanceWeight := clamp((distanceToPlayer-hordeHuntNearDistance)/hordeHuntDistanceRange, 0, 1)
+	dwindle := 1 - float32(g.hordeEvent.Remaining)/float32(max(1, g.hordeEvent.Total))
+	hunting := speed * (1 + hordeHuntDistanceBoost*distanceWeight + hordeHuntDwindleBoost*dwindle)
+	return min(hunting, max(speed, hordeHuntPlayerShare*g.player.MoveSpeed))
 }
 
 func (u *UI) drawHordeEventBar(g *Game, screen *ebiten.Image) {

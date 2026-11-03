@@ -52,7 +52,7 @@ func (g *Game) moveEnemy(index int, definition *EnemyDefinition, deltaSeconds fl
 	enemies := g.enemies
 	x, y := enemies.PositionX[index], enemies.PositionY[index]
 	directionX, directionY := normalize(g.player.X-x, g.player.Y-y)
-	speed := definition.Speed * enemies.SpeedFactor(index)
+	speed := g.hordeHuntSpeed(index, definition.Speed*enemies.SpeedFactor(index), length(g.player.X-x, g.player.Y-y))
 	separationX, separationY := g.computeSeparation(index, definition.Radius)
 	velocityX := directionX*speed + enemies.KnockbackX[index]
 	velocityY := directionY*speed + enemies.KnockbackY[index]

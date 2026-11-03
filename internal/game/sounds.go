@@ -12,7 +12,7 @@ type SoundIDs [soundKindCount]audio.SoundID
 
 const LaserChargeSoundSeconds = 2.6
 
-const FrostChargeSoundSeconds = 4.4
+const FrostChargeSoundSeconds = 2.7
 
 const (
 	SoundNone SoundKind = iota

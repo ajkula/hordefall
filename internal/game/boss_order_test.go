@@ -136,7 +136,7 @@ func TestEveryHordeIsLargerThanTheLast(t *testing.T) {
 }
 
 func TestBossKillsRequiredGrowWithRankAndNeverShrinkWithTime(t *testing.T) {
-	expected := map[int]int{0: 300, 1: 423, 2: 552, 3: 583, 5: 828, 10: 1530, 20: 3315}
+	expected := map[int]int{0: 300, 1: 423, 2: 552, 3: 583, 4: 105, 5: 124, 6: 958, 8: 1234, 9: 206}
 	for rank, kills := range expected {
 		if got := computeBossKillsRequired(rank, 0); got != kills {
 			t.Fatalf("rank %d: %d kills, want %d", rank, got, kills)
@@ -147,6 +147,55 @@ func TestBossKillsRequiredGrowWithRankAndNeverShrinkWithTime(t *testing.T) {
 	}
 	if got := computeBossKillsRequired(3, 60); got != 583 {
 		t.Fatalf("a fast player got %d kills, want the base 583", got)
+	}
+}
+
+func TestOnlyTheRepeatedSpiderTanksOfTheStackNeedFewerKills(t *testing.T) {
+	expected := []bool{false, false, false, false, true, true, false, false, false, true, true, false}
+	for bossesSpawned, isRepeat := range expected {
+		if got := isStackRepeat(bossesSpawned); got != isRepeat {
+			t.Fatalf("boss %d: repeat %v, want %v", bossesSpawned, got, isRepeat)
+		}
+	}
+}
+
+func TestHordeHuntsFasterFarAwayAndAsItDwindles(t *testing.T) {
+	game := newHeadlessGame(t)
+	game.player.MoveSpeed = 1000
+	game.startHordeEvent()
+	index := game.enemies.Count - 1
+	near := game.hordeHuntSpeed(index, 40, hordeHuntNearDistance)
+	far := game.hordeHuntSpeed(index, 40, hordeHuntNearDistance+hordeHuntDistanceRange)
+	if near != 40 || far != 40*(1+hordeHuntDistanceBoost) {
+		t.Fatalf("a full horde hunts at %.0f near and %.0f far", near, far)
+	}
+	game.hordeEvent.Remaining = 0
+	if last := game.hordeHuntSpeed(index, 40, hordeHuntNearDistance); last != 40*(1+hordeHuntDwindleBoost) {
+		t.Fatalf("the last member hunts at %.0f", last)
+	}
+}
+
+func TestHordeHuntNeverOutrunsThePlayerNorSlowsAFastEnemy(t *testing.T) {
+	game := newHeadlessGame(t)
+	game.player.MoveSpeed = 200
+	game.startHordeEvent()
+	index := game.enemies.Count - 1
+	if capped := game.hordeHuntSpeed(index, 100, 5000); capped != 180 {
+		t.Fatalf("hunting speed %.0f, want the cap of 180", capped)
+	}
+	if fast := game.hordeHuntSpeed(index, 190, 5000); fast != 190 {
+		t.Fatalf("a fast enemy went from 190 to %.0f", fast)
+	}
+	if frozen := game.hordeHuntSpeed(index, 0, 5000); frozen != 0 {
+		t.Fatalf("a frozen enemy moves at %.0f", frozen)
+	}
+}
+
+func TestOrdinaryEnemiesDoNotHunt(t *testing.T) {
+	game := newHeadlessGame(t)
+	game.spawnEnemyAt(EnemyBrute, game.player.X+2000, game.player.Y)
+	if speed := game.hordeHuntSpeed(game.enemies.Count-1, 40, 2000); speed != 40 {
+		t.Fatalf("an ordinary enemy hunts at %.0f", speed)
 	}
 }
 

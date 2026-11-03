@@ -35,6 +35,7 @@ const (
 	bossKillsPerRank        = 120
 	bossKillsPerRankSquared = 3
 	bossStackKillsFactor    = 0.85
+	bossRepeatKillsFactor   = 0.15
 	bossPaceSeconds         = 120
 	spiderTurretPivot       = 8
 	maximumBossesAlive      = 3
@@ -107,7 +108,18 @@ func computeBossKillsRequired(bossesSpawned int, seconds float32) int {
 	base := bossKillsBase + bossKillsPerRank*rank + bossKillsPerRankSquared*rank*rank
 	phaseFactors := [2]float32{1, bossStackKillsFactor}
 	phaseFactor := phaseFactors[boolToIndex(bossesSpawned >= len(bossDiscoveryList))]
-	return int(base * phaseFactor * max(1, seconds/(bossPaceSeconds*(rank+1))))
+	repeatFactors := [2]float32{1, bossRepeatKillsFactor}
+	repeatFactor := repeatFactors[boolToIndex(isStackRepeat(bossesSpawned))]
+	return int(base * phaseFactor * repeatFactor * max(1, seconds/(bossPaceSeconds*(rank+1))))
+}
+
+func isStackRepeat(bossesSpawned int) bool {
+	position := bossesSpawned - len(bossDiscoveryList)
+	if position < 0 || position%len(bossStack) == 0 {
+		return false
+	}
+	position %= len(bossStack)
+	return bossStack[position] == bossStack[position-1]
 }
 
 func (g *Game) spawnSpiderAt(angle, distance float32) {

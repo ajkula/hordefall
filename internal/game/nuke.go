@@ -28,7 +28,7 @@ const (
 	nukeRadius             = screenWidth / 2
 	nukeClearingRadius     = 130
 	nukeKillOverkill       = 2
-	nukeBossDamageFraction = 0.3
+	nukeBossDamageFraction = 0.15
 	nukeGrowthSeconds      = 0.3
 	nukeDissolveSeconds    = 0.5
 	nukeDissolveGrowth     = 0.08
