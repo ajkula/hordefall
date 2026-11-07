@@ -63,7 +63,7 @@ var weatherDefinitions = []world.WeatherDefinition{
 	WeatherHeatwave: {
 		Key: "heatwave", LabelColor: [3]float32{1, 0.6, 0.2},
 		Multiply: [3]float32{1, 0.86, 0.66}, Lift: [3]float32{0.1, 0.04, 0},
-		GroundStimulus: StimulusHeat, GroundCellsPerTick: 30, GroundInnerCells: 5,
+		GroundStimulus: StimulusSunlight, GroundCellsPerTick: 30, GroundInnerCells: 5,
 		Precipitation: world.Precipitation{
 			Style: world.StyleEmber, Count: 90, VelocityX: 15, VelocityY: -45, Size: 1.5, SizeSpread: 1.2, Sway: 10,
 			Color: [3]float32{1, 0.55, 0.15}, Alpha: 0.8,
@@ -116,11 +116,14 @@ func newWeather(soundIDs SoundIDs) world.Weather {
 
 func (g *Game) resetWeather() {
 	g.weather.Reset(&g.random)
+	g.resetLakeTide()
 }
 
 func (g *Game) updateWeather(deltaSeconds float32) {
 	events := g.weather.Advance(deltaSeconds, &g.random)
 	g.announceWeatherIf(events.HasStart)
+	g.planLakeTideIf(events.HasStart)
+	g.advanceLakeTide(deltaSeconds)
 	intensity := g.weather.Intensity()
 	soaking := &weatherSoakings[g.weather.Kind]
 	g.soakEnemies(soaking, soaking.StatusChancePerSecond*deltaSeconds*intensity)

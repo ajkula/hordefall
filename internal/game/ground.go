@@ -1,6 +1,10 @@
 package game
 
-import "github.com/ajkula/ajkurig/world"
+import (
+	"slices"
+
+	"github.com/ajkula/ajkurig/world"
+)
 
 // ===== Types =====
 
@@ -18,6 +22,10 @@ const (
 	GroundFire
 	GroundIce
 	GroundWater
+	GroundScorched
+	GroundBurntShore
+	GroundSprout
+	GroundRegrowing
 	groundKindCount
 )
 
@@ -32,13 +40,16 @@ const (
 	StimulusOil
 	StimulusDouse
 	StimulusScorch
+	StimulusSunlight
+	StimulusRegrow
 	stimulusCount
 )
 
 const (
-	groundCellSize     = 16
-	groundTickFrames   = 6
-	spawnClearingCells = 8
+	groundCellSize      = 16
+	groundTickFrames    = 6
+	spawnClearingCells  = 8
+	regrowChancePer1024 = 8
 )
 
 var groundMaterials = []world.Material{
@@ -61,27 +72,59 @@ var groundMaterials = []world.Material{
 		LifetimeMinTicks: 150, LifetimeMaxTicks: 250, Tag: uint32(ElementFrost),
 	},
 	GroundWater: {Name: "Water", BaseColor: [3]uint8{36, 84, 165}, ColorVariation: 16, Tag: uint32(ElementWater)},
+	GroundScorched: {
+		Name: "Scorched", BaseColor: [3]uint8{44, 34, 28}, ColorVariation: 10,
+		LifetimeMinTicks: 300, LifetimeMaxTicks: 5000,
+	},
+	GroundBurntShore: {
+		Name: "Burnt Shore", BaseColor: [3]uint8{58, 45, 34}, ColorVariation: 12,
+		LifetimeMinTicks: 600, LifetimeMaxTicks: 1500,
+	},
+	GroundSprout: {
+		Name: "Sprout", BaseColor: [3]uint8{88, 122, 52}, ColorVariation: 14,
+		LifetimeMinTicks: 40, LifetimeMaxTicks: 80,
+	},
+	GroundRegrowing: {
+		Name: "Regrowing", BaseColor: [3]uint8{46, 86, 44}, ColorVariation: 16,
+		LifetimeMinTicks: 200, LifetimeMaxTicks: 400, Emits: StimulusRegrow,
+	},
 }
 
-var groundRules = []world.MaterialRule{
-	world.Rule(StimulusHeat, GroundGrass, GroundFire, 36),
-	world.Rule(StimulusHeat, GroundOil, GroundFire, 1024),
-	world.Rule(StimulusHeat, GroundIce, GroundWater, 500),
-	world.Rule(StimulusChill, GroundWater, GroundIce, 1024),
-	world.Rule(StimulusChill, GroundFire, GroundAsh, 1024),
-	world.Rule(StimulusOil, GroundGrass, GroundOil, 1024),
-	world.Rule(StimulusOil, GroundDirt, GroundOil, 1024),
-	world.Rule(StimulusOil, GroundAsh, GroundOil, 1024),
-	world.Rule(StimulusDouse, GroundFire, GroundAsh, 1024),
-	world.Rule(StimulusScorch, GroundGrass, GroundFire, 700),
-	world.Rule(StimulusScorch, GroundOil, GroundFire, 1024),
-	world.Rule(StimulusScorch, GroundIce, GroundWater, 1024),
-	world.Rule(StimulusScorch, GroundDirt, GroundAsh, 500),
-	world.Rule(StimulusExpire, GroundFire, GroundAsh, 1024),
-	world.Rule(StimulusExpire, GroundAsh, GroundGrass, 1024),
-	world.Rule(StimulusExpire, GroundIce, GroundWater, 1024),
-	world.Rule(StimulusExpire, GroundOil, GroundDirt, 1024),
-}
+var flammableGrounds = []GroundKind{GroundGrass, GroundSprout, GroundRegrowing}
+
+var oilableGrounds = []GroundKind{GroundGrass, GroundDirt, GroundAsh, GroundScorched, GroundBurntShore, GroundSprout, GroundRegrowing}
+
+var groundRules = slices.Concat(
+	groundRulesFor(StimulusHeat, flammableGrounds, GroundFire, 36),
+	groundRulesFor(StimulusSunlight, flammableGrounds, GroundFire, 36),
+	groundRulesFor(StimulusScorch, flammableGrounds, GroundFire, 700),
+	groundRulesFor(StimulusOil, oilableGrounds, GroundOil, 1024),
+	[]world.MaterialRule{
+		world.Rule(StimulusHeat, GroundOil, GroundFire, 1024),
+		world.Rule(StimulusHeat, GroundIce, GroundWater, 500),
+		world.Rule(StimulusHeat, GroundScorched, GroundScorched, 1024),
+		world.Rule(StimulusHeat, GroundBurntShore, GroundBurntShore, 1024),
+		world.Rule(StimulusSunlight, GroundOil, GroundFire, 1024),
+		world.Rule(StimulusSunlight, GroundIce, GroundWater, 500),
+		world.Rule(StimulusChill, GroundWater, GroundIce, 1024),
+		world.Rule(StimulusChill, GroundFire, GroundAsh, 1024),
+		world.Rule(StimulusDouse, GroundFire, GroundAsh, 1024),
+		world.Rule(StimulusScorch, GroundOil, GroundFire, 1024),
+		world.Rule(StimulusScorch, GroundIce, GroundWater, 1024),
+		world.Rule(StimulusScorch, GroundDirt, GroundBurntShore, 500),
+		world.Rule(StimulusScorch, GroundScorched, GroundScorched, 1024),
+		world.Rule(StimulusScorch, GroundBurntShore, GroundBurntShore, 1024),
+		world.Rule(StimulusRegrow, GroundScorched, GroundSprout, regrowChancePer1024),
+		world.Rule(StimulusExpire, GroundFire, GroundAsh, 1024),
+		world.Rule(StimulusExpire, GroundAsh, GroundScorched, 1024),
+		world.Rule(StimulusExpire, GroundIce, GroundWater, 1024),
+		world.Rule(StimulusExpire, GroundOil, GroundDirt, 1024),
+		world.Rule(StimulusExpire, GroundScorched, GroundSprout, 1024),
+		world.Rule(StimulusExpire, GroundSprout, GroundRegrowing, 1024),
+		world.Rule(StimulusExpire, GroundRegrowing, GroundGrass, 1024),
+		world.Rule(StimulusExpire, GroundBurntShore, GroundDirt, 1024),
+	},
+)
 
 var terrainKinds = [4]GroundKind{GroundGrass, GroundDirt, GroundWater, GroundOil}
 
@@ -110,6 +153,14 @@ func contactElement(ground *world.Ground, x, y float32) Element {
 
 func clearSpawnArea(ground *world.Ground) {
 	ground.PaintCircle(ground.Columns/2, ground.Rows/2, spawnClearingCells, GroundGrass)
+}
+
+func groundRulesFor(stimulus GroundStimulus, sources []GroundKind, into GroundKind, chancePer1024 uint32) []world.MaterialRule {
+	rules := make([]world.MaterialRule, 0, len(sources))
+	for _, source := range sources {
+		rules = append(rules, world.Rule(stimulus, source, into, chancePer1024))
+	}
+	return rules
 }
 
 func generateTerrain(column, row int, seed uint32) GroundKind {

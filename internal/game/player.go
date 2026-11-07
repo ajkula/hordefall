@@ -69,6 +69,7 @@ const (
 
 var groundPlayerSpeed = [groundKindCount]float32{
 	GroundGrass: 1, GroundDirt: 1, GroundAsh: 1, GroundOil: 0.85, GroundFire: 1, GroundIce: 1.2, GroundWater: 0.7,
+	GroundScorched: 1, GroundBurntShore: 1, GroundSprout: 1, GroundRegrowing: 1,
 }
 
 // ===== Public API =====

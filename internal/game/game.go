@@ -59,6 +59,7 @@ type Game struct {
 	bossEventCount        int
 	hordeEvent            HordeEvent
 	weather               world.Weather
+	lakeTide              LakeTide
 	volleys               [maximumVolleys]Volley
 	volleyCount           int
 	pendingVolleys        int
