@@ -112,7 +112,7 @@ func (r *Renderer) queueSteamPuff(player *Player, puff *SteamPuff) {
 	}
 	progress := 1 - puff.Remaining/steamPuffSeconds
 	distance := steamPuffStartDistance + steamPuffTravelDistance*progress*(2-progress)
-	x, y := r.tachikomaPoint(player, steamPuffCenterForward+cosine(puff.Angle)*distance, sine(puff.Angle)*distance)
+	x, y := r.tsukumoPoint(player, steamPuffCenterForward+cosine(puff.Angle)*distance, sine(puff.Angle)*distance)
 	fadeOut := clamp((1-progress)/steamPuffFadeFraction, 0, 1)
 	alpha := (steamPuffBirthAlpha + (steamPuffPeakAlpha-steamPuffBirthAlpha)*progress) * fadeOut
 	r.batches.Solid.AddCircle(x, y, steamPuffRadius*(1+steamPuffGrowth*progress), steamColor, alpha)

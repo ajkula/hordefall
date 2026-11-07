@@ -89,7 +89,7 @@ var chatterTopics = []ui.Topic{
 }
 
 var chatterStyle = ui.BubbleStyle{
-	KeyPrefix: "tachikoma", GlobalGap: chatterGlobalGap, UrgentGap: chatterUrgentGap, ScrollSpeed: chatterScrollSpeed,
+	KeyPrefix: "tsukumo", GlobalGap: chatterGlobalGap, UrgentGap: chatterUrgentGap, ScrollSpeed: chatterScrollSpeed,
 	BoxCharacters: chatterBoxCharacters, Padding: chatterBoxPadding, Alpha: chatterBoxAlpha, Lift: chatterLift, TextRise: chatterTextRise,
 	Face: ui.FaceMono, TextColor: textColor, BoxColor: panelColor,
 }

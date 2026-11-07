@@ -26,6 +26,7 @@ type ArtCanvas struct {
 	Final  []byte
 	Layer  ArtLayer
 	Image  *ebiten.Image
+	Look   RobotLook
 }
 
 type ArtPose struct {
@@ -47,36 +48,36 @@ type ArtLimb struct {
 // ===== Constants =====
 
 const (
-	artWidth            = 128
-	artHeight           = 72
-	artDesignScale      = float32(artWidth) / 256
-	artModelScale       = float32(artWidth) / 320
-	artVanishX          = 128 * artDesignScale
-	artVanishY          = 116 * artDesignScale
-	artZoomStart        = 0.2
-	artPixelScale       = screenWidth / artWidth
-	artShadeLevels      = 4
-	artSpecularDot      = 0.94
-	artRimDepth         = 0.6
-	artFloorTop         = 116 * artDesignScale
-	artFloorBandHeight  = 9 * artDesignScale
-	tachikomaArtX       = 70 * artDesignScale
-	tachikomaArtY       = 139 * artDesignScale
-	spiderArtX          = 190 * artDesignScale
-	spiderArtY          = 139 * artDesignScale
-	spiderArtSlide      = 13 * artDesignScale
-	spiderArtLean       = 0.1
-	tachikomaEyeShrink  = 0.75
-	tachikomaGunTopX    = 0
-	tachikomaGunTopY    = -22
-	tachikomaEyeClosing = 1 / artModelScale
-	artRimWidth         = 0.7
+	artWidth           = 128
+	artHeight          = 72
+	artDesignScale     = float32(artWidth) / 256
+	artModelScale      = float32(artWidth) / 320
+	artVanishX         = 128 * artDesignScale
+	artVanishY         = 116 * artDesignScale
+	artZoomStart       = 0.2
+	artPixelScale      = screenWidth / artWidth
+	artShadeLevels     = 4
+	artSpecularDot     = 0.94
+	artRimDepth        = 0.6
+	artFloorTop        = 116 * artDesignScale
+	artFloorBandHeight = 9 * artDesignScale
+	tsukumoArtX        = 70 * artDesignScale
+	tsukumoArtY        = 139 * artDesignScale
+	spiderArtX         = 190 * artDesignScale
+	spiderArtY         = 139 * artDesignScale
+	spiderArtSlide     = 13 * artDesignScale
+	spiderArtLean      = 0.1
+	tsukumoEyeShrink   = 0.75
+	tsukumoGunTopX     = 0
+	tsukumoGunTopY     = -22
+	tsukumoEyeClosing  = 1 / artModelScale
+	artRimWidth        = 0.7
 )
 
-var tachikomaArtEyes = [3][3]float32{
-	moveTowardGun(shrinkToward(-10, -40, 7, tachikomaGunTopX, tachikomaGunTopY, tachikomaEyeShrink)),
-	moveTowardGun(shrinkToward(10, -40, 7, tachikomaGunTopX, tachikomaGunTopY, tachikomaEyeShrink)),
-	moveTowardGun(shrinkToward(0, -27, 4, tachikomaGunTopX, tachikomaGunTopY, tachikomaEyeShrink)),
+var tsukumoArtEyes = [3][3]float32{
+	moveTowardGun(shrinkToward(-10, -40, 7, tsukumoGunTopX, tsukumoGunTopY, tsukumoEyeShrink)),
+	moveTowardGun(shrinkToward(10, -40, 7, tsukumoGunTopX, tsukumoGunTopY, tsukumoEyeShrink)),
+	moveTowardGun(shrinkToward(0, -27, 4, tsukumoGunTopX, tsukumoGunTopY, tsukumoEyeShrink)),
 }
 
 var (
@@ -87,29 +88,26 @@ var (
 	blueRim         = [3]float32{0.35, 0.7, 1}
 	artFloorBands   = [3][3]float32{{0.03, 0.03, 0.05}, {0.05, 0.045, 0.07}, {0.07, 0.06, 0.09}}
 
-	tachikomaShell = Material{Base: tachikomaBlue, Rim: redRim, RimSide: 1, IsShaded: true, IsHighlight: true}
-	tachikomaHead  = Material{Base: [3]float32{0.12, 0.3, 0.66}, Rim: redRim, RimSide: 1, IsShaded: true, IsHighlight: true}
-	tachikomaDark  = Material{Base: [3]float32{0.08, 0.14, 0.32}, Rim: redRim, RimSide: 1, IsShaded: true}
-	tachikomaLimb  = Material{Base: tachikomaWhite, Rim: redRim, RimSide: 1, IsShaded: true}
-	tachikomaFar   = Material{Base: [3]float32{0.62, 0.66, 0.74}, IsShaded: true}
-	tachikomaEye   = Material{Base: tachikomaWhite, IsShaded: true, IsHighlight: true}
-	flatPupil      = Material{Base: tachikomaPupil}
-	flatWheel      = Material{Base: tachikomaWheel, Rim: redRim, RimSide: 1, IsShaded: true}
-	flatHub        = Material{Base: tachikomaLegShade}
-	flatBore       = Material{Base: artOutline}
-	spiderArmor    = Material{Base: [3]float32{0.46, 0.52, 0.44}, Rim: blueRim, RimSide: -1, IsShaded: true, IsHighlight: true}
-	spiderPlate    = Material{Base: [3]float32{0.6, 0.66, 0.56}, Rim: blueRim, RimSide: -1, IsShaded: true, IsHighlight: true}
-	spiderDark     = Material{Base: [3]float32{0.2, 0.23, 0.2}, Rim: blueRim, RimSide: -1, IsShaded: true}
-	spiderJoint    = Material{Base: jointColor, Rim: blueRim, RimSide: -1, IsShaded: true}
-	spiderFar      = Material{Base: [3]float32{0.27, 0.3, 0.26}, IsShaded: true}
-	spiderEye      = Material{Base: sensorRed}
-	spiderEyeCore  = Material{Base: [3]float32{1, 0.85, 0.75}}
+	tsukumoLimb   = Material{Base: tsukumoWhite, Rim: redRim, RimSide: 1, IsShaded: true}
+	tsukumoFar    = Material{Base: [3]float32{0.62, 0.66, 0.74}, IsShaded: true}
+	tsukumoEye    = Material{Base: tsukumoWhite, IsShaded: true, IsHighlight: true}
+	flatPupil     = Material{Base: tsukumoPupil}
+	flatWheel     = Material{Base: tsukumoWheel, Rim: redRim, RimSide: 1, IsShaded: true}
+	flatHub       = Material{Base: tsukumoLegShade}
+	flatBore      = Material{Base: artOutline}
+	spiderArmor   = Material{Base: [3]float32{0.46, 0.52, 0.44}, Rim: blueRim, RimSide: -1, IsShaded: true, IsHighlight: true}
+	spiderPlate   = Material{Base: [3]float32{0.6, 0.66, 0.56}, Rim: blueRim, RimSide: -1, IsShaded: true, IsHighlight: true}
+	spiderDark    = Material{Base: [3]float32{0.2, 0.23, 0.2}, Rim: blueRim, RimSide: -1, IsShaded: true}
+	spiderJoint   = Material{Base: jointColor, Rim: blueRim, RimSide: -1, IsShaded: true}
+	spiderFar     = Material{Base: [3]float32{0.27, 0.3, 0.26}, IsShaded: true}
+	spiderEye     = Material{Base: sensorRed}
+	spiderEyeCore = Material{Base: [3]float32{1, 0.85, 0.75}}
 
-	tachikomaRearLimbs = [2]ArtLimb{
+	tsukumoRearLimbs = [2]ArtLimb{
 		{Hip: [2]float32{-6, -22}, Knee: [2]float32{-16, -27.5}, Foot: [2]float32{-19, -12}, UpperWidth: [2]float32{3.2, 2.5}, LowerWidth: [2]float32{2.5, 1.8}},
 		{Hip: [2]float32{6, -22}, Knee: [2]float32{16, -27.5}, Foot: [2]float32{19, -12}, UpperWidth: [2]float32{3.2, 2.5}, LowerWidth: [2]float32{2.5, 1.8}},
 	}
-	tachikomaFrontLimbs = [2]ArtLimb{
+	tsukumoFrontLimbs = [2]ArtLimb{
 		{Hip: [2]float32{-17, -25}, Knee: [2]float32{-46, -36}, Foot: [2]float32{-40, -11}, UpperWidth: [2]float32{3.8, 3}, LowerWidth: [2]float32{3, 2.2}},
 		{Hip: [2]float32{17, -25}, Knee: [2]float32{46, -36}, Foot: [2]float32{40, -11}, UpperWidth: [2]float32{3.8, 3}, LowerWidth: [2]float32{3, 2.2}},
 	}
@@ -145,10 +143,10 @@ func (c *ArtCanvas) Render(progress, seconds float32) *ebiten.Image {
 	c.beginLayer()
 	c.paintSpider(spider, seconds)
 	c.commitLayer()
-	tachikoma := zoomedPose(tachikomaArtX, tachikomaArtY, zoom)
-	c.paintShadow(tachikoma.AnchorX, tachikoma.AnchorY, 56*tachikoma.Scale, 4*tachikoma.Scale)
+	tsukumo := zoomedPose(tsukumoArtX, tsukumoArtY, zoom)
+	c.paintShadow(tsukumo.AnchorX, tsukumo.AnchorY, 56*tsukumo.Scale, 4*tsukumo.Scale)
 	c.beginLayer()
-	c.paintTachikoma(tachikoma)
+	c.paintRobot(tsukumo)
 	c.commitLayer()
 	c.Image.WritePixels(c.Final)
 	return c.Image
@@ -221,33 +219,63 @@ func (c *ArtCanvas) isInside(x, y int) bool {
 	return x >= 0 && y >= 0 && x < c.Width && y < c.Height
 }
 
-func (c *ArtCanvas) paintTachikoma(pose ArtPose) {
-	for _, limb := range tachikomaRearLimbs {
-		c.paintLimb(pose, limb, tachikomaFar, tachikomaFar)
+func (c *ArtCanvas) paintRobot(pose ArtPose) {
+	look := &c.Look
+	paint := &robotPaints[look.Color]
+	robotArtRearLegs[look.Legs](c, pose, paint)
+	robotArtAbdomens[look.Abdomen](c, pose, paint)
+	robotArtHeads[look.Head](c, pose, paint)
+	robotArtEyes[look.Eyes](c, pose, paint)
+	robotArtArms[look.Arms](c, pose, paint)
+	c.paintRobotGun(pose, paint)
+	robotArtFrontLegs[look.Legs](c, pose, paint)
+}
+
+func (c *ArtCanvas) paintDropletRearLegs(pose ArtPose, _ *RobotPaint) {
+	for _, limb := range tsukumoRearLimbs {
+		c.paintLimb(pose, limb, tsukumoFar, tsukumoFar)
 		c.paintWheel(pose, limb.Foot, 7.5)
 	}
-	c.paintEllipsoid(pose, 4, -44, 36, 26, tachikomaShell)
-	c.paintEllipsoid(pose, -21, -50, 5, 4, tachikomaDark)
-	c.paintEllipsoid(pose, 24, -56, 4, 3, tachikomaDark)
-	c.paintCapsule(pose, 2, -30, 0, -36, 8, 8, tachikomaDark)
-	c.paintEllipsoid(pose, 0, -36, 22, 15, tachikomaHead)
-	for _, eye := range tachikomaArtEyes {
-		c.paintEye(pose, eye[0], eye[1], eye[2])
-	}
-	for _, side := range [2]float32{-1, 1} {
-		c.paintCapsule(pose, 14*side, -27, 20*side, -16, 1.8, 1.6, tachikomaLimb)
-		c.paintEllipsoid(pose, 21*side, -15, 2.5, 2.5, tachikomaDark)
-	}
-	c.paintCapsule(pose, tachikomaGunTopX, tachikomaGunTopY, 0, -18, 2.4, 2.4, tachikomaDark)
-	c.paintFlatDisc(pose, 0, -17.5, 1.4, flatPupil)
-	for _, limb := range tachikomaFrontLimbs {
-		c.paintLimb(pose, limb, tachikomaLimb, tachikomaDark)
+}
+
+func (c *ArtCanvas) paintDropletFrontLegs(pose ArtPose, paint *RobotPaint) {
+	for _, limb := range tsukumoFrontLimbs {
+		c.paintLimb(pose, limb, tsukumoLimb, paint.Dark)
 		c.paintWheel(pose, limb.Foot, 11.25)
 	}
 }
 
+func (c *ArtCanvas) paintBulbAbdomen(pose ArtPose, paint *RobotPaint) {
+	c.paintEllipsoid(pose, 4, -44, 36, 26, paint.Shell)
+	c.paintEllipsoid(pose, -21, -50, 5, 4, paint.Dark)
+	c.paintEllipsoid(pose, 24, -56, 4, 3, paint.Dark)
+}
+
+func (c *ArtCanvas) paintRoundHead(pose ArtPose, paint *RobotPaint) {
+	c.paintCapsule(pose, 2, -30, 0, -36, 8, 8, paint.Dark)
+	c.paintEllipsoid(pose, 0, -36, 22, 15, paint.Head)
+}
+
+func (c *ArtCanvas) paintTrioEyes(pose ArtPose, _ *RobotPaint) {
+	for _, eye := range tsukumoArtEyes {
+		c.paintEye(pose, eye[0], eye[1], eye[2])
+	}
+}
+
+func (c *ArtCanvas) paintManipulatorArms(pose ArtPose, paint *RobotPaint) {
+	for _, side := range [2]float32{-1, 1} {
+		c.paintCapsule(pose, 14*side, -27, 20*side, -16, 1.8, 1.6, tsukumoLimb)
+		c.paintEllipsoid(pose, 21*side, -15, 2.5, 2.5, paint.Dark)
+	}
+}
+
+func (c *ArtCanvas) paintRobotGun(pose ArtPose, paint *RobotPaint) {
+	c.paintCapsule(pose, tsukumoGunTopX, tsukumoGunTopY, 0, -18, 2.4, 2.4, paint.Dark)
+	c.paintFlatDisc(pose, 0, -17.5, 1.4, flatPupil)
+}
+
 func (c *ArtCanvas) paintEye(pose ArtPose, x, y, radius float32) {
-	c.paintEllipsoid(pose, x, y, radius, radius, tachikomaEye)
+	c.paintEllipsoid(pose, x, y, radius, radius, tsukumoEye)
 	c.paintFlatDisc(pose, x+radius*0.3, y, radius*0.48, flatPupil)
 }
 
@@ -367,9 +395,9 @@ func shrinkToward(x, y, radius, targetX, targetY, factor float32) [3]float32 {
 }
 
 func moveTowardGun(eye [3]float32) [3]float32 {
-	offsetX, offsetY := tachikomaGunTopX-eye[0], tachikomaGunTopY-eye[1]
+	offsetX, offsetY := tsukumoGunTopX-eye[0], tsukumoGunTopY-eye[1]
 	directionX, directionY := normalize(offsetX, offsetY)
-	shift := min(tachikomaEyeClosing, length(offsetX, offsetY)-eye[2])
+	shift := min(tsukumoEyeClosing, length(offsetX, offsetY)-eye[2])
 	return [3]float32{eye[0] + directionX*shift, eye[1] + directionY*shift, eye[2]}
 }
 

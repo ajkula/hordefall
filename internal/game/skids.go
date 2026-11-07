@@ -28,15 +28,15 @@ func newEffects() *fx.Effects {
 	return effects
 }
 
-func (g *Game) updateSkid(rig *TachikomaRig, accelerationX, accelerationY float32) {
-	for leg := range tachikomaLegCount {
+func (g *Game) updateSkid(rig *TsukumoRig, accelerationX, accelerationY float32) {
+	for leg := range tsukumoLegCount {
 		g.markWheel(&rig.Legs[leg], accelerationX, accelerationY)
 	}
 }
 
-func (g *Game) markWheel(state *TachikomaLeg, accelerationX, accelerationY float32) {
+func (g *Game) markWheel(state *TsukumoLeg, accelerationX, accelerationY float32) {
 	state.Skid.Steer(accelerationX, accelerationY)
-	wheelDiameter := float32(2 * tachikomaWheelRadius * tachikomaScale)
+	wheelDiameter := float32(2 * tsukumoWheelRadius * tsukumoScale)
 	isMarked := state.Skid.Mark(&g.effects.Skids, state.FootX, state.FootY, wheelDiameter*skidWidthPerWheel)
 	g.raiseDustIf(state.FootX, state.FootY, isMarked && g.random.Chance(state.Skid.Amount*skidDustChance))
 }

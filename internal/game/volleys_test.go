@@ -54,7 +54,7 @@ func TestLogoCannotBePickedBeforeItSettles(t *testing.T) {
 	}
 	game.updateVolleys(volleyFlightSeconds)
 	if game.volleyCount != 0 {
-		t.Fatalf("a settled logo under the tachikoma was not picked up")
+		t.Fatalf("a settled logo under the tsukumo was not picked up")
 	}
 }
 

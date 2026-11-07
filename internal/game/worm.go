@@ -658,6 +658,7 @@ func (g *Game) destroyWormIf(worm *DrillWorm, shouldDestroy bool) {
 	g.effects.AddPopup(g.player.X, g.player.Y-80, i18n.T("worm.destroyed"), accentColor)
 	g.say(ChatterWormDown)
 	g.effects.AddShake(14)
+	g.countWormDefeat()
 	worm.IsActive = false
 }
 

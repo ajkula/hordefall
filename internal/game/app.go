@@ -82,7 +82,14 @@ func NewApp(isSilent bool) (*rig.App, *Game, error) {
 		Title: gameTitle, GameOverTitle: gameOverTitle, DemoClipSeconds: demoSequenceSeconds, ClipsPerBoard: 2 * len(demoSequences),
 		GameOverIdle: gameOverIdleSeconds, Intro: introSettings(), AttractArt: game.ui.drawAttractArt,
 		HighScoreLine: describeHighScore, ControlsHint: controlsHintKey, GameplayOptions: game.gameplayOptions(),
+		MainMenuExtras: []ui.Option{{Label: shell.Label("menu.tsukumo"), Activate: func() { app.Switch(screenRobotGarage) }}},
 	})
+	app.SetScreen(screenRobotGarage, NewRobotGarageScreen(game))
+	recordScore := app.OnQuit
+	app.OnQuit = func() {
+		recordScore()
+		game.saveRobotGarage()
+	}
 	return app, game, nil
 }
 

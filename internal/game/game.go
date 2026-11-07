@@ -46,6 +46,10 @@ type Game struct {
 	nextBodyID            uint32
 	isBodySpreadSpent     bool
 	conductionHop         int
+	robotLook             RobotLook
+	robotLab              *RobotLab
+	garage                RobotGarage
+	isGarageDirty         bool
 	spiders               []SpiderRig
 	demoReinforceCooldown float32
 	mines                 []StaticMine
@@ -118,6 +122,8 @@ func NewGame(app *rig.App, soundIDs SoundIDs) *Game {
 	game.renderer = NewRenderer(app.Batches, app.Camera, game.ground.Columns, game.ground.Rows)
 	game.puddleMarks = make([]uint32, game.ground.Columns*game.ground.Rows)
 	game.attachAudio(app.Audio, soundIDs)
+	game.garage = LoadRobotGarage(app.Store)
+	game.applyRobotLook(game.garage.Look)
 	return game
 }
 
@@ -126,6 +132,7 @@ func (g *Game) Name() string {
 }
 
 func (g *Game) Reset(frame *rig.Frame) {
+	g.saveRobotGarage()
 	demoDraws[boolToIndex(frame.IsDemo)](g)
 	g.resetRun()
 	g.isDemo = frame.IsDemo

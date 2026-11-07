@@ -55,10 +55,7 @@ func (g *Game) simulationModules() []rig.Module {
 		}),
 		simulationStep(moduleSpiders, func() { g.updateSpiders(deltaSeconds) }),
 		simulationStep(moduleWorm, func() { g.updateWorm(deltaSeconds) }),
-		simulationStep(moduleDirector, func() {
-			g.updateSpawning(deltaSeconds)
-			g.startBossEventIfDue()
-		}),
+		simulationStep(moduleDirector, func() { g.updateDirector(deltaSeconds) }),
 		simulationStep(moduleGround, g.tickGroundIfDue),
 		simulationStep(moduleWeather, func() { g.updateWeather(deltaSeconds) }),
 		simulationStep(moduleChatter, func() { g.updateChatter(deltaSeconds) }),
@@ -108,6 +105,7 @@ func (g *Game) hudModules() []rig.Module {
 	return []rig.Module{
 		hudStep(moduleLevelUp, func(screen *ebiten.Image) { g.renderer.drawUpgradeLogos(g, screen) }),
 		hudStep(moduleHud, func(screen *ebiten.Image) { u.drawStatus(g, screen) }),
+		hudStep(moduleHud, func(screen *ebiten.Image) { u.drawRobotLab(g, screen) }),
 		hudStep(moduleChatter, func(screen *ebiten.Image) { u.drawChatter(g, screen) }),
 		hudStep(moduleLevelUp, func(screen *ebiten.Image) { u.drawLevelUpBanner(g, screen) }),
 		hudStep(moduleEffects, func(screen *ebiten.Image) { g.effects.DrawPopups(screen, u.kit, g.renderer.camera) }),
@@ -139,4 +137,5 @@ func (g *Game) endTick(frame *rig.Frame) {
 	g.levelUpBannerSeconds = max(0, g.levelUpBannerSeconds-deltaSeconds)
 	demoEpilogues[boolToIndex(frame.IsDemo)](g)
 	g.updateMusicSignals()
+	g.saveRobotGarageOnDeath()
 }

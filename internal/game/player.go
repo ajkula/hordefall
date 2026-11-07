@@ -15,7 +15,7 @@ type Player struct {
 	VelocityY           float32
 	ShoveX              float32
 	ShoveY              float32
-	Rig                 TachikomaRig
+	Rig                 TsukumoRig
 	AimX                float32
 	AimY                float32
 	IsAimLocked         bool
@@ -74,7 +74,7 @@ var groundPlayerSpeed = [groundKindCount]float32{
 // ===== Public API =====
 
 func NewPlayer() *Player {
-	return &Player{
+	player := &Player{
 		X: arenaSize / 2, Y: arenaSize / 2, FacingX: 1, AimX: 1,
 		Health: playerStartHealth, MaximumHealth: playerStartHealth,
 		Level: 1, ExperienceToNext: experienceForLevel(1),
@@ -83,6 +83,8 @@ func NewPlayer() *Player {
 		Weapons:  []WeaponState{{Kind: WeaponPulseShot, Level: 1}},
 		LifeGate: NewLifeGate(),
 	}
+	player.placeRig()
+	return player
 }
 
 func (p *Player) BladePosition(blade int) (float32, float32) {
@@ -190,7 +192,7 @@ func (g *Game) updatePlayer(deltaSeconds float32) {
 	player.GainExperience(collected)
 	g.playSoundIf(SoundGem, collected > 0)
 	g.updateHealOrbs(deltaSeconds)
-	g.updateTachikoma(deltaSeconds)
+	g.updateTsukumo(deltaSeconds)
 }
 
 func (g *Game) updateFacing() {
