@@ -3,7 +3,7 @@ module hordefall
 go 1.26.0
 
 require (
-	github.com/ajkula/ajkurig v0.8.0
+	github.com/ajkula/ajkurig v0.9.0
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 )
 

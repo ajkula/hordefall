@@ -1,5 +1,7 @@
 github.com/ajkula/ajkurig v0.8.0 h1:KD0/Mvja2iLnm2f3IEXKJ4tSeqgb5/6745YIL5gfYL0=
 github.com/ajkula/ajkurig v0.8.0/go.mod h1:+4OQFc1sEf4TugM+ShGiaGyjsUXdqQ4lZQgT3zlAvsw=
+github.com/ajkula/ajkurig v0.9.0 h1:37t+qw3hiTrKxYZ9CNqiXgtYj4ByoM4DHfQMD/rlblc=
+github.com/ajkula/ajkurig v0.9.0/go.mod h1:+4OQFc1sEf4TugM+ShGiaGyjsUXdqQ4lZQgT3zlAvsw=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 h1:Tnc3YtzxhgsvNdNrER9wWkGJbyjOwyUuzjUY5rZK72k=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6/go.mod h1:gwnFEwdzWZpNehgwkeK4756Ez58f58bXz6bgEAq+xqk=
 github.com/ebitengine/hideconsole v1.0.0 h1:5J4U0kXF+pv/DhiXt5/lTz0eO5ogJ1iXb8Yj1yReDqE=
